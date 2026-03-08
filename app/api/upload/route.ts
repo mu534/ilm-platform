@@ -1,11 +1,15 @@
 // src/app/api/upload/route.ts
 import { NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { uploadToCloudinary } from "@/lib/cloudinary";
-import { successResponse, errorResponse, handleApiError } from "@/utils/api";
+import { authOptions } from "../../lib/auth";
+import { uploadToCloudinary } from "../../lib/cloudinary";
+import {
+  successResponse,
+  errorResponse,
+  handleApiError,
+} from "../../utils/api";
 
-const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
+const MAX_FILE_SIZE = 100 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = [
   "image/jpeg",
   "image/png",

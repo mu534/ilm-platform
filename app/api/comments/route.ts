@@ -1,10 +1,14 @@
 // src/app/api/comments/route.ts
 import { NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { commentSchema } from "@/lib/validations";
-import { successResponse, errorResponse, handleApiError } from "@/utils/api";
+import { authOptions } from "../../lib/auth";
+import { prisma } from "../../lib/prism";
+import { commentSchema } from "../../lib/validations";
+import {
+  successResponse,
+  errorResponse,
+  handleApiError,
+} from "../../utils/api";
 
 export async function GET(req: NextRequest) {
   try {

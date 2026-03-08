@@ -1,15 +1,15 @@
 // src/app/api/lectures/route.ts
 import { NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { lectureSchema } from "@/lib/validations";
+import { authOptions } from "../../lib/auth";
+import { prisma } from "../../lib/prism";
+import { lectureSchema } from "../../lib/validations";
 import {
   successResponse,
   errorResponse,
   handleApiError,
   slugify,
-} from "@/utils/api";
+} from "../../utils/api";
 
 export async function GET(req: NextRequest) {
   try {

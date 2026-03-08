@@ -1,4 +1,3 @@
-// src/components/Footer.tsx
 import Link from "next/link";
 import { GiMoon } from "react-icons/gi";
 import { FiMail, FiGithub } from "react-icons/fi";

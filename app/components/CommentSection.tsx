@@ -5,8 +5,8 @@ import { useSession } from "next-auth/react";
 import { useQuery, useMutation, useQueryClient } from "react-query";
 import * as Avatar from "@radix-ui/react-avatar";
 import Link from "next/link";
-import { Comment } from "@/types";
-import { formatDate } from "@/utils/api";
+import { Comment } from "../types/auth.types";
+import { formatDate } from "../utils/api";
 import { FiSend, FiTrash2, FiMessageCircle } from "react-icons/fi";
 
 interface CommentSectionProps {

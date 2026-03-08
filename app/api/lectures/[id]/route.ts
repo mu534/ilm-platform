@@ -1,10 +1,14 @@
 // src/app/api/lectures/[id]/route.ts
 import { NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { lectureSchema } from "@/lib/validations";
-import { successResponse, errorResponse, handleApiError } from "@/utils/api";
+import { authOptions } from "../../../lib/auth";
+import { prisma } from "../../../lib/prism";
+import { lectureSchema } from "../../../lib/validations";
+import {
+  successResponse,
+  errorResponse,
+  handleApiError,
+} from "../../../utils/api";
 
 const lectureSelect = {
   id: true,

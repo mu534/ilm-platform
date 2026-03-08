@@ -1,10 +1,14 @@
 // src/app/api/scholars/route.ts
 import { NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { prisma } from "../../lib/prisma";
-import { scholarSchema } from "@/lib/validations";
-import { successResponse, errorResponse, handleApiError } from "@/utils/api";
+import { authOptions } from "../../lib/auth";
+import { prisma } from "../../lib/prism";
+import { scholarSchema } from "../../lib/validations";
+import {
+  successResponse,
+  errorResponse,
+  handleApiError,
+} from "../../utils/api";
 
 export async function GET(req: NextRequest) {
   try {

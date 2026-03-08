@@ -1,9 +1,13 @@
 // src/app/api/auth/register/route.ts
 import { NextRequest } from "next/server";
 import bcrypt from "bcryptjs";
-import { prisma } from "@/lib/prisma";
-import { registerSchema } from "@/lib/validations";
-import { successResponse, errorResponse, handleApiError } from "@/utils/api";
+import { prisma } from "../../../lib/prism";
+import { registerSchema } from "../../../lib/validations";
+import {
+  successResponse,
+  errorResponse,
+  handleApiError,
+} from "../../../utils/api";
 
 export async function POST(req: NextRequest) {
   try {

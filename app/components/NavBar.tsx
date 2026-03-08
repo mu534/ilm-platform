@@ -5,7 +5,7 @@ import { useSession, signOut } from "next-auth/react";
 import { useState } from "react";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import * as Avatar from "@radix-ui/react-avatar";
-import type { SessionUser } from "@/types/auth.types";
+import type { SessionUser } from "../types/auth.types";
 import {
   FiMenu,
   FiX,

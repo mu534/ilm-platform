@@ -1,8 +1,7 @@
-// src/components/LectureCard.tsx
 import Link from "next/link";
 import Image from "next/image";
-import { Lecture } from "@/types";
-import { formatDate } from "@/utils/api";
+import { Lecture } from "../types/auth.types";
+import { formatDate } from "../utils/api";
 import {
   FiVideo,
   FiHeadphones,

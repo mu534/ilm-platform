@@ -1,8 +1,8 @@
 // src/app/api/comments/[id]/route.ts
 import { NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { authOptions } from "../../../lib/auth";
+import { prisma } from "../../../lib/prism";
 import { successResponse, errorResponse, handleApiError } from "@/utils/api";
 
 export async function DELETE(

@@ -1,8 +1,4 @@
 @import "tailwindcss";
-/* src/app/globals.css */
-@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,600&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=Amiri:ital,wght@0,400;0,700;1,400&display=swap");
-
-@tailwind utilities;
 
 :root {
   --font-display: "Cormorant Garamond", Georgia, serif;
@@ -37,7 +33,6 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Islamic geometric pattern overlay */
 .pattern-overlay {
   background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23c8871a' fill-opacity='0.04'%3E%3Cpath d='M30 0l8.66 5v10L30 20l-8.66-5V5L30 0zm0 40l8.66 5v10L30 60l-8.66-5V45L30 40zM0 20l8.66 5v10L0 40l-8.66-5V25L0 20zm60 0l8.66 5v10L60 40l-8.66-5V25L60 20z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
 }
@@ -67,7 +62,6 @@ body {
   letter-spacing: 0.05em;
 }
 
-/* Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
 }
@@ -79,7 +73,6 @@ body {
   border-radius: 3px;
 }
 
-/* Animations */
 @keyframes fadeInUp {
   from {
     opacity: 0;
@@ -94,7 +87,6 @@ body {
 .animate-fadeInUp {
   animation: fadeInUp 0.6s ease-out forwards;
 }
-
 .delay-100 {
   animation-delay: 0.1s;
 }
@@ -105,7 +97,6 @@ body {
   animation-delay: 0.3s;
 }
 
-/* Prose styles for lecture content */
 .lecture-prose {
   font-family: var(--font-display);
   font-size: 1.125rem;
@@ -124,6 +115,15 @@ body {
 .lecture-prose h3 {
   font-size: 1.375rem;
   margin: 1.5rem 0 0.75rem;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 .shimmer {

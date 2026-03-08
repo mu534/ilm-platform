@@ -1,8 +1,7 @@
-// src/app/page.tsx
 import Link from "next/link";
-import { prisma } from "@/lib/prisma";
-import { LectureCard } from "@/components/LectureCard";
-import { ScholarCard } from "@/components/ScholarCard";
+import { prisma } from "../app/lib/prism";
+import { LectureCard } from "../app/components/LectureCard";
+import { ScholarCard } from "../app/components/ScholarCard";
 import {
   FiSearch,
   FiArrowRight,

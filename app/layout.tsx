@@ -1,9 +1,32 @@
-// src/app/layout.tsx
 import type { Metadata } from "next";
+import { Cormorant_Garamond, DM_Sans, Amiri } from "next/font/google";
 import "./globals.css";
-import { Providers } from "@/components/Providers";
-import { Navbar } from "@/components/Navbar";
-import { Footer } from "@/components/Footer";
+import { Providers } from "@/app/components/Providers";
+import { Navbar } from "@/app/components/NavBar";
+import { Footer } from "@/app/components/Footer";
+
+const cormorant = Cormorant_Garamond({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  style: ["normal", "italic"],
+  variable: "--font-display",
+  display: "swap",
+});
+
+const dmSans = DM_Sans({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600"],
+  variable: "--font-body",
+  display: "swap",
+});
+
+const amiri = Amiri({
+  subsets: ["arabic", "latin"],
+  weight: ["400", "700"],
+  style: ["normal", "italic"],
+  variable: "--font-arabic",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: {
@@ -28,7 +51,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html
+      lang="en"
+      className={`${cormorant.variable} ${dmSans.variable} ${amiri.variable}`}
+    >
       <body>
         <Providers>
           <div className="flex flex-col min-h-screen">

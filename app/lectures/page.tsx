@@ -4,18 +4,19 @@ import Link from "next/link";
 import { FiSearch, FiFilter } from "react-icons/fi";
 import type { Lecture, LectureType } from "../types/auth.types";
 
+type SearchParams = {
+  search?: string;
+  tag?: string;
+  type?: string;
+  featured?: string;
+  page?: string;
+};
+
 interface Props {
-  searchParams: {
-    search?: string;
-    tag?: string;
-    type?: string;
-    featured?: string;
-    page?: string;
-  };
+  searchParams: Promise<SearchParams>;
 }
 
 const VALID_TYPES = new Set(["TEXT", "VIDEO", "AUDIO"]);
-
 const PAGE_SIZE = 12;
 
 function mapLecture(l: {
@@ -76,7 +77,7 @@ function mapLecture(l: {
   };
 }
 
-async function getLectures(params: Props["searchParams"]) {
+async function getLectures(params: SearchParams) {
   const page = Math.max(1, Number(params.page ?? 1));
   const search = params.search ?? "";
   const tag = params.tag ?? "";
@@ -85,34 +86,23 @@ async function getLectures(params: Props["searchParams"]) {
 
   const typeFilter = VALID_TYPES.has(type) ? (type as LectureType) : undefined;
 
-  const [total, lectures] = await Promise.all([
-    prisma.lecture.count({
-      where: {
-        published: true,
-        ...(featured && { featured: true }),
-        ...(typeFilter && { type: typeFilter }),
-        ...(tag && { tags: { has: tag } }),
-        ...(search && {
-          OR: [
-            { title: { contains: search, mode: "insensitive" } },
-            { description: { contains: search, mode: "insensitive" } },
-          ],
-        }),
-      },
+  const where = {
+    published: true,
+    ...(featured && { featured: true }),
+    ...(typeFilter && { type: typeFilter }),
+    ...(tag && { tags: { has: tag } }),
+    ...(search && {
+      OR: [
+        { title: { contains: search, mode: "insensitive" as const } },
+        { description: { contains: search, mode: "insensitive" as const } },
+      ],
     }),
+  };
+
+  const [total, lectures] = await Promise.all([
+    prisma.lecture.count({ where }),
     prisma.lecture.findMany({
-      where: {
-        published: true,
-        ...(featured && { featured: true }),
-        ...(typeFilter && { type: typeFilter }),
-        ...(tag && { tags: { has: tag } }),
-        ...(search && {
-          OR: [
-            { title: { contains: search, mode: "insensitive" } },
-            { description: { contains: search, mode: "insensitive" } },
-          ],
-        }),
-      },
+      where,
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
       orderBy: { createdAt: "desc" },
@@ -140,16 +130,16 @@ async function getLectures(params: Props["searchParams"]) {
 }
 
 export default async function LecturesPage({ searchParams }: Props) {
-  const { lectures, total, page, totalPages, tags } =
-    await getLectures(searchParams);
+  const sp = await searchParams;
+  const { lectures, total, page, totalPages, tags } = await getLectures(sp);
 
   const buildUrl = (overrides: Record<string, string>) => {
     const merged: Record<string, string> = {};
-    for (const [k, v] of Object.entries(searchParams)) {
+    for (const [k, v] of Object.entries(sp)) {
       if (v !== undefined) merged[k] = v;
     }
-    const params = new URLSearchParams({ ...merged, ...overrides });
-    return `/lectures?${params.toString()}`;
+    const urlParams = new URLSearchParams({ ...merged, ...overrides });
+    return `/lectures?${urlParams.toString()}`;
   };
 
   return (
@@ -171,7 +161,7 @@ export default async function LecturesPage({ searchParams }: Props) {
             />
             <input
               name="search"
-              defaultValue={searchParams.search}
+              defaultValue={sp.search}
               placeholder="Search lectures..."
               className="w-full pl-10 pr-4 py-2.5 bg-ink-800/80 border border-white/10 rounded-xl text-white text-sm placeholder-ink-500 focus:outline-none focus:border-gold-500/50"
             />
@@ -197,7 +187,7 @@ export default async function LecturesPage({ searchParams }: Props) {
                 key={val}
                 href={buildUrl({ type: val, page: "1" })}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                  (searchParams.type ?? "") === val
+                  (sp.type ?? "") === val
                     ? "bg-gold-600 text-white"
                     : "bg-ink-800/60 text-ink-300 hover:text-white border border-white/5"
                 }`}
@@ -210,12 +200,9 @@ export default async function LecturesPage({ searchParams }: Props) {
           {tags.slice(0, 10).map((tag) => (
             <Link
               key={tag}
-              href={buildUrl({
-                tag: searchParams.tag === tag ? "" : tag,
-                page: "1",
-              })}
+              href={buildUrl({ tag: sp.tag === tag ? "" : tag, page: "1" })}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                searchParams.tag === tag
+                sp.tag === tag
                   ? "bg-gold-600/20 text-gold-300 border border-gold-500/30"
                   : "bg-ink-800/40 text-ink-400 hover:text-white border border-white/5"
               }`}

@@ -1,5 +1,5 @@
 "use client";
-// src/app/login/page.tsx
+
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";

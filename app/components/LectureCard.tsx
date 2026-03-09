@@ -1,23 +1,26 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Lecture } from "../types/auth.types";
-import { formatDate } from "../utils/api";
 import {
   FiVideo,
   FiHeadphones,
   FiFileText,
   FiEye,
   FiMessageCircle,
-  FiTag,
 } from "react-icons/fi";
+import type { Lecture, LectureType } from "../types/auth.types";
+import { formatDate } from "../utils/api";
 
-const typeIcons = {
+const typeIcons: Record<LectureType, React.ReactElement> = {
   VIDEO: <FiVideo className="text-gold-400" size={14} />,
   AUDIO: <FiHeadphones className="text-gold-400" size={14} />,
   TEXT: <FiFileText className="text-gold-400" size={14} />,
 };
 
-const typeLabels = { VIDEO: "Video", AUDIO: "Audio", TEXT: "Article" };
+const typeLabels: Record<LectureType, string> = {
+  VIDEO: "Video",
+  AUDIO: "Audio",
+  TEXT: "Article",
+};
 
 interface LectureCardProps {
   lecture: Lecture;
@@ -96,7 +99,7 @@ export function LectureCard({
             <span className="flex items-center gap-1 text-xs text-gold-400">
               {typeIcons[lecture.type]} {typeLabels[lecture.type]}
             </span>
-            {lecture.tags.slice(0, 2).map((tag) => (
+            {lecture.tags.slice(0, 2).map((tag: string) => (
               <span
                 key={tag}
                 className="text-xs text-ink-500 bg-white/5 px-2 py-0.5 rounded-full"

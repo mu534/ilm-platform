@@ -1,8 +1,7 @@
-// src/components/ScholarCard.tsx
 import Link from "next/link";
 import Image from "next/image";
 import * as Avatar from "@radix-ui/react-avatar";
-import { ScholarProfile } from "@/types";
+import { ScholarProfile } from "../types";
 import { FiBookOpen, FiStar } from "react-icons/fi";
 
 interface ScholarCardProps {

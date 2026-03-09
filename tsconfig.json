@@ -16,7 +16,8 @@
     "baseUrl": ".",
 
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@prisma-generated": ["./generated/prisma"]
     },
 
     "plugins": [

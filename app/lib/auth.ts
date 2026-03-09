@@ -1,13 +1,11 @@
-// src/lib/auth.ts
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { PrismaAdapter } from "@auth/prisma-adapter";
 import bcrypt from "bcryptjs";
 import { prisma } from "../lib/prism";
-import { Role } from "@prisma/client";
+
+type UserRole = "ADMIN" | "SCHOLAR" | "USER";
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma) as any,
   session: { strategy: "jwt" },
   pages: {
     signIn: "/login",
@@ -27,9 +25,17 @@ export const authOptions: NextAuthOptions = {
 
         const user = await prisma.user.findUnique({
           where: { email: credentials.email },
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            image: true,
+            password: true,
+            role: true,
+          },
         });
 
-        if (!user || !user.password) {
+        if (!user?.password) {
           throw new Error("Invalid credentials");
         }
 
@@ -37,14 +43,17 @@ export const authOptions: NextAuthOptions = {
           credentials.password,
           user.password,
         );
-        if (!isValid) throw new Error("Invalid credentials");
+
+        if (!isValid) {
+          throw new Error("Invalid credentials");
+        }
 
         return {
           id: user.id,
           email: user.email,
           name: user.name,
-          image: user.image,
-          role: user.role,
+          image: user.image ?? null,
+          role: user.role as UserRole,
         };
       },
     }),
@@ -53,15 +62,13 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
-        token.role = (user as any).role as Role;
+        token.role = user.role as UserRole;
       }
       return token;
     },
     async session({ session, token }) {
-      if (session.user) {
-        (session.user as any).id = token.id as string;
-        (session.user as any).role = token.role as Role;
-      }
+      session.user.id = token.id;
+      session.user.role = token.role;
       return session;
     },
   },

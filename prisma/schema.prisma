@@ -6,10 +6,95 @@
 
 generator client {
   provider = "prisma-client"
-   output   = "../node_modules/.prisma/client" 
+  output   = "../generated/prisma"
 }
 
 datasource db {
-  provider = "mongodb"
-  url      = env("DATABASE_URL")
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  SCHOLAR
+  USER
+}
+
+enum LectureType {
+  TEXT
+  VIDEO
+  AUDIO
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String?
+  image     String?
+  role      Role     @default(USER)
+  bio       String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  lectures Lecture[]
+  comments Comment[]
+  scholar  Scholar?
+
+  @@map("users")
+}
+
+model Scholar {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bio            String
+  photo          String?
+  topics         String[]
+  qualifications String[]
+  featured       Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  lectures Lecture[]
+
+  @@map("scholars")
+}
+
+model Lecture {
+  id           String      @id @default(cuid())
+  title        String
+  slug         String      @unique
+  description  String
+  content      String?
+  type         LectureType @default(TEXT)
+  mediaUrl     String?
+  thumbnailUrl String?
+  tags         String[]
+  published    Boolean     @default(false)
+  featured     Boolean     @default(false)
+  views        Int         @default(0)
+  authorId     String
+  author       User        @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  scholarId    String?
+  scholar      Scholar?    @relation(fields: [scholarId], references: [id])
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  comments Comment[]
+
+  @@map("lectures")
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  body      String
+  lectureId String
+  lecture   Lecture  @relation(fields: [lectureId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  approved  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("comments")
 }

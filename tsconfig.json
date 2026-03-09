@@ -13,9 +13,6 @@
     "isolatedModules": true,
     "jsx": "react-jsx",
     "incremental": true,
-     "esModuleInterop": true,
-    "ignoreDeprecations": "6.0",
-
     "baseUrl": ".",
 
     "paths": {

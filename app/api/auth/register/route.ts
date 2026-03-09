@@ -1,4 +1,3 @@
-// src/app/api/auth/register/route.ts
 import { NextRequest } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "../../../lib/prism";

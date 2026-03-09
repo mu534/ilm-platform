@@ -10,6 +10,7 @@ import {
   FiVideo,
 } from "react-icons/fi";
 import { GiMoon, GiStarFormation } from "react-icons/gi";
+import type { Lecture, Scholar } from "../app/types/auth.types";
 
 async function getHomeData() {
   const [featuredLectures, latestLectures, featuredScholars, stats] =
@@ -52,10 +53,68 @@ async function getHomeData() {
   return { featuredLectures, latestLectures, featuredScholars, stats };
 }
 
+function mapLecture(l: {
+  id: string;
+  title: string;
+  slug: string;
+  description: string;
+  content: string | null;
+  type: "TEXT" | "VIDEO" | "AUDIO";
+  mediaUrl: string | null;
+  thumbnailUrl: string | null;
+  tags: string[];
+  published: boolean;
+  featured: boolean;
+  views: number;
+  createdAt: Date;
+  author: { id: string; name: string; image: string | null };
+  scholar: {
+    id: string;
+    bio: string;
+    photo: string | null;
+    topics: string[];
+    user: { name: string };
+  } | null;
+  _count: { comments: number };
+}): Lecture {
+  return {
+    ...l,
+    createdAt: l.createdAt.toISOString(),
+    scholar: l.scholar
+      ? {
+          id: l.scholar.id,
+          bio: l.scholar.bio,
+          photo: l.scholar.photo,
+          topics: l.scholar.topics,
+          user: { name: l.scholar.user.name },
+        }
+      : null,
+  };
+}
+
+function mapScholar(s: {
+  id: string;
+  userId: string;
+  bio: string;
+  photo: string | null;
+  topics: string[];
+  qualifications: string[];
+  featured: boolean;
+  user: { name: string; email: string; image: string | null };
+  _count: { lectures: number };
+}): Scholar {
+  return { ...s };
+}
+
 export default async function HomePage() {
   const { featuredLectures, latestLectures, featuredScholars, stats } =
     await getHomeData();
+
   const [lectureCount, scholarCount, userCount] = stats;
+
+  const mappedFeatured = featuredLectures.map(mapLecture);
+  const mappedLatest = latestLectures.map(mapLecture);
+  const mappedScholars = featuredScholars.map(mapScholar);
 
   return (
     <div className="min-h-screen">
@@ -87,7 +146,6 @@ export default async function HomePage() {
             and deepen your understanding of the Deen.
           </p>
 
-          {/* Search */}
           <form
             action="/lectures"
             method="GET"
@@ -151,7 +209,7 @@ export default async function HomePage() {
       </section>
 
       {/* Featured Lectures */}
-      {featuredLectures.length > 0 && (
+      {mappedFeatured.length > 0 && (
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="flex items-center justify-between mb-8">
             <div>
@@ -170,10 +228,10 @@ export default async function HomePage() {
             </Link>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {featuredLectures.map((lecture) => (
+            {mappedFeatured.map((lecture) => (
               <LectureCard
                 key={lecture.id}
-                lecture={lecture as any}
+                lecture={lecture}
                 variant="featured"
               />
             ))}
@@ -200,14 +258,14 @@ export default async function HomePage() {
           </Link>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {latestLectures.map((lecture) => (
-            <LectureCard key={lecture.id} lecture={lecture as any} />
+          {mappedLatest.map((lecture) => (
+            <LectureCard key={lecture.id} lecture={lecture} />
           ))}
         </div>
       </section>
 
       {/* Featured Scholars */}
-      {featuredScholars.length > 0 && (
+      {mappedScholars.length > 0 && (
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="flex items-center justify-between mb-8">
             <div>
@@ -226,8 +284,8 @@ export default async function HomePage() {
             </Link>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {featuredScholars.map((scholar) => (
-              <ScholarCard key={scholar.id} scholar={scholar as any} />
+            {mappedScholars.map((scholar) => (
+              <ScholarCard key={scholar.id} scholar={scholar} />
             ))}
           </div>
         </section>

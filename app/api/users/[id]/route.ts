@@ -1,4 +1,3 @@
-// src/app/api/users/[id]/route.ts
 import { NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../../lib/auth";
@@ -9,6 +8,7 @@ import {
   errorResponse,
   handleApiError,
 } from "../../../utils/api";
+import type { SessionUser } from "../../../types/next-auth";
 
 export async function GET(
   _req: NextRequest,
@@ -18,11 +18,12 @@ export async function GET(
     const session = await getServerSession(authOptions);
     if (!session?.user) return errorResponse("Unauthorized", 401);
 
-    const userId = (session.user as any).id;
-    const isAdmin = (session.user as any).role === "ADMIN";
+    const { id: userId, role: userRole } = session.user as SessionUser;
+    const isAdmin = userRole === "ADMIN";
 
-    if (!isAdmin && userId !== params.id)
+    if (!isAdmin && userId !== params.id) {
       return errorResponse("Forbidden", 403);
+    }
 
     const user = await prisma.user.findUnique({
       where: { id: params.id },
@@ -46,6 +47,7 @@ export async function GET(
         _count: { select: { lectures: true, comments: true } },
       },
     });
+
     if (!user) return errorResponse("User not found", 404);
     return successResponse(user);
   } catch (error) {
@@ -61,16 +63,19 @@ export async function PATCH(
     const session = await getServerSession(authOptions);
     if (!session?.user) return errorResponse("Unauthorized", 401);
 
-    const userId = (session.user as any).id;
-    const isAdmin = (session.user as any).role === "ADMIN";
+    const { id: userId, role: userRole } = session.user as SessionUser;
+    const isAdmin = userRole === "ADMIN";
 
-    if (!isAdmin && userId !== params.id)
+    if (!isAdmin && userId !== params.id) {
       return errorResponse("Forbidden", 403);
+    }
 
-    const body = await req.json();
+    const body = (await req.json()) as Record<string, unknown>;
 
     // Only admins can change roles
-    if (!isAdmin && body.role) delete body.role;
+    if (!isAdmin) {
+      delete body.role;
+    }
 
     const data = updateUserSchema.parse(body);
 
@@ -99,7 +104,10 @@ export async function DELETE(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user || (session.user as any).role !== "ADMIN") {
+    if (!session?.user) return errorResponse("Unauthorized", 401);
+
+    const { role: userRole } = session.user as SessionUser;
+    if (userRole !== "ADMIN") {
       return errorResponse("Forbidden", 403);
     }
 

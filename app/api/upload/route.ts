@@ -1,4 +1,3 @@
-// src/app/api/upload/route.ts
 import { NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../lib/auth";
@@ -8,6 +7,9 @@ import {
   errorResponse,
   handleApiError,
 } from "../../utils/api";
+import type { SessionUser } from "../../types/next-auth";
+
+type ResourceType = "image" | "video" | "raw" | "auto";
 
 const MAX_FILE_SIZE = 100 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = [
@@ -18,37 +20,49 @@ const ALLOWED_IMAGE_TYPES = [
 ];
 const ALLOWED_VIDEO_TYPES = ["video/mp4", "video/webm", "video/ogg"];
 
+function getResourceType(mimeType: string): ResourceType | null {
+  if (ALLOWED_IMAGE_TYPES.includes(mimeType)) return "image";
+  if (ALLOWED_VIDEO_TYPES.includes(mimeType)) return "video";
+  if (mimeType.startsWith("audio/")) return "auto";
+  return null;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) return errorResponse("Unauthorized", 401);
 
-    const userRole = (session.user as any).role;
+    const { role: userRole } = session.user as SessionUser;
     if (!["ADMIN", "SCHOLAR"].includes(userRole)) {
       return errorResponse("Forbidden", 403);
     }
 
     const formData = await req.formData();
-    const file = formData.get("file") as File | null;
-    const folder = (formData.get("folder") as string) || "ilm-platform";
+    const file = formData.get("file");
+    const folder = formData.get("folder");
 
-    if (!file) return errorResponse("No file provided", 400);
-    if (file.size > MAX_FILE_SIZE)
+    if (!(file instanceof File)) {
+      return errorResponse("No file provided", 400);
+    }
+
+    if (file.size > MAX_FILE_SIZE) {
       return errorResponse("File size exceeds 100MB limit", 400);
+    }
 
-    const mimeType = file.type;
-    let resourceType: "image" | "video" | "raw" | "auto" = "auto";
+    const resolvedFolder =
+      typeof folder === "string" && folder ? folder : "ilm-platform";
+    const resourceType = getResourceType(file.type);
 
-    if (ALLOWED_IMAGE_TYPES.includes(mimeType)) {
-      resourceType = "image";
-    } else if (ALLOWED_VIDEO_TYPES.includes(mimeType)) {
-      resourceType = "video";
-    } else if (!mimeType.startsWith("audio/")) {
+    if (resourceType === null) {
       return errorResponse("Unsupported file type", 400);
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
-    const result = await uploadToCloudinary(buffer, folder, resourceType);
+    const result = await uploadToCloudinary(
+      buffer,
+      resolvedFolder,
+      resourceType,
+    );
 
     return successResponse({
       url: result.url,

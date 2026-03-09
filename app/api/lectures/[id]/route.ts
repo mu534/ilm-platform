@@ -1,4 +1,3 @@
-// src/app/api/lectures/[id]/route.ts
 import { NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../../lib/auth";
@@ -9,6 +8,7 @@ import {
   errorResponse,
   handleApiError,
 } from "../../../utils/api";
+import type { SessionUser } from "../../../types/next-auth";
 
 const lectureSelect = {
   id: true,
@@ -40,7 +40,7 @@ const lectureSelect = {
 };
 
 export async function GET(
-  req: NextRequest,
+  _req: NextRequest,
   { params }: { params: { id: string } },
 ) {
   try {
@@ -50,7 +50,6 @@ export async function GET(
     });
     if (!lecture) return errorResponse("Lecture not found", 404);
 
-    // Increment views
     await prisma.lecture.update({
       where: { id: lecture.id },
       data: { views: { increment: 1 } },
@@ -70,19 +69,19 @@ export async function PATCH(
     const session = await getServerSession(authOptions);
     if (!session?.user) return errorResponse("Unauthorized", 401);
 
+    const { id: userId, role: userRole } = session.user as SessionUser;
+
     const lecture = await prisma.lecture.findUnique({
       where: { id: params.id },
     });
     if (!lecture) return errorResponse("Lecture not found", 404);
 
-    const userRole = (session.user as any).role;
-    const userId = (session.user as any).id;
-    const isOwner = lecture.authorId === userId;
     const isAdmin = userRole === "ADMIN";
+    const isOwner = lecture.authorId === userId;
 
     if (!isAdmin && !isOwner) return errorResponse("Forbidden", 403);
 
-    const body = await req.json();
+    const body = (await req.json()) as unknown;
     const data = lectureSchema.partial().parse(body);
 
     const updated = await prisma.lecture.update({
@@ -98,20 +97,20 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  req: NextRequest,
+  _req: NextRequest,
   { params }: { params: { id: string } },
 ) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) return errorResponse("Unauthorized", 401);
 
+    const { id: userId, role: userRole } = session.user as SessionUser;
+
     const lecture = await prisma.lecture.findUnique({
       where: { id: params.id },
     });
     if (!lecture) return errorResponse("Lecture not found", 404);
 
-    const userRole = (session.user as any).role;
-    const userId = (session.user as any).id;
     const isAdmin = userRole === "ADMIN";
     const isOwner = lecture.authorId === userId;
 

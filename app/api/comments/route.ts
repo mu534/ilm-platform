@@ -1,4 +1,3 @@
-// src/app/api/comments/route.ts
 import { NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../lib/auth";
@@ -9,6 +8,7 @@ import {
   errorResponse,
   handleApiError,
 } from "../../utils/api";
+import type { SessionUser } from "../../types/next-auth";
 
 export async function GET(req: NextRequest) {
   try {
@@ -33,10 +33,13 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user)
+    if (!session?.user) {
       return errorResponse("You must be logged in to comment", 401);
+    }
 
-    const body = await req.json();
+    const { id: authorId } = session.user as SessionUser;
+
+    const body = (await req.json()) as unknown;
     const data = commentSchema.parse(body);
 
     const lecture = await prisma.lecture.findUnique({
@@ -48,7 +51,7 @@ export async function POST(req: NextRequest) {
       data: {
         body: data.body,
         lectureId: data.lectureId,
-        authorId: (session.user as any).id,
+        authorId,
       },
       include: {
         author: { select: { id: true, name: true, image: true } },

@@ -1,4 +1,3 @@
-// src/app/api/scholars/route.ts
 import { NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../lib/auth";
@@ -9,6 +8,12 @@ import {
   errorResponse,
   handleApiError,
 } from "../../utils/api";
+import type { SessionUser } from "../../types/next-auth";
+
+interface ScholarWhereInput {
+  featured?: boolean;
+  topics?: { has: string };
+}
 
 export async function GET(req: NextRequest) {
   try {
@@ -16,7 +21,7 @@ export async function GET(req: NextRequest) {
     const featured = searchParams.get("featured") === "true";
     const topic = searchParams.get("topic") ?? "";
 
-    const where: any = {};
+    const where: ScholarWhereInput = {};
     if (featured) where.featured = true;
     if (topic) where.topics = { has: topic };
 
@@ -40,8 +45,7 @@ export async function POST(req: NextRequest) {
     const session = await getServerSession(authOptions);
     if (!session?.user) return errorResponse("Unauthorized", 401);
 
-    const userRole = (session.user as any).role;
-    const userId = (session.user as any).id;
+    const { id: userId, role: userRole } = session.user as SessionUser;
 
     if (!["ADMIN", "SCHOLAR"].includes(userRole)) {
       return errorResponse("Forbidden", 403);
@@ -50,7 +54,7 @@ export async function POST(req: NextRequest) {
     const existing = await prisma.scholar.findUnique({ where: { userId } });
     if (existing) return errorResponse("Scholar profile already exists", 409);
 
-    const body = await req.json();
+    const body = (await req.json()) as unknown;
     const data = scholarSchema.parse(body);
 
     const scholar = await prisma.scholar.create({

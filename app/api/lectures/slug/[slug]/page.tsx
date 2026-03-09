@@ -1,9 +1,9 @@
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { prisma } from "../../../lib/prism";
-import { CommentSection } from "../../../components/CommentSection";
-import { formatDate } from "../../../utils/api";
+import { prisma } from "../../../../lib/prism";
+import { CommentSection } from "../../../../components/CommentSection";
+import { formatDate } from "../../../../utils/api";
 import { FiEye, FiCalendar, FiTag, FiUser } from "react-icons/fi";
 import { GiBookmark } from "react-icons/gi";
 

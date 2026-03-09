@@ -1,4 +1,3 @@
-// src/app/api/lectures/route.ts
 import { NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../lib/auth";
@@ -10,6 +9,21 @@ import {
   handleApiError,
   slugify,
 } from "../../utils/api";
+import type { SessionUser } from "../../types/next-auth";
+
+type LectureType = "TEXT" | "VIDEO" | "AUDIO";
+
+interface LectureWhereInput {
+  published?: boolean;
+  featured?: boolean;
+  scholarId?: string;
+  type?: LectureType;
+  tags?: { has: string };
+  OR?: Array<{
+    title?: { contains: string; mode: "insensitive" };
+    description?: { contains: string; mode: "insensitive" };
+  }>;
+}
 
 export async function GET(req: NextRequest) {
   try {
@@ -27,22 +41,26 @@ export async function GET(req: NextRequest) {
     const published = searchParams.get("published");
 
     const session = await getServerSession(authOptions);
-    const isAdmin = (session?.user as any)?.role === "ADMIN";
+    const isAdmin =
+      (session?.user as SessionUser | undefined)?.role === "ADMIN";
 
-    const where: any = {};
-    // Non-admins see only published content
-    if (!isAdmin) where.published = true;
-    else if (published !== null) where.published = published === "true";
+    const where: LectureWhereInput = {};
+
+    if (!isAdmin) {
+      where.published = true;
+    } else if (published !== null) {
+      where.published = published === "true";
+    }
 
     if (search) {
       where.OR = [
         { title: { contains: search, mode: "insensitive" } },
         { description: { contains: search, mode: "insensitive" } },
-        { tags: { has: search } },
       ];
     }
+
     if (tag) where.tags = { has: tag };
-    if (type) where.type = type;
+    if (type) where.type = type as LectureType;
     if (featured) where.featured = true;
     if (scholarId) where.scholarId = scholarId;
 
@@ -97,7 +115,8 @@ export async function POST(req: NextRequest) {
     const session = await getServerSession(authOptions);
     if (!session?.user) return errorResponse("Unauthorized", 401);
 
-    const userRole = (session.user as any).role;
+    const { id: authorId, role: userRole } = session.user as SessionUser;
+
     if (!["ADMIN", "SCHOLAR"].includes(userRole)) {
       return errorResponse(
         "Forbidden: Only Admins and Scholars can create lectures",
@@ -105,7 +124,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const body = await req.json();
+    const body = (await req.json()) as unknown;
     const data = lectureSchema.parse(body);
     const slug = slugify(data.title);
 
@@ -113,7 +132,7 @@ export async function POST(req: NextRequest) {
       data: {
         ...data,
         slug,
-        authorId: (session.user as any).id,
+        authorId,
       },
     });
 

@@ -1,5 +1,5 @@
 "use client";
-// src/components/FileUploader.tsx
+
 import { useState, useRef } from "react";
 import { FiUploadCloud, FiX, FiFile } from "react-icons/fi";
 
@@ -49,8 +49,9 @@ export function FileUploader({
       setPreview(data.data.url);
       onUpload(data.data.url);
       setProgress(100);
-    } catch (err: any) {
-      setError(err.message || "Upload failed");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Upload failed";
+      setError(message);
     } finally {
       setUploading(false);
     }

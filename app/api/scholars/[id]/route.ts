@@ -1,4 +1,3 @@
-// src/app/api/scholars/[id]/route.ts
 import { NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../../lib/auth";
@@ -9,6 +8,7 @@ import {
   errorResponse,
   handleApiError,
 } from "../../../utils/api";
+import type { SessionUser } from "../../../types/next-auth";
 
 export async function GET(
   _req: NextRequest,
@@ -39,6 +39,7 @@ export async function GET(
         _count: { select: { lectures: true } },
       },
     });
+
     if (!scholar) return errorResponse("Scholar not found", 404);
     return successResponse(scholar);
   } catch (error) {
@@ -54,19 +55,19 @@ export async function PATCH(
     const session = await getServerSession(authOptions);
     if (!session?.user) return errorResponse("Unauthorized", 401);
 
+    const { id: userId, role: userRole } = session.user as SessionUser;
+
     const scholar = await prisma.scholar.findUnique({
       where: { id: params.id },
     });
     if (!scholar) return errorResponse("Scholar not found", 404);
 
-    const userRole = (session.user as any).role;
-    const userId = (session.user as any).id;
     const isAdmin = userRole === "ADMIN";
     const isOwner = scholar.userId === userId;
 
     if (!isAdmin && !isOwner) return errorResponse("Forbidden", 403);
 
-    const body = await req.json();
+    const body = (await req.json()) as unknown;
     const data = scholarSchema.partial().parse(body);
 
     const updated = await prisma.scholar.update({
@@ -89,7 +90,7 @@ export async function DELETE(
     const session = await getServerSession(authOptions);
     if (!session?.user) return errorResponse("Unauthorized", 401);
 
-    const userRole = (session.user as any).role;
+    const { role: userRole } = session.user as SessionUser;
     if (userRole !== "ADMIN") return errorResponse("Forbidden", 403);
 
     await prisma.scholar.delete({ where: { id: params.id } });

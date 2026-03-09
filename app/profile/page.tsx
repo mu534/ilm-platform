@@ -1,27 +1,35 @@
 "use client";
-// src/app/profile/page.tsx
+
 import { useSession } from "next-auth/react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import {
-  FiUser,
-  FiMail,
-  FiEdit2,
-  FiCheck,
-  FiAlertCircle,
-} from "react-icons/fi";
+import { FiMail, FiEdit2, FiCheck, FiAlertCircle } from "react-icons/fi";
 import * as Avatar from "@radix-ui/react-avatar";
+import type { SessionUser, UserRole } from "../types/auth.types";
+
+type Status = "idle" | "saving" | "success" | "error";
+
+const roleBadgeColors: Record<UserRole, string> = {
+  ADMIN: "bg-red-900/30 text-red-400 border-red-700/30",
+  SCHOLAR: "bg-gold-900/30 text-gold-400 border-gold-700/30",
+  USER: "bg-blue-900/20 text-blue-400 border-blue-700/20",
+};
+
+interface ApiResponse {
+  success: boolean;
+  error?: string;
+}
 
 export default function ProfilePage() {
   const { data: session, update } = useSession();
   const router = useRouter();
-  const user = session?.user as any;
+
+  const user = session?.user as SessionUser | undefined;
+
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ name: user?.name ?? "", bio: "" });
-  const [status, setStatus] = useState<"idle" | "saving" | "success" | "error">(
-    "idle",
-  );
+  const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState("");
 
   if (!session) {
@@ -32,28 +40,28 @@ export default function ProfilePage() {
   const handleSave = async () => {
     setStatus("saving");
     try {
-      const res = await fetch(`/api/users/${user.id}`, {
+      const res = await fetch(`/api/users/${user?.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
-      const data = await res.json();
-      if (!data.success) throw new Error(data.error);
+
+      const data = (await res.json()) as ApiResponse;
+      if (!data.success) throw new Error(data.error ?? "Update failed");
+
       await update({ name: form.name });
       setStatus("success");
       setEditing(false);
       setTimeout(() => setStatus("idle"), 2000);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Something went wrong";
+      setError(message);
       setStatus("error");
     }
   };
 
-  const roleBadgeColor = {
-    ADMIN: "bg-red-900/30 text-red-400 border-red-700/30",
-    SCHOLAR: "bg-gold-900/30 text-gold-400 border-gold-700/30",
-    USER: "bg-blue-900/20 text-blue-400 border-blue-700/20",
-  }[user?.role ?? "USER"];
+  const badgeColor = roleBadgeColors[user?.role ?? "USER"];
 
   return (
     <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -64,12 +72,12 @@ export default function ProfilePage() {
       </div>
 
       <div className="glass-card gold-border rounded-2xl p-8">
-        {/* Avatar & basic */}
+        {/* Avatar & basic info */}
         <div className="flex items-start gap-6 mb-8 pb-8 border-b border-white/5">
           <Avatar.Root className="w-20 h-20 rounded-full overflow-hidden border-2 border-gold-500/30">
             <Avatar.Image
               src={user?.image ?? ""}
-              alt={user?.name}
+              alt={user?.name ?? "User"}
               className="w-full h-full object-cover"
             />
             <Avatar.Fallback className="w-full h-full flex items-center justify-center bg-gold-700 text-white text-2xl font-display font-bold">
@@ -86,7 +94,7 @@ export default function ProfilePage() {
             </p>
             <div className="mt-2">
               <span
-                className={`text-xs px-2 py-0.5 rounded-full border font-medium ${roleBadgeColor}`}
+                className={`text-xs px-2 py-0.5 rounded-full border font-medium ${badgeColor}`}
               >
                 {user?.role}
               </span>
@@ -94,7 +102,7 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Edit form */}
+        {/* Status messages */}
         {status === "success" && (
           <div className="flex items-center gap-2 text-green-400 text-sm mb-4">
             <FiCheck /> Profile updated!
@@ -106,6 +114,7 @@ export default function ProfilePage() {
           </div>
         )}
 
+        {/* Form fields */}
         <div className="space-y-4">
           <div>
             <label className="block text-xs text-ink-400 font-medium mb-1.5">
@@ -130,6 +139,7 @@ export default function ProfilePage() {
           </div>
         </div>
 
+        {/* Action buttons */}
         <div className="flex gap-3 mt-8">
           {editing ? (
             <>
@@ -158,7 +168,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Role-based actions */}
-        {["ADMIN", "SCHOLAR"].includes(user?.role) && (
+        {(user?.role === "ADMIN" || user?.role === "SCHOLAR") && (
           <div className="mt-8 pt-8 border-t border-white/5">
             <p className="text-xs text-ink-500 uppercase tracking-wider font-semibold mb-3">
               Actions

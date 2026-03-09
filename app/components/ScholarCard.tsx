@@ -1,15 +1,14 @@
 import Link from "next/link";
-import Image from "next/image";
 import * as Avatar from "@radix-ui/react-avatar";
-import { ScholarProfile } from "../types";
 import { FiBookOpen, FiStar } from "react-icons/fi";
+import type { Scholar } from "../types/auth.types";
 
 interface ScholarCardProps {
-  scholar: ScholarProfile;
+  scholar: Scholar;
 }
 
 export function ScholarCard({ scholar }: ScholarCardProps) {
-  const photoSrc = scholar.photo || scholar.user.image;
+  const photoSrc = scholar.photo ?? scholar.user.image;
 
   return (
     <Link href={`/scholars/${scholar.id}`} className="group block">
@@ -17,13 +16,13 @@ export function ScholarCard({ scholar }: ScholarCardProps) {
         {/* Avatar */}
         <div className="flex justify-center mb-4">
           <Avatar.Root className="w-20 h-20 rounded-full overflow-hidden border-2 border-gold-500/30 group-hover:border-gold-400/60 transition-colors">
-            {photoSrc ? (
+            {photoSrc && (
               <Avatar.Image
                 src={photoSrc}
                 alt={scholar.user.name}
                 className="w-full h-full object-cover"
               />
-            ) : null}
+            )}
             <Avatar.Fallback className="w-full h-full flex items-center justify-center bg-gold-800/50 text-gold-300 text-2xl font-display font-bold">
               {scholar.user.name[0]?.toUpperCase()}
             </Avatar.Fallback>
@@ -49,7 +48,7 @@ export function ScholarCard({ scholar }: ScholarCardProps) {
 
         {/* Topics */}
         <div className="flex flex-wrap gap-1.5 justify-center mb-4">
-          {scholar.topics.slice(0, 3).map((topic) => (
+          {scholar.topics.slice(0, 3).map((topic: string) => (
             <span
               key={topic}
               className="text-xs px-2 py-0.5 rounded-full bg-gold-900/30 text-gold-400 border border-gold-700/30"

@@ -2,18 +2,19 @@ import Link from "next/link";
 import { prisma } from "../app/lib/prism";
 import { LectureCard } from "../app/components/LectureCard";
 import { ScholarCard } from "../app/components/ScholarCard";
+import type { Lecture, Scholar } from "../app/types/auth.types";
 import {
   FiSearch,
   FiArrowRight,
   FiBookOpen,
   FiUsers,
   FiVideo,
+  FiStar,
 } from "react-icons/fi";
 import { GiMoon, GiStarFormation } from "react-icons/gi";
-import type { Lecture, Scholar } from "../app/types/auth.types";
 
 async function getHomeData() {
-  const [featuredLectures, latestLectures, featuredScholars, stats] =
+  const [featuredLectures, latestLectures, featuredScholars, counts] =
     await Promise.all([
       prisma.lecture.findMany({
         where: { published: true, featured: true },
@@ -50,10 +51,12 @@ async function getHomeData() {
       ]),
     ]);
 
-  return { featuredLectures, latestLectures, featuredScholars, stats };
+  return { featuredLectures, latestLectures, featuredScholars, counts };
 }
 
-function mapLecture(l: {
+// ─── Mappers ──────────────────────────────────────────────────────────────────
+
+type PrismaLecture = {
   id: string;
   title: string;
   slug: string;
@@ -76,7 +79,21 @@ function mapLecture(l: {
     user: { name: string };
   } | null;
   _count: { comments: number };
-}): Lecture {
+};
+
+type PrismaScholar = {
+  id: string;
+  userId: string;
+  bio: string;
+  photo: string | null;
+  topics: string[];
+  qualifications: string[];
+  featured: boolean;
+  user: { name: string; email: string; image: string | null };
+  _count: { lectures: number };
+};
+
+function mapLecture(l: PrismaLecture): Lecture {
   return {
     ...l,
     createdAt: l.createdAt.toISOString(),
@@ -92,25 +109,76 @@ function mapLecture(l: {
   };
 }
 
-function mapScholar(s: {
-  id: string;
-  userId: string;
-  bio: string;
-  photo: string | null;
-  topics: string[];
-  qualifications: string[];
-  featured: boolean;
-  user: { name: string; email: string; image: string | null };
-  _count: { lectures: number };
-}): Scholar {
+function mapScholar(s: PrismaScholar): Scholar {
   return { ...s };
 }
 
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+function SectionHeader({
+  eyebrow,
+  title,
+  href,
+  linkLabel,
+}: {
+  eyebrow: string;
+  title: string;
+  href?: string;
+  linkLabel?: string;
+}) {
+  return (
+    <div className="flex items-end justify-between mb-8 gap-4">
+      <div>
+        <p className="text-xs text-gold-400 uppercase tracking-widest font-semibold mb-1.5">
+          {eyebrow}
+        </p>
+        <h2 className="font-display text-2xl sm:text-3xl font-semibold text-white leading-tight">
+          {title}
+        </h2>
+      </div>
+      {href && linkLabel && (
+        <Link
+          href={href}
+          className="flex-shrink-0 flex items-center gap-1.5 text-sm text-gold-400 hover:text-gold-300 transition-colors group"
+        >
+          {linkLabel}
+          <FiArrowRight
+            size={14}
+            className="group-hover:translate-x-0.5 transition-transform"
+          />
+        </Link>
+      )}
+    </div>
+  );
+}
+
+function StatCard({
+  icon,
+  count,
+  label,
+}: {
+  icon: React.ReactNode;
+  count: number;
+  label: string;
+}) {
+  return (
+    <div className="flex flex-col items-center gap-2 p-6 rounded-2xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.04] transition-colors">
+      <div className="text-gold-400 text-xl">{icon}</div>
+      <div className="font-display text-3xl sm:text-4xl font-bold text-white tabular-nums">
+        {count.toLocaleString()}
+      </div>
+      <div className="text-sm text-ink-400">{label}</div>
+    </div>
+  );
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
 export default async function HomePage() {
-  const { featuredLectures, latestLectures, featuredScholars, stats } =
+  const { featuredLectures, latestLectures, featuredScholars, counts } =
     await getHomeData();
 
-  const [lectureCount, scholarCount, userCount] = stats;
+  const [lectureCount, scholarCount, userCount] = counts;
 
   const mappedFeatured = featuredLectures.map(mapLecture);
   const mappedLatest = latestLectures.map(mapLecture);
@@ -118,66 +186,79 @@ export default async function HomePage() {
 
   return (
     <div className="min-h-screen">
-      {/* Hero */}
-      <section className="relative overflow-hidden py-24 md:py-36">
-        <div className="absolute inset-0 pattern-overlay" />
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gold-600/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-gold-400/5 rounded-full blur-3xl" />
+      {/* ── Hero ── */}
+      <section className="relative overflow-hidden py-20 sm:py-28 md:py-36">
+        {/* Background layers */}
+        <div className="absolute inset-0 pattern-overlay opacity-40" />
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-gold-600/5 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-ink-950 to-transparent pointer-events-none" />
 
         <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="flex items-center justify-center gap-2 mb-6">
-            <GiStarFormation className="text-gold-400 text-sm" />
+          {/* Eyebrow */}
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-gold-500/20 bg-gold-500/5 mb-8">
+            <GiStarFormation className="text-gold-400 text-xs" />
             <span className="text-xs tracking-widest text-gold-400 uppercase font-semibold">
               Knowledge is Light
             </span>
-            <GiStarFormation className="text-gold-400 text-sm" />
+            <GiStarFormation className="text-gold-400 text-xs" />
           </div>
 
-          <p className="arabic-bismillah text-3xl mb-8">
+          {/* Arabic */}
+          <p className="arabic-bismillah text-2xl sm:text-3xl mb-6 text-gold-300/80">
             بِسْمِ اللّٰهِ الرَّحْمَنِ الرَّحِيْمِ
           </p>
 
-          <h1 className="font-display text-5xl md:text-7xl font-bold text-white leading-tight mb-6">
-            Seek Knowledge with <span className="gradient-text">Clarity</span>
+          {/* Headline */}
+          <h1 className="font-display text-4xl sm:text-5xl md:text-7xl font-bold text-white leading-[1.1] tracking-tight mb-6">
+            Seek Knowledge
+            <br />
+            with <span className="gradient-text">Clarity</span>
           </h1>
 
-          <p className="text-lg text-ink-300 max-w-2xl mx-auto mb-10 leading-relaxed">
+          <p className="text-base sm:text-lg text-ink-300 max-w-xl mx-auto mb-10 leading-relaxed">
             Access authentic Islamic lectures, connect with qualified scholars,
             and deepen your understanding of the Deen.
           </p>
 
+          {/* Search */}
           <form
             action="/lectures"
             method="GET"
-            className="max-w-xl mx-auto mb-10"
+            className="max-w-lg mx-auto mb-8"
           >
-            <div className="relative flex items-center">
-              <FiSearch className="absolute left-4 text-ink-400" size={18} />
-              <input
-                name="search"
-                type="text"
-                placeholder="Search lectures, topics, scholars..."
-                className="w-full pl-11 pr-32 py-4 bg-ink-800/80 border border-white/10 rounded-2xl text-white placeholder-ink-500 focus:outline-none focus:border-gold-500/50 text-sm backdrop-blur-sm"
-              />
+            <div className="relative flex items-center gap-2">
+              <div className="relative flex-1">
+                <FiSearch
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-400 pointer-events-none"
+                  size={17}
+                />
+                <input
+                  name="search"
+                  type="text"
+                  placeholder="Search lectures, scholars, topics…"
+                  className="w-full pl-11 pr-4 py-3.5 bg-ink-800/80 border border-white/10 rounded-xl text-white placeholder-ink-500 focus:outline-none focus:border-gold-500/40 text-sm backdrop-blur-sm transition-colors"
+                />
+              </div>
               <button
                 type="submit"
-                className="absolute right-2 px-5 py-2 bg-gold-600 hover:bg-gold-500 text-white rounded-xl text-sm font-medium transition-colors"
+                className="flex-shrink-0 px-5 py-3.5 bg-gold-600 hover:bg-gold-500 active:bg-gold-700 text-white rounded-xl text-sm font-medium transition-colors"
               >
                 Search
               </button>
             </div>
           </form>
 
-          <div className="flex flex-wrap items-center justify-center gap-4">
+          {/* CTAs */}
+          <div className="flex flex-wrap items-center justify-center gap-3">
             <Link
               href="/lectures"
-              className="flex items-center gap-2 px-6 py-3 bg-gold-600 hover:bg-gold-500 text-white rounded-xl font-medium transition-colors"
+              className="flex items-center gap-2 px-6 py-3 bg-gold-600 hover:bg-gold-500 active:bg-gold-700 text-white rounded-xl font-medium transition-colors text-sm"
             >
-              Explore Lectures <FiArrowRight size={16} />
+              Explore Lectures <FiArrowRight size={15} />
             </Link>
             <Link
               href="/scholars"
-              className="flex items-center gap-2 px-6 py-3 border border-white/10 hover:border-gold-500/30 text-white rounded-xl font-medium transition-colors"
+              className="flex items-center gap-2 px-6 py-3 border border-white/10 hover:border-gold-500/30 hover:bg-white/5 text-white rounded-xl font-medium transition-colors text-sm"
             >
               Meet Scholars
             </Link>
@@ -185,49 +266,25 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Stats */}
-      <section className="border-y border-white/5 bg-ink-900/30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-          <div className="grid grid-cols-3 gap-8 text-center">
-            {[
-              { icon: <FiVideo />, count: lectureCount, label: "Lectures" },
-              { icon: <FiUsers />, count: scholarCount, label: "Scholars" },
-              { icon: <FiBookOpen />, count: userCount, label: "Students" },
-            ].map((stat) => (
-              <div key={stat.label}>
-                <div className="flex items-center justify-center text-gold-400 mb-2">
-                  {stat.icon}
-                </div>
-                <div className="font-display text-3xl md:text-4xl font-bold text-white">
-                  {stat.count.toLocaleString()}
-                </div>
-                <div className="text-sm text-ink-400 mt-1">{stat.label}</div>
-              </div>
-            ))}
-          </div>
+      {/* ── Stats ── */}
+      <section className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+        <div className="grid grid-cols-3 gap-3 sm:gap-4">
+          <StatCard icon={<FiVideo />} count={lectureCount} label="Lectures" />
+          <StatCard icon={<FiUsers />} count={scholarCount} label="Scholars" />
+          <StatCard icon={<FiBookOpen />} count={userCount} label="Students" />
         </div>
       </section>
 
-      {/* Featured Lectures */}
+      {/* ── Featured Lectures ── */}
       {mappedFeatured.length > 0 && (
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <p className="text-xs text-gold-400 uppercase tracking-wider font-semibold mb-1">
-                Handpicked for you
-              </p>
-              <h2 className="font-display text-3xl font-semibold text-white">
-                Featured Lectures
-              </h2>
-            </div>
-            <Link
-              href="/lectures?featured=true"
-              className="text-sm text-gold-400 hover:text-gold-300 flex items-center gap-1 transition-colors"
-            >
-              View all <FiArrowRight size={14} />
-            </Link>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+          <SectionHeader
+            eyebrow="Handpicked for you"
+            title="Featured Lectures"
+            href="/lectures?featured=true"
+            linkLabel="View all"
+          />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {mappedFeatured.map((lecture) => (
               <LectureCard
                 key={lecture.id}
@@ -239,24 +296,14 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* Latest Lectures */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <p className="text-xs text-gold-400 uppercase tracking-wider font-semibold mb-1">
-              Most recent
-            </p>
-            <h2 className="font-display text-3xl font-semibold text-white">
-              Latest Lectures
-            </h2>
-          </div>
-          <Link
-            href="/lectures"
-            className="text-sm text-gold-400 hover:text-gold-300 flex items-center gap-1"
-          >
-            View all <FiArrowRight size={14} />
-          </Link>
-        </div>
+      {/* ── Latest Lectures ── */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 border-t border-white/5">
+        <SectionHeader
+          eyebrow="Most recent"
+          title="Latest Lectures"
+          href="/lectures"
+          linkLabel="View all"
+        />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {mappedLatest.map((lecture) => (
             <LectureCard key={lecture.id} lecture={lecture} />
@@ -264,26 +311,16 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Featured Scholars */}
+      {/* ── Featured Scholars ── */}
       {mappedScholars.length > 0 && (
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <p className="text-xs text-gold-400 uppercase tracking-wider font-semibold mb-1">
-                Learn from the best
-              </p>
-              <h2 className="font-display text-3xl font-semibold text-white">
-                Featured Scholars
-              </h2>
-            </div>
-            <Link
-              href="/scholars"
-              className="text-sm text-gold-400 hover:text-gold-300 flex items-center gap-1"
-            >
-              All Scholars <FiArrowRight size={14} />
-            </Link>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 border-t border-white/5">
+          <SectionHeader
+            eyebrow="Learn from the best"
+            title="Featured Scholars"
+            href="/scholars"
+            linkLabel="All Scholars"
+          />
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
             {mappedScholars.map((scholar) => (
               <ScholarCard key={scholar.id} scholar={scholar} />
             ))}
@@ -291,25 +328,38 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* CTA */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="glass-card gold-border rounded-3xl p-12 text-center pattern-overlay relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-gold-900/20 to-transparent" />
-          <div className="relative">
-            <GiMoon className="text-gold-400 text-4xl mx-auto mb-4" />
-            <h2 className="font-display text-4xl font-bold text-white mb-4">
+      {/* ── CTA Banner ── */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+        <div className="relative rounded-3xl overflow-hidden border border-gold-500/20 bg-gradient-to-br from-gold-900/20 via-ink-900 to-ink-900">
+          {/* Decorative glow */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-32 bg-gold-500/10 blur-3xl pointer-events-none" />
+          <div className="absolute inset-0 pattern-overlay opacity-20" />
+
+          <div className="relative px-6 py-14 sm:py-20 text-center">
+            <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gold-500/10 border border-gold-500/20 mb-6">
+              <GiMoon className="text-gold-400 text-2xl" />
+            </div>
+            <h2 className="font-display text-3xl sm:text-4xl font-bold text-white mb-4 leading-tight">
               Start Your Journey Today
             </h2>
-            <p className="text-ink-300 mb-8 max-w-md mx-auto">
+            <p className="text-ink-300 mb-8 max-w-sm mx-auto text-sm sm:text-base leading-relaxed">
               Join thousands of students seeking authentic Islamic knowledge
               from qualified scholars.
             </p>
-            <Link
-              href="/register"
-              className="inline-flex items-center gap-2 px-8 py-3 bg-gold-600 hover:bg-gold-500 text-white rounded-xl font-medium transition-colors"
-            >
-              Create Free Account <FiArrowRight />
-            </Link>
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              <Link
+                href="/register"
+                className="inline-flex items-center gap-2 px-7 py-3.5 bg-gold-600 hover:bg-gold-500 active:bg-gold-700 text-white rounded-xl font-medium transition-colors text-sm"
+              >
+                Create Free Account <FiArrowRight size={15} />
+              </Link>
+              <Link
+                href="/lectures"
+                className="inline-flex items-center gap-2 px-7 py-3.5 border border-white/10 hover:border-white/20 hover:bg-white/5 text-white rounded-xl font-medium transition-colors text-sm"
+              >
+                Browse Lectures
+              </Link>
+            </div>
           </div>
         </div>
       </section>

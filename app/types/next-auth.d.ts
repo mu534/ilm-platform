@@ -2,6 +2,13 @@ import { DefaultSession } from "next-auth";
 import { DefaultJWT } from "next-auth/jwt";
 
 type UserRole = "ADMIN" | "SCHOLAR" | "USER";
+export interface SessionUser {
+  id: string;
+  role: UserRole;
+  name: string | null;
+  email: string | null;
+  image: string | null;
+}
 
 declare module "next-auth" {
   interface Session {

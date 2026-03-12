@@ -1,17 +1,18 @@
 import Link from "next/link";
-import { prisma } from "../app/lib/prism";
-import { LectureCard } from "../app/components/LectureCard";
-import { ScholarCard } from "../app/components/ScholarCard";
-import type { Lecture, Scholar } from "../app/types/auth.types";
+import { prisma } from "@/app/lib/prism";
+import { LectureCard } from "@/app/components/lectures/LectureCard";
+import { ScholarCard } from "@/app/components/scholars/ScholarCard";
+import type { Lecture, Scholar } from "@/app/types/auth.types";
 import {
   FiSearch,
   FiArrowRight,
   FiBookOpen,
   FiUsers,
   FiVideo,
-  FiStar,
 } from "react-icons/fi";
 import { GiMoon, GiStarFormation } from "react-icons/gi";
+
+// ─── Data fetching ────────────────────────────────────────────────────────────
 
 async function getHomeData() {
   const [featuredLectures, latestLectures, featuredScholars, counts] =
@@ -54,7 +55,7 @@ async function getHomeData() {
   return { featuredLectures, latestLectures, featuredScholars, counts };
 }
 
-// ─── Mappers ──────────────────────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 type PrismaLecture = {
   id: string;
@@ -92,6 +93,8 @@ type PrismaScholar = {
   user: { name: string; email: string; image: string | null };
   _count: { lectures: number };
 };
+
+// ─── Mappers ──────────────────────────────────────────────────────────────────
 
 function mapLecture(l: PrismaLecture): Lecture {
   return {
@@ -162,12 +165,12 @@ function StatCard({
   label: string;
 }) {
   return (
-    <div className="flex flex-col items-center gap-2 p-6 rounded-2xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.04] transition-colors">
+    <div className="flex flex-col items-center gap-2 p-4 sm:p-6 rounded-2xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.04] transition-colors text-center">
       <div className="text-gold-400 text-xl">{icon}</div>
-      <div className="font-display text-3xl sm:text-4xl font-bold text-white tabular-nums">
+      <div className="font-display text-2xl sm:text-4xl font-bold text-white tabular-nums">
         {count.toLocaleString()}
       </div>
-      <div className="text-sm text-ink-400">{label}</div>
+      <div className="text-xs sm:text-sm text-ink-400">{label}</div>
     </div>
   );
 }
@@ -185,16 +188,14 @@ export default async function HomePage() {
   const mappedScholars = featuredScholars.map(mapScholar);
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen w-full">
       {/* ── Hero ── */}
-      <section className="relative overflow-hidden py-20 sm:py-28 md:py-36">
-        {/* Background layers */}
+      <section className="relative overflow-hidden py-20 sm:py-28 md:py-36 w-full">
         <div className="absolute inset-0 pattern-overlay opacity-40" />
         <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-gold-600/5 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-ink-950 to-transparent pointer-events-none" />
 
-        <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          {/* Eyebrow */}
+        <div className="relative w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center text-center">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-gold-500/20 bg-gold-500/5 mb-8">
             <GiStarFormation className="text-gold-400 text-xs" />
             <span className="text-xs tracking-widest text-gold-400 uppercase font-semibold">
@@ -203,31 +204,28 @@ export default async function HomePage() {
             <GiStarFormation className="text-gold-400 text-xs" />
           </div>
 
-          {/* Arabic */}
           <p className="arabic-bismillah text-2xl sm:text-3xl mb-6 text-gold-300/80">
             بِسْمِ اللّٰهِ الرَّحْمَنِ الرَّحِيْمِ
           </p>
 
-          {/* Headline */}
           <h1 className="font-display text-4xl sm:text-5xl md:text-7xl font-bold text-white leading-[1.1] tracking-tight mb-6">
             Seek Knowledge
             <br />
             with <span className="gradient-text">Clarity</span>
           </h1>
 
-          <p className="text-base sm:text-lg text-ink-300 max-w-xl mx-auto mb-10 leading-relaxed">
+          <p className="text-base sm:text-lg text-ink-300 max-w-xl mb-10 leading-relaxed">
             Access authentic Islamic lectures, connect with qualified scholars,
             and deepen your understanding of the Deen.
           </p>
 
-          {/* Search */}
           <form
             action="/lectures"
             method="GET"
-            className="max-w-lg mx-auto mb-8"
+            className="w-full max-w-lg mb-8"
           >
-            <div className="relative flex items-center gap-2">
-              <div className="relative flex-1">
+            <div className="flex items-center gap-2 w-full">
+              <div className="relative flex-1 min-w-0">
                 <FiSearch
                   className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-400 pointer-events-none"
                   size={17}
@@ -248,7 +246,6 @@ export default async function HomePage() {
             </div>
           </form>
 
-          {/* CTAs */}
           <div className="flex flex-wrap items-center justify-center gap-3">
             <Link
               href="/lectures"
@@ -267,7 +264,7 @@ export default async function HomePage() {
       </section>
 
       {/* ── Stats ── */}
-      <section className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+      <section className="w-full max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
         <div className="grid grid-cols-3 gap-3 sm:gap-4">
           <StatCard icon={<FiVideo />} count={lectureCount} label="Lectures" />
           <StatCard icon={<FiUsers />} count={scholarCount} label="Scholars" />
@@ -277,7 +274,7 @@ export default async function HomePage() {
 
       {/* ── Featured Lectures ── */}
       {mappedFeatured.length > 0 && (
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+        <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
           <SectionHeader
             eyebrow="Handpicked for you"
             title="Featured Lectures"
@@ -297,7 +294,7 @@ export default async function HomePage() {
       )}
 
       {/* ── Latest Lectures ── */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 border-t border-white/5">
+      <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 border-t border-white/5">
         <SectionHeader
           eyebrow="Most recent"
           title="Latest Lectures"
@@ -313,14 +310,14 @@ export default async function HomePage() {
 
       {/* ── Featured Scholars ── */}
       {mappedScholars.length > 0 && (
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 border-t border-white/5">
+        <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 border-t border-white/5">
           <SectionHeader
             eyebrow="Learn from the best"
             title="Featured Scholars"
             href="/scholars"
             linkLabel="All Scholars"
           />
-          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
             {mappedScholars.map((scholar) => (
               <ScholarCard key={scholar.id} scholar={scholar} />
             ))}
@@ -329,20 +326,18 @@ export default async function HomePage() {
       )}
 
       {/* ── CTA Banner ── */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+      <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
         <div className="relative rounded-3xl overflow-hidden border border-gold-500/20 bg-gradient-to-br from-gold-900/20 via-ink-900 to-ink-900">
-          {/* Decorative glow */}
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-32 bg-gold-500/10 blur-3xl pointer-events-none" />
           <div className="absolute inset-0 pattern-overlay opacity-20" />
-
-          <div className="relative px-6 py-14 sm:py-20 text-center">
+          <div className="relative px-6 py-14 sm:py-20 flex flex-col items-center text-center">
             <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gold-500/10 border border-gold-500/20 mb-6">
               <GiMoon className="text-gold-400 text-2xl" />
             </div>
             <h2 className="font-display text-3xl sm:text-4xl font-bold text-white mb-4 leading-tight">
               Start Your Journey Today
             </h2>
-            <p className="text-ink-300 mb-8 max-w-sm mx-auto text-sm sm:text-base leading-relaxed">
+            <p className="text-ink-300 mb-8 max-w-sm text-sm sm:text-base leading-relaxed">
               Join thousands of students seeking authentic Islamic knowledge
               from qualified scholars.
             </p>

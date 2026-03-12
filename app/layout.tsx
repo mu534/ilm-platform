@@ -51,15 +51,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html
-      lang="en"
-      className={`${cormorant.variable} ${dmSans.variable} ${amiri.variable}`}
-    >
-      <body>
+    <html lang="en">
+      <body
+        className={`${cormorant.variable} ${dmSans.variable} ${amiri.variable}`}
+      >
         <Providers>
-          <div className="flex flex-col min-h-screen">
+          <div className="flex flex-col min-h-screen w-full">
             <Navbar />
-            <main className="flex-1">{children}</main>
+            <main className="p-5">{children}</main>
             <Footer />
           </div>
         </Providers>

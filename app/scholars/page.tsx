@@ -1,5 +1,6 @@
 import { prisma } from "../lib/prism";
-import { ScholarCard } from "../components/ScholarCard";
+import { ScholarCard } from "../components/scholars/ScholarCard";
+import type { Scholar } from "@/app/types/auth.types";
 
 async function getScholars() {
   return prisma.scholar.findMany({
@@ -11,6 +12,21 @@ async function getScholars() {
   });
 }
 
+type PrismaScholar = {
+  id: string;
+  userId: string;
+  bio: string;
+  photo: string | null;
+  topics: string[];
+  qualifications: string[];
+  featured: boolean;
+  user: { name: string; email: string; image: string | null };
+  _count: { lectures: number };
+};
+
+function mapScholar(s: PrismaScholar): Scholar {
+  return { ...s };
+}
 export const metadata = { title: "Scholars" };
 
 export default async function ScholarsPage() {
@@ -40,7 +56,7 @@ export default async function ScholarsPage() {
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {scholars.map((scholar) => (
-            <ScholarCard key={scholar.id} scholar={scholar as any} />
+            <ScholarCard key={scholar.id} scholar={mapScholar(scholar)} />
           ))}
         </div>
       )}

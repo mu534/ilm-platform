@@ -1,5 +1,5 @@
 "use client";
-// src/components/Navbar.tsx
+
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { useState } from "react";
@@ -71,7 +71,6 @@ export function Navbar() {
                     <Avatar.Root className="w-7 h-7 rounded-full overflow-hidden">
                       <Avatar.Image
                         src={user?.image ?? ""}
-                        alt={user?.name}
                         className="w-full h-full object-cover"
                       />
                       <Avatar.Fallback className="w-full h-full flex items-center justify-center bg-gold-600 text-white text-xs font-bold">

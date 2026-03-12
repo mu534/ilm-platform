@@ -1,11 +1,11 @@
 "use client";
-// src/components/CommentSection.tsx
+
 import { useState } from "react";
 import { useSession } from "next-auth/react";
-import { useQuery, useMutation, useQueryClient } from "react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as Avatar from "@radix-ui/react-avatar";
 import Link from "next/link";
-import { Comment } from "../types/auth.types";
+import type { Comment, SessionUser } from "../types/auth.types";
 import { formatDate } from "../utils/api";
 import { FiSend, FiTrash2, FiMessageCircle } from "react-icons/fi";
 
@@ -13,10 +13,16 @@ interface CommentSectionProps {
   lectureId: string;
 }
 
+interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  error?: string;
+}
+
 async function fetchComments(lectureId: string): Promise<Comment[]> {
   const res = await fetch(`/api/comments?lectureId=${lectureId}`);
-  const data = await res.json();
-  if (!data.success) throw new Error(data.error);
+  const data = (await res.json()) as ApiResponse<Comment[]>;
+  if (!data.success) throw new Error(data.error ?? "Failed to fetch comments");
   return data.data;
 }
 
@@ -25,42 +31,49 @@ export function CommentSection({ lectureId }: CommentSectionProps) {
   const queryClient = useQueryClient();
   const [body, setBody] = useState("");
   const [error, setError] = useState("");
-  const user = session?.user as any;
 
-  const { data: comments = [], isLoading } = useQuery(
-    ["comments", lectureId],
-    () => fetchComments(lectureId),
-  );
+  const user = session?.user as SessionUser | undefined;
 
-  const addComment = useMutation(
-    async (text: string) => {
+  const { data: comments = [], isLoading } = useQuery({
+    queryKey: ["comments", lectureId],
+    queryFn: () => fetchComments(lectureId),
+  });
+
+  const addComment = useMutation({
+    mutationFn: async (text: string) => {
       const res = await fetch("/api/comments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ body: text, lectureId }),
       });
-      const data = await res.json();
-      if (!data.success) throw new Error(data.error);
+      const data = (await res.json()) as ApiResponse<Comment>;
+      if (!data.success)
+        throw new Error(data.error ?? "Failed to post comment");
       return data.data;
     },
-    {
-      onSuccess: () => {
-        setBody("");
-        setError("");
-        queryClient.invalidateQueries(["comments", lectureId]);
-      },
-      onError: (err: any) => setError(err.message),
+    onSuccess: () => {
+      setBody("");
+      setError("");
+      queryClient.invalidateQueries({ queryKey: ["comments", lectureId] });
     },
-  );
+    onError: (err) => {
+      const message =
+        err instanceof Error ? err.message : "Failed to post comment";
+      setError(message);
+    },
+  });
 
-  const deleteComment = useMutation(
-    async (id: string) => {
+  const deleteComment = useMutation({
+    mutationFn: async (id: string) => {
       const res = await fetch(`/api/comments/${id}`, { method: "DELETE" });
-      const data = await res.json();
-      if (!data.success) throw new Error(data.error);
+      const data = (await res.json()) as ApiResponse<null>;
+      if (!data.success)
+        throw new Error(data.error ?? "Failed to delete comment");
     },
-    { onSuccess: () => queryClient.invalidateQueries(["comments", lectureId]) },
-  );
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["comments", lectureId] });
+    },
+  });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,7 +94,7 @@ export function CommentSection({ lectureId }: CommentSectionProps) {
         <FiMessageCircle className="text-gold-400" />
         Comments{" "}
         <span className="text-sm font-normal text-ink-400 font-body">
-          ({comments.length})
+          ({(comments as Comment[]).length})
         </span>
       </h2>
 
@@ -92,7 +105,7 @@ export function CommentSection({ lectureId }: CommentSectionProps) {
             <Avatar.Root className="w-9 h-9 rounded-full overflow-hidden flex-shrink-0 mt-1">
               <Avatar.Image
                 src={user?.image ?? ""}
-                alt={user?.name}
+                alt={user?.name ?? "User"}
                 className="w-full h-full object-cover"
               />
               <Avatar.Fallback className="w-full h-full flex items-center justify-center bg-gold-700 text-white text-sm font-bold">
@@ -114,11 +127,11 @@ export function CommentSection({ lectureId }: CommentSectionProps) {
               <div className="flex justify-end mt-2">
                 <button
                   type="submit"
-                  disabled={addComment.isLoading || !body.trim()}
+                  disabled={addComment.isPending || !body.trim()}
                   className="flex items-center gap-2 px-4 py-2 bg-gold-600 hover:bg-gold-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-colors"
                 >
                   <FiSend size={14} />
-                  {addComment.isLoading ? "Posting..." : "Post Comment"}
+                  {addComment.isPending ? "Posting..." : "Post Comment"}
                 </button>
               </div>
             </div>
@@ -146,13 +159,13 @@ export function CommentSection({ lectureId }: CommentSectionProps) {
             </div>
           ))}
         </div>
-      ) : comments.length === 0 ? (
+      ) : (comments as Comment[]).length === 0 ? (
         <p className="text-sm text-ink-500 text-center py-8">
           No comments yet. Be the first to share your thoughts.
         </p>
       ) : (
         <div className="space-y-6">
-          {comments.map((comment) => (
+          {(comments as Comment[]).map((comment) => (
             <div key={comment.id} className="flex gap-3 group">
               <Avatar.Root className="w-9 h-9 rounded-full overflow-hidden flex-shrink-0">
                 <Avatar.Image

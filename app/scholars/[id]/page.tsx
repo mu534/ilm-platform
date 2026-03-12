@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import { prisma } from "../../lib/prism";
-import { LectureCard } from "../../components/LectureCard";
+import { LectureCard } from "../../components/lectures/LectureCard";
 import { FiBookOpen, FiStar } from "react-icons/fi";
 import type { Lecture, LectureType } from "../../types/auth.types";
 

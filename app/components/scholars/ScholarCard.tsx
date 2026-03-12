@@ -1,7 +1,7 @@
 import Link from "next/link";
 import * as Avatar from "@radix-ui/react-avatar";
 import { FiBookOpen, FiStar } from "react-icons/fi";
-import type { Scholar } from "../types/auth.types";
+import type { Scholar } from "../../types/auth.types";
 
 interface ScholarCardProps {
   scholar: Scholar;

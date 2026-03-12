@@ -7,8 +7,8 @@ import {
   FiEye,
   FiMessageCircle,
 } from "react-icons/fi";
-import type { Lecture, LectureType } from "../types/auth.types";
-import { formatDate } from "../utils/api";
+import type { Lecture, LectureType } from "../../types/auth.types";
+import { formatDate } from "../../utils/api";
 
 const typeIcons: Record<LectureType, React.ReactElement> = {
   VIDEO: <FiVideo className="text-gold-400" size={14} />,

@@ -1,10 +1,52 @@
 @import "tailwindcss";
+@source "../";
 
-:root {
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+    padding: 0;
+    margin: 0;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: var(--font-body);
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+@theme {
+  --color-gold-300: #e9c34f;
+  --color-gold-400: #c8871a;
+  --color-gold-500: #b87516;
+  --color-gold-600: #a06412;
+  --color-gold-700: #8a5510;
+  --color-gold-800: #6b3f0a;
+  --color-gold-900: #4a2a06;
+
+  --color-ink-200: #d4cec6;
+  --color-ink-300: #b8b0a6;
+  --color-ink-400: #a09080;
+  --color-ink-500: #857568;
+  --color-ink-600: #6b5d52;
+  --color-ink-800: #2a2420;
+  --color-ink-900: #1a1510;
+  --color-ink-950: #0a0a0a;
+
   --font-display: "Cormorant Garamond", Georgia, serif;
   --font-body: "DM Sans", system-ui, sans-serif;
   --font-arabic: "Amiri", serif;
+}
 
+:root {
   --bg-primary: #0a0a0a;
   --bg-secondary: #111111;
   --bg-card: #161616;
@@ -15,22 +57,13 @@
   --accent-light: #e9c34f;
 }
 
-* {
-  box-sizing: border-box;
-  padding: 0;
-  margin: 0;
+section {
+  width: 100%;
 }
 
-html {
-  scroll-behavior: smooth;
-}
-
-body {
-  font-family: var(--font-body);
-  background-color: var(--bg-primary);
-  color: var(--text-primary);
-  min-height: 100vh;
-  -webkit-font-smoothing: antialiased;
+main {
+  width: 100%;
+  display: block;
 }
 
 .pattern-overlay {
@@ -103,7 +136,6 @@ body {
   line-height: 1.8;
   color: var(--text-primary);
 }
-
 .lecture-prose p {
   margin-bottom: 1.5rem;
 }

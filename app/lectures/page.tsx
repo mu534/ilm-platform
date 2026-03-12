@@ -1,8 +1,8 @@
-import { prisma } from "../lib/prism";
-import { LectureCard } from "../components/LectureCard";
 import Link from "next/link";
 import { FiSearch, FiFilter } from "react-icons/fi";
-import type { Lecture, LectureType } from "../types/auth.types";
+import { prisma } from "@/app/lib/prism";
+import { LectureCard } from "@/app/components/lectures/LectureCard";
+import type { Lecture, LectureType } from "@/app/types/auth.types";
 
 type SearchParams = {
   search?: string;

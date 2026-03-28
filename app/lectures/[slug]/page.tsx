@@ -7,8 +7,9 @@ import { formatDate } from "../../utils/api";
 import { FiEye, FiCalendar, FiTag, FiUser } from "react-icons/fi";
 import { GiBookmark } from "react-icons/gi";
 
+// ✅ Next.js 15 — params is a Promise
 interface Props {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }
 
 async function getLecture(slug: string) {
@@ -25,7 +26,8 @@ async function getLecture(slug: string) {
 }
 
 export async function generateMetadata({ params }: Props) {
-  const lecture = await getLecture(params.slug);
+  const { slug } = await params;
+  const lecture = await getLecture(slug);
   if (!lecture) return { title: "Lecture Not Found" };
   return {
     title: lecture.title,
@@ -35,7 +37,8 @@ export async function generateMetadata({ params }: Props) {
 }
 
 export default async function LecturePage({ params }: Props) {
-  const lecture = await getLecture(params.slug);
+  const { slug } = await params;
+  const lecture = await getLecture(slug);
   if (!lecture) notFound();
 
   // Increment views
@@ -63,7 +66,6 @@ export default async function LecturePage({ params }: Props) {
 
       {/* Article header */}
       <header className="mb-8">
-        {/* Type badge */}
         <div className="flex flex-wrap items-center gap-2 mb-4">
           <span className="px-3 py-1 rounded-full bg-gold-900/30 text-gold-400 text-xs border border-gold-700/30 font-medium">
             {lecture.type}
@@ -87,7 +89,6 @@ export default async function LecturePage({ params }: Props) {
           {lecture.description}
         </p>
 
-        {/* Meta */}
         <div className="flex flex-wrap items-center gap-6 text-sm text-ink-500 pb-6 border-b border-white/5">
           <div className="flex items-center gap-2">
             {lecture.author.image ? (
@@ -198,8 +199,6 @@ export default async function LecturePage({ params }: Props) {
           </div>
         </div>
       )}
-
-      {/* Comments */}
       <CommentSection lectureId={lecture.id} />
     </div>
   );

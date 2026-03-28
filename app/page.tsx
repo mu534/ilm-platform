@@ -175,8 +175,6 @@ function StatCard({
   );
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
-
 export default async function HomePage() {
   const { featuredLectures, latestLectures, featuredScholars, counts } =
     await getHomeData();

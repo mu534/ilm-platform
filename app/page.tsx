@@ -55,8 +55,6 @@ async function getHomeData() {
   return { featuredLectures, latestLectures, featuredScholars, counts };
 }
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 type PrismaLecture = {
   id: string;
   title: string;
@@ -93,8 +91,6 @@ type PrismaScholar = {
   user: { name: string; email: string; image: string | null };
   _count: { lectures: number };
 };
-
-// ─── Mappers ──────────────────────────────────────────────────────────────────
 
 function mapLecture(l: PrismaLecture): Lecture {
   return {
@@ -174,6 +170,8 @@ function StatCard({
     </div>
   );
 }
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default async function HomePage() {
   const { featuredLectures, latestLectures, featuredScholars, counts } =

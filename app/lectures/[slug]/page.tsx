@@ -7,7 +7,6 @@ import { formatDate } from "../../utils/api";
 import { FiEye, FiCalendar, FiTag, FiUser } from "react-icons/fi";
 import { GiBookmark } from "react-icons/gi";
 
-// ✅ Next.js 15 — params is a Promise
 interface Props {
   params: Promise<{ slug: string }>;
 }

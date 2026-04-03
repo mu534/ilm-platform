@@ -12,11 +12,12 @@ import type { SessionUser } from "../../../types/next-auth";
 
 export async function GET(
   _req: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    const { id } = await params;
     const scholar = await prisma.scholar.findFirst({
-      where: { OR: [{ id: params.id }, { userId: params.id }] },
+      where: { OR: [{ id }, { userId: id }] },
       include: {
         user: { select: { name: true, email: true, image: true } },
         lectures: {
@@ -49,16 +50,17 @@ export async function GET(
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) return errorResponse("Unauthorized", 401);
 
     const { id: userId, role: userRole } = session.user as SessionUser;
+    const { id } = await params;
 
     const scholar = await prisma.scholar.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
     if (!scholar) return errorResponse("Scholar not found", 404);
 
@@ -71,7 +73,7 @@ export async function PATCH(
     const data = scholarSchema.partial().parse(body);
 
     const updated = await prisma.scholar.update({
-      where: { id: params.id },
+      where: { id },
       data,
       include: { user: { select: { name: true, image: true } } },
     });
@@ -84,7 +86,7 @@ export async function PATCH(
 
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -92,8 +94,9 @@ export async function DELETE(
 
     const { role: userRole } = session.user as SessionUser;
     if (userRole !== "ADMIN") return errorResponse("Forbidden", 403);
+    const { id } = await params;
 
-    await prisma.scholar.delete({ where: { id: params.id } });
+    await prisma.scholar.delete({ where: { id } });
     return successResponse({ message: "Scholar profile deleted" });
   } catch (error) {
     return handleApiError(error);

@@ -11,16 +11,17 @@ import type { SessionUser } from "../../../types/next-auth";
 
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) return errorResponse("Unauthorized", 401);
 
     const { id: userId, role: userRole } = session.user as SessionUser;
+    const { id } = await params;
 
     const comment = await prisma.comment.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
     if (!comment) return errorResponse("Comment not found", 404);
 
@@ -29,7 +30,7 @@ export async function DELETE(
 
     if (!isAdmin && !isOwner) return errorResponse("Forbidden", 403);
 
-    await prisma.comment.delete({ where: { id: params.id } });
+    await prisma.comment.delete({ where: { id } });
     return successResponse({ message: "Comment deleted" });
   } catch (error) {
     return handleApiError(error);
@@ -38,7 +39,7 @@ export async function DELETE(
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -48,9 +49,10 @@ export async function PATCH(
     if (userRole !== "ADMIN") return errorResponse("Forbidden", 403);
 
     const body = (await req.json()) as { approved: boolean };
+    const { id } = await params;
 
     const comment = await prisma.comment.update({
-      where: { id: params.id },
+      where: { id },
       data: { approved: body.approved },
     });
 

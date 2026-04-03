@@ -12,7 +12,7 @@ import type { SessionUser } from "../../../types/next-auth";
 
 export async function GET(
   _req: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -20,13 +20,14 @@ export async function GET(
 
     const { id: userId, role: userRole } = session.user as SessionUser;
     const isAdmin = userRole === "ADMIN";
+    const { id } = await params;
 
-    if (!isAdmin && userId !== params.id) {
+    if (!isAdmin && userId !== id) {
       return errorResponse("Forbidden", 403);
     }
 
     const user = await prisma.user.findUnique({
-      where: { id: params.id },
+      where: { id },
       select: {
         id: true,
         name: true,
@@ -57,7 +58,7 @@ export async function GET(
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -65,8 +66,9 @@ export async function PATCH(
 
     const { id: userId, role: userRole } = session.user as SessionUser;
     const isAdmin = userRole === "ADMIN";
+    const { id } = await params;
 
-    if (!isAdmin && userId !== params.id) {
+    if (!isAdmin && userId !== id) {
       return errorResponse("Forbidden", 403);
     }
 
@@ -80,7 +82,7 @@ export async function PATCH(
     const data = updateUserSchema.parse(body);
 
     const user = await prisma.user.update({
-      where: { id: params.id },
+      where: { id },
       data,
       select: {
         id: true,
@@ -100,7 +102,7 @@ export async function PATCH(
 
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -110,8 +112,9 @@ export async function DELETE(
     if (userRole !== "ADMIN") {
       return errorResponse("Forbidden", 403);
     }
+    const { id } = await params;
 
-    await prisma.user.delete({ where: { id: params.id } });
+    await prisma.user.delete({ where: { id } });
     return successResponse({ message: "User deleted" });
   } catch (error) {
     return handleApiError(error);

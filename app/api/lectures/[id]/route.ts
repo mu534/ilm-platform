@@ -41,11 +41,12 @@ const lectureSelect = {
 
 export async function GET(
   _req: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    const { id } = await params;
     const lecture = await prisma.lecture.findFirst({
-      where: { OR: [{ id: params.id }, { slug: params.id }] },
+      where: { OR: [{ id }, { slug: id }] },
       select: lectureSelect,
     });
     if (!lecture) return errorResponse("Lecture not found", 404);
@@ -63,16 +64,17 @@ export async function GET(
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) return errorResponse("Unauthorized", 401);
 
     const { id: userId, role: userRole } = session.user as SessionUser;
+    const { id } = await params;
 
     const lecture = await prisma.lecture.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
     if (!lecture) return errorResponse("Lecture not found", 404);
 
@@ -85,7 +87,7 @@ export async function PATCH(
     const data = lectureSchema.partial().parse(body);
 
     const updated = await prisma.lecture.update({
-      where: { id: params.id },
+      where: { id },
       data,
       select: lectureSelect,
     });
@@ -98,16 +100,17 @@ export async function PATCH(
 
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) return errorResponse("Unauthorized", 401);
 
     const { id: userId, role: userRole } = session.user as SessionUser;
+    const { id } = await params;
 
     const lecture = await prisma.lecture.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
     if (!lecture) return errorResponse("Lecture not found", 404);
 
@@ -116,7 +119,7 @@ export async function DELETE(
 
     if (!isAdmin && !isOwner) return errorResponse("Forbidden", 403);
 
-    await prisma.lecture.delete({ where: { id: params.id } });
+    await prisma.lecture.delete({ where: { id } });
     return successResponse({ message: "Lecture deleted successfully" });
   } catch (error) {
     return handleApiError(error);

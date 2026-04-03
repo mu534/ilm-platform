@@ -70,7 +70,7 @@ export function Badge({
 }
 
 // Role badge — convenience wrapper used across the app
-import { Role } from "@prisma/client";
+import { Role } from "../../../generated/prisma/enums";
 
 const roleVariant: Record<Role, BadgeVariant> = {
   ADMIN: "danger",

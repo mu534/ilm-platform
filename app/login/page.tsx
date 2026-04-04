@@ -15,15 +15,20 @@ export default function LoginPage() {
   );
 }
 
+interface LoginFormState {
+  email: string;
+  password: string;
+}
+
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") ?? "/";
-  const [form, setForm] = useState({ email: "", password: "" });
+  const callbackUrl = searchParams?.get("callbackUrl") ?? "/";
+  const [form, setForm] = useState<LoginFormState>({ email: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
     setLoading(true);

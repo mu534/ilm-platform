@@ -7,7 +7,7 @@ interface Activity {
   description: string;
   user: {
     name: string;
-    image?: string;
+    image?: string | null;
   };
   timestamp: Date;
   link: string;

@@ -5,6 +5,7 @@ import { ScholarCard } from "@/app/components/scholars/ScholarCard";
 import { TestimonialsSection } from "@/app/components/TestimonialsSection";
 import { NewsletterSignup } from "@/app/components/NewsletterSignup";
 import { EnhancedSearch } from "@/app/components/EnhancedSearch";
+import { PersonalizedRecommendations } from "@/app/components/PersonalizedRecommendations";
 import { RecentActivityFeed } from "@/app/components/RecentActivityFeed";
 import { PopularTopics } from "@/app/components/PopularTopics";
 import { QuickAccess } from "@/app/components/QuickAccess";
@@ -354,6 +355,8 @@ export default async function HomePage() {
 
           <EnhancedSearch />
 
+          <PersonalizedRecommendations />
+
           <div className="flex flex-wrap items-center justify-center gap-3">
             <Link
               href="/lectures"
@@ -451,16 +454,16 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* ── Testimonials ── */}
+    
       <TestimonialsSection testimonials={processedTestimonials} />
 
-      {/* ── Recent Activity ── */}
+     
       <RecentActivityFeed activities={processedActivity} />
 
-      {/* ── Newsletter Signup ── */}
+     
       <NewsletterSignup />
 
-      {/* ── CTA Banner ── */}
+    
       <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 animate-fadeInUp delay-200">
         <div className="relative rounded-3xl overflow-hidden border border-gold-500/20 bg-gradient-to-br from-gold-900/20 via-ink-900 to-ink-900 hover:border-gold-500/30 transition-all duration-500 hover:shadow-2xl hover:shadow-gold-500/20">
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-32 bg-gold-500/10 blur-3xl pointer-events-none" />

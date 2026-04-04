@@ -30,19 +30,72 @@ const amiri = Amiri({
 
 export const metadata: Metadata = {
   title: {
-    default: "Ilm Platform – Islamic Learning",
+    default: "Ilm Platform – Authentic Islamic Learning",
     template: "%s | Ilm Platform",
   },
   description:
-    "A comprehensive Islamic educational platform featuring lectures, scholars, and knowledge.",
+    "Discover authentic Islamic knowledge through lectures from qualified scholars. Learn Quran, Hadith, Fiqh, and Islamic history with our comprehensive educational platform.",
   keywords: [
     "Islamic education",
-    "lectures",
+    "Quran learning",
+    "Hadith studies",
+    "Islamic lectures",
     "scholars",
-    "Quran",
-    "Hadith",
-    "Islam",
+    "Islamic knowledge",
+    "Fiqh",
+    "Islamic history",
+    "Tawhid",
+    "Islamic ethics",
   ],
+  authors: [{ name: "Ilm Platform Team" }],
+  creator: "Ilm Platform",
+  publisher: "Ilm Platform",
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  metadataBase: new URL("https://ilm-platform.com"),
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "https://ilm-platform.com",
+    title: "Ilm Platform – Authentic Islamic Learning",
+    description: "Discover authentic Islamic knowledge through lectures from qualified scholars.",
+    siteName: "Ilm Platform",
+    images: [
+      {
+        url: "/og-image.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Ilm Platform - Islamic Learning Platform",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Ilm Platform – Authentic Islamic Learning",
+    description: "Discover authentic Islamic knowledge through lectures from qualified scholars.",
+    images: ["/og-image.jpg"],
+    creator: "@ilmplatform",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  verification: {
+    google: "your-google-verification-code",
+  },
 };
 
 export default function RootLayout({

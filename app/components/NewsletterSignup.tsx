@@ -14,7 +14,7 @@ export function NewsletterSignup() {
 
     setIsLoading(true);
 
-    // Simulate API call
+   
     setTimeout(() => {
       setIsSubscribed(true);
       setIsLoading(false);

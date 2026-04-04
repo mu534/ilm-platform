@@ -4,6 +4,10 @@ import { LectureCard } from "@/app/components/lectures/LectureCard";
 import { ScholarCard } from "@/app/components/scholars/ScholarCard";
 import { TestimonialsSection } from "@/app/components/TestimonialsSection";
 import { NewsletterSignup } from "@/app/components/NewsletterSignup";
+import { EnhancedSearch } from "@/app/components/EnhancedSearch";
+import { RecentActivityFeed } from "@/app/components/RecentActivityFeed";
+import { PopularTopics } from "@/app/components/PopularTopics";
+import { QuickAccess } from "@/app/components/QuickAccess";
 import type { Lecture, Scholar } from "@/app/types/auth.types";
 import {
   FiSearch,
@@ -11,13 +15,15 @@ import {
   FiBookOpen,
   FiUsers,
   FiVideo,
+  FiMessageCircle,
+  FiClock,
 } from "react-icons/fi";
 import { GiMoon, GiStarFormation } from "react-icons/gi";
 
 // ─── Data fetching ────────────────────────────────────────────────────────────
 
 async function getHomeData() {
-  const [featuredLectures, latestLectures, featuredScholars, counts] =
+  const [featuredLectures, latestLectures, featuredScholars, counts, recentStats, popularTopics, recentActivity, testimonials] =
     await Promise.all([
       prisma.lecture.findMany({
         where: { published: true, featured: true },
@@ -52,9 +58,83 @@ async function getHomeData() {
         prisma.scholar.count(),
         prisma.user.count(),
       ]),
+      // Recent activity stats
+      Promise.all([
+        prisma.comment.count({
+          where: {
+            createdAt: {
+              gte: new Date(Date.now() - 24 * 60 * 60 * 1000), // Last 24 hours
+            },
+          },
+        }),
+        prisma.lecture.count({
+          where: {
+            createdAt: {
+              gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // Last 7 days
+            },
+            published: true,
+          },
+        }),
+        prisma.user.count({
+          where: {
+            createdAt: {
+              gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // Last 30 days
+            },
+          },
+        }),
+      ]),
+      // Popular topics based on actual lecture tags
+      prisma.lecture.findMany({
+        where: { published: true },
+        select: { tags: true },
+        take: 100, // Sample recent lectures to analyze tags
+      }),
+      // Recent activity for feed
+      Promise.all([
+        // Recent comments
+        prisma.comment.findMany({
+          take: 3,
+          orderBy: { createdAt: "desc" },
+          include: {
+            author: { select: { name: true, image: true } },
+            lecture: { select: { title: true, slug: true } },
+          },
+        }),
+        // Recent lectures
+        prisma.lecture.findMany({
+          where: { published: true },
+          take: 2,
+          orderBy: { createdAt: "desc" },
+          include: {
+            author: { select: { name: true } },
+            scholar: { include: { user: { select: { name: true } } } },
+          },
+        }),
+        // Recent scholars
+        prisma.scholar.findMany({
+          take: 2,
+          orderBy: { createdAt: "desc" },
+          include: {
+            user: { select: { name: true } },
+          },
+        }),
+      ]),
+      // Testimonials from database (assuming we add a testimonials table)
+      prisma.user.findMany({
+        where: {
+          bio: { not: null },
+          role: "USER", // Regular users who might have testimonials
+        },
+        take: 3,
+        select: {
+          name: true,
+          image: true,
+          bio: true,
+        },
+      }),
     ]);
 
-  return { featuredLectures, latestLectures, featuredScholars, counts };
+  return { featuredLectures, latestLectures, featuredScholars, counts, recentStats, popularTopics, recentActivity, testimonials };
 }
 
 type PrismaLecture = {
@@ -176,14 +256,69 @@ function StatCard({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default async function HomePage() {
-  const { featuredLectures, latestLectures, featuredScholars, counts } =
+  const { featuredLectures, latestLectures, featuredScholars, counts, recentStats, popularTopics, recentActivity, testimonials } =
     await getHomeData();
 
   const [lectureCount, scholarCount, userCount] = counts;
+  const [recentComments, recentLectures, recentUsers] = recentStats;
+  const [recentCommentsData, recentLecturesData, recentScholarsData] = recentActivity;
 
   const mappedFeatured = featuredLectures.map(mapLecture);
   const mappedLatest = latestLectures.map(mapLecture);
   const mappedScholars = featuredScholars.map(mapScholar);
+
+  // Process popular topics from lecture tags
+  const tagCounts: Record<string, number> = {};
+  popularTopics.forEach(lecture => {
+    lecture.tags.forEach(tag => {
+      tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+    });
+  });
+
+  const processedPopularTopics = Object.entries(tagCounts)
+    .sort(([,a], [,b]) => b - a)
+    .slice(0, 8)
+    .map(([name, count]) => ({ name, count }));
+
+  // Process testimonials
+  const processedTestimonials = testimonials.map(user => ({
+    id: user.name, // Using name as ID for now
+    name: user.name,
+    role: "Student", // Default role
+    content: user.bio || "Great platform for Islamic learning!",
+    rating: 5,
+  }));
+
+  // Process recent activity
+  const processedActivity = [
+    ...recentCommentsData.map(comment => ({
+      id: `comment-${comment.id}`,
+      type: "comment" as const,
+      title: `New comment on "${comment.lecture.title}"`,
+      description: comment.body.length > 100 ? comment.body.substring(0, 100) + "..." : comment.body,
+      user: { name: comment.author.name, image: comment.author.image },
+      timestamp: comment.createdAt,
+      link: `/lectures/${comment.lecture.slug}`,
+    })),
+    ...recentLecturesData.map(lecture => ({
+      id: `lecture-${lecture.id}`,
+      type: "lecture" as const,
+      title: "New lecture published",
+      description: `"${lecture.title}" by ${lecture.scholar?.user.name || lecture.author.name}`,
+      user: { name: lecture.author.name },
+      timestamp: lecture.createdAt,
+      link: `/lectures/${lecture.slug}`,
+    })),
+    ...recentScholarsData.map(scholar => ({
+      id: `scholar-${scholar.id}`,
+      type: "scholar" as const,
+      title: "New scholar joined",
+      description: `${scholar.user.name} joined the platform`,
+      user: { name: scholar.user.name },
+      timestamp: scholar.createdAt,
+      link: `/scholars/${scholar.id}`,
+    })),
+  ].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()).slice(0, 5);
 
   return (
     <div className="min-h-screen w-full">
@@ -217,32 +352,7 @@ export default async function HomePage() {
             and deepen your understanding of the Deen.
           </p>
 
-          <form
-            action="/lectures"
-            method="GET"
-            className="w-full max-w-lg mb-8"
-          >
-            <div className="flex items-center gap-2 w-full">
-              <div className="relative flex-1 min-w-0">
-                <FiSearch
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-400 pointer-events-none"
-                  size={17}
-                />
-                <input
-                  name="search"
-                  type="text"
-                  placeholder="Search lectures, scholars, topics…"
-                  className="w-full pl-11 pr-4 py-3.5 bg-ink-800/80 border border-white/10 rounded-xl text-white placeholder-ink-500 focus:outline-none focus:border-gold-500/40 text-sm backdrop-blur-sm transition-colors"
-                />
-              </div>
-              <button
-                type="submit"
-                className="flex-shrink-0 px-5 py-3.5 bg-gold-600 hover:bg-gold-500 active:bg-gold-700 text-white rounded-xl text-sm font-medium transition-colors"
-              >
-                Search
-              </button>
-            </div>
-          </form>
+          <EnhancedSearch />
 
           <div className="flex flex-wrap items-center justify-center gap-3">
             <Link
@@ -262,11 +372,23 @@ export default async function HomePage() {
       </section>
 
       {/* ── Stats ── */}
-      <section className="w-full max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 animate-fadeInUp delay-100">
-        <div className="grid grid-cols-3 gap-3 sm:gap-4">
+      <section className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 animate-fadeInUp delay-100">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 sm:gap-4">
           <StatCard icon={<FiVideo />} count={lectureCount} label="Lectures" />
           <StatCard icon={<FiUsers />} count={scholarCount} label="Scholars" />
           <StatCard icon={<FiBookOpen />} count={userCount} label="Students" />
+          <StatCard icon={<FiMessageCircle />} count={recentComments} label="Comments (24h)" />
+          <StatCard icon={<FiClock />} count={recentLectures} label="New This Week" />
+        </div>
+
+        {/* Social Proof */}
+        <div className="mt-8 text-center">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-500/10 border border-green-500/20 rounded-full">
+            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+            <span className="text-green-400 text-sm font-medium">
+              {recentUsers} new students joined this month
+            </span>
+          </div>
         </div>
       </section>
 
@@ -306,6 +428,12 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* ── Popular Topics ── */}
+      <PopularTopics topics={processedPopularTopics} />
+
+      {/* ── Quick Access ── */}
+      <QuickAccess />
+
       {/* ── Featured Scholars ── */}
       {mappedScholars.length > 0 && (
         <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 border-t border-white/5 animate-fadeInUp delay-100">
@@ -324,7 +452,10 @@ export default async function HomePage() {
       )}
 
       {/* ── Testimonials ── */}
-      <TestimonialsSection />
+      <TestimonialsSection testimonials={processedTestimonials} />
+
+      {/* ── Recent Activity ── */}
+      <RecentActivityFeed activities={processedActivity} />
 
       {/* ── Newsletter Signup ── */}
       <NewsletterSignup />

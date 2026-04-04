@@ -9,31 +9,15 @@ interface Testimonial {
   rating: number;
 }
 
-const testimonials: Testimonial[] = [
-  {
-    id: "1",
-    name: "Sarah Ahmed",
-    role: "Student",
-    content: "This platform has transformed my understanding of Islamic teachings. The scholars are incredibly knowledgeable and the lectures are beautifully presented.",
-    rating: 5,
-  },
-  {
-    id: "2",
-    name: "Mohammed Khan",
-    role: "Professional",
-    content: "Finding authentic Islamic knowledge was always challenging until I discovered this platform. The quality and depth of content is exceptional.",
-    rating: 5,
-  },
-  {
-    id: "3",
-    name: "Aisha Rahman",
-    role: "Parent",
-    content: "As a parent, I wanted my children to learn from qualified scholars. This platform provides exactly that - authentic, reliable Islamic education.",
-    rating: 5,
-  },
-];
+interface TestimonialsSectionProps {
+  testimonials: Testimonial[];
+}
 
-export function TestimonialsSection() {
+export function TestimonialsSection({ testimonials }: TestimonialsSectionProps) {
+  if (testimonials.length === 0) {
+    return null; // Don't render if no testimonials
+  }
+
   return (
     <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 border-t border-white/5">
       <div className="text-center mb-12">

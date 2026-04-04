@@ -2,6 +2,8 @@ import Link from "next/link";
 import { prisma } from "@/app/lib/prism";
 import { LectureCard } from "@/app/components/lectures/LectureCard";
 import { ScholarCard } from "@/app/components/scholars/ScholarCard";
+import { TestimonialsSection } from "@/app/components/TestimonialsSection";
+import { NewsletterSignup } from "@/app/components/NewsletterSignup";
 import type { Lecture, Scholar } from "@/app/types/auth.types";
 import {
   FiSearch,
@@ -161,9 +163,9 @@ function StatCard({
   label: string;
 }) {
   return (
-    <div className="flex flex-col items-center gap-2 p-4 sm:p-6 rounded-2xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.04] transition-colors text-center">
-      <div className="text-gold-400 text-xl">{icon}</div>
-      <div className="font-display text-2xl sm:text-4xl font-bold text-white tabular-nums">
+    <div className="flex flex-col items-center gap-2 p-4 sm:p-6 rounded-2xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.04] hover:border-gold-500/20 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-gold-500/10">
+      <div className="text-gold-400 text-xl transition-transform duration-300 hover:scale-110">{icon}</div>
+      <div className="font-display text-2xl sm:text-4xl font-bold text-white tabular-nums transition-colors duration-300">
         {count.toLocaleString()}
       </div>
       <div className="text-xs sm:text-sm text-ink-400">{label}</div>
@@ -186,7 +188,7 @@ export default async function HomePage() {
   return (
     <div className="min-h-screen w-full">
       {/* ── Hero ── */}
-      <section className="relative overflow-hidden py-20 sm:py-28 md:py-36 w-full">
+      <section className="relative overflow-hidden py-20 sm:py-28 md:py-36 w-full animate-fadeInUp">
         <div className="absolute inset-0 pattern-overlay opacity-40" />
         <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-gold-600/5 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-ink-950 to-transparent pointer-events-none" />
@@ -260,7 +262,7 @@ export default async function HomePage() {
       </section>
 
       {/* ── Stats ── */}
-      <section className="w-full max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+      <section className="w-full max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 animate-fadeInUp delay-100">
         <div className="grid grid-cols-3 gap-3 sm:gap-4">
           <StatCard icon={<FiVideo />} count={lectureCount} label="Lectures" />
           <StatCard icon={<FiUsers />} count={scholarCount} label="Scholars" />
@@ -270,7 +272,7 @@ export default async function HomePage() {
 
       {/* ── Featured Lectures ── */}
       {mappedFeatured.length > 0 && (
-        <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+        <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 animate-fadeInUp delay-200">
           <SectionHeader
             eyebrow="Handpicked for you"
             title="Featured Lectures"
@@ -290,7 +292,7 @@ export default async function HomePage() {
       )}
 
       {/* ── Latest Lectures ── */}
-      <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 border-t border-white/5">
+      <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 border-t border-white/5 animate-fadeInUp delay-300">
         <SectionHeader
           eyebrow="Most recent"
           title="Latest Lectures"
@@ -306,7 +308,7 @@ export default async function HomePage() {
 
       {/* ── Featured Scholars ── */}
       {mappedScholars.length > 0 && (
-        <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 border-t border-white/5">
+        <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 border-t border-white/5 animate-fadeInUp delay-100">
           <SectionHeader
             eyebrow="Learn from the best"
             title="Featured Scholars"
@@ -321,13 +323,19 @@ export default async function HomePage() {
         </section>
       )}
 
+      {/* ── Testimonials ── */}
+      <TestimonialsSection />
+
+      {/* ── Newsletter Signup ── */}
+      <NewsletterSignup />
+
       {/* ── CTA Banner ── */}
-      <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
-        <div className="relative rounded-3xl overflow-hidden border border-gold-500/20 bg-gradient-to-br from-gold-900/20 via-ink-900 to-ink-900">
+      <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 animate-fadeInUp delay-200">
+        <div className="relative rounded-3xl overflow-hidden border border-gold-500/20 bg-gradient-to-br from-gold-900/20 via-ink-900 to-ink-900 hover:border-gold-500/30 transition-all duration-500 hover:shadow-2xl hover:shadow-gold-500/20">
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-32 bg-gold-500/10 blur-3xl pointer-events-none" />
           <div className="absolute inset-0 pattern-overlay opacity-20" />
           <div className="relative px-6 py-14 sm:py-20 flex flex-col items-center text-center">
-            <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gold-500/10 border border-gold-500/20 mb-6">
+            <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gold-500/10 border border-gold-500/20 mb-6 hover:bg-gold-500/20 transition-colors duration-300">
               <GiMoon className="text-gold-400 text-2xl" />
             </div>
             <h2 className="font-display text-3xl sm:text-4xl font-bold text-white mb-4 leading-tight">
@@ -340,13 +348,13 @@ export default async function HomePage() {
             <div className="flex flex-wrap items-center justify-center gap-3">
               <Link
                 href="/register"
-                className="inline-flex items-center gap-2 px-7 py-3.5 bg-gold-600 hover:bg-gold-500 active:bg-gold-700 text-white rounded-xl font-medium transition-colors text-sm"
+                className="inline-flex items-center gap-2 px-7 py-3.5 bg-gold-600 hover:bg-gold-500 active:bg-gold-700 text-white rounded-xl font-medium transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-gold-500/25 text-sm"
               >
                 Create Free Account <FiArrowRight size={15} />
               </Link>
               <Link
                 href="/lectures"
-                className="inline-flex items-center gap-2 px-7 py-3.5 border border-white/10 hover:border-white/20 hover:bg-white/5 text-white rounded-xl font-medium transition-colors text-sm"
+                className="inline-flex items-center gap-2 px-7 py-3.5 border border-white/10 hover:border-gold-500/30 hover:bg-white/5 text-white rounded-xl font-medium transition-all duration-300 hover:scale-105 text-sm"
               >
                 Browse Lectures
               </Link>

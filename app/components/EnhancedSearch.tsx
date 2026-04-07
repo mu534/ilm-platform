@@ -10,7 +10,7 @@ interface SearchResult {
   title: string;
   slug: string;
   description: string;
-  type: "TEXT" | "VIDEO" | "AUDIO";
+  type: "TEXT" | "VIDEO";
   scholar?: {
     user: {
       name: string;
@@ -153,7 +153,6 @@ export function EnhancedSearch({ initialQuery = "" }: EnhancedSearchProps) {
                 <option value="all">All Types</option>
                 <option value="TEXT">Text</option>
                 <option value="VIDEO">Video</option>
-                <option value="AUDIO">Audio</option>
               </select>
             </div>
             <div>
@@ -192,7 +191,7 @@ export function EnhancedSearch({ initialQuery = "" }: EnhancedSearchProps) {
                 >
                   <div className="flex items-start gap-3">
                     <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-gold-500/20 flex items-center justify-center text-gold-400 text-xs font-medium">
-                      {result.type === "VIDEO" ? "🎥" : result.type === "AUDIO" ? "🎵" : "📄"}
+                      {result.type === "VIDEO" ? "🎥" : "📄"}
                     </div>
                     <div className="flex-1 min-w-0">
                       <h4 className="text-white text-sm font-medium truncate">{result.title}</h4>

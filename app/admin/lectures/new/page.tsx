@@ -10,7 +10,7 @@ export default function NewLecturePage() {
     title: "",
     description: "",
     content: "",
-    type: "TEXT" as "TEXT" | "VIDEO" | "AUDIO",
+    type: "TEXT" as "TEXT" | "VIDEO",
     tags: "",
     published: false,
     featured: false,
@@ -113,7 +113,7 @@ export default function NewLecturePage() {
             Content Type *
           </label>
           <div className="flex gap-3">
-            {(["TEXT", "VIDEO", "AUDIO"] as const).map((type) => (
+            {([ "TEXT", "VIDEO"] as const).map((type) => (
               <button
                 key={type}
                 type="button"
@@ -167,9 +167,9 @@ export default function NewLecturePage() {
         {/* Media upload */}
         {form.type !== "TEXT" && (
           <FileUploader
-            accept={form.type === "VIDEO" ? "video/*" : "audio/*"}
+            accept="video/*"
             folder="ilm-platform/lectures"
-            label={`${form.type === "VIDEO" ? "Video" : "Audio"} File`}
+            label="Video File"
             onUpload={(url) => setForm({ ...form, mediaUrl: url })}
             currentUrl={form.mediaUrl}
           />

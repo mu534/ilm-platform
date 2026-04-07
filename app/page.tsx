@@ -144,7 +144,7 @@ type PrismaLecture = {
   slug: string;
   description: string;
   content: string | null;
-  type: "TEXT" | "VIDEO" | "AUDIO";
+  type: "TEXT" | "VIDEO";
   mediaUrl: string | null;
   thumbnailUrl: string | null;
   tags: string[];

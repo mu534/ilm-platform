@@ -138,19 +138,6 @@ export default async function LecturePage({ params }: Props) {
         </div>
       )}
 
-      {/* Audio player */}
-      {lecture.type === "AUDIO" && lecture.mediaUrl && (
-        <div className="mb-8 p-6 glass-card gold-border rounded-2xl">
-          <div className="flex items-center gap-3 mb-4">
-            <GiBookmark className="text-gold-400 text-2xl" />
-            <span className="font-display text-lg text-white">
-              Listen to Lecture
-            </span>
-          </div>
-          <audio src={lecture.mediaUrl} controls className="w-full" />
-        </div>
-      )}
-
       {/* Content */}
       {lecture.content && (
         <div

@@ -22,7 +22,6 @@ enum Role {
 enum LectureType {
   TEXT
   VIDEO
-  AUDIO
 }
 
 model User {

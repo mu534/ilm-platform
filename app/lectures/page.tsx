@@ -16,7 +16,7 @@ interface Props {
   searchParams: Promise<SearchParams>;
 }
 
-const VALID_TYPES = new Set(["TEXT", "VIDEO", "AUDIO"]);
+const VALID_TYPES = new Set(["TEXT", "VIDEO"]);
 const PAGE_SIZE = 12;
 
 function mapLecture(l: {
@@ -55,7 +55,7 @@ function mapLecture(l: {
     slug: l.slug,
     description: l.description,
     content: l.content,
-    type: l.type as "TEXT" | "VIDEO" | "AUDIO",
+    type: l.type as "TEXT" | "VIDEO",
     mediaUrl: l.mediaUrl,
     thumbnailUrl: l.thumbnailUrl,
     tags: l.tags,
@@ -175,12 +175,11 @@ export default async function LecturesPage({ searchParams }: Props) {
         </form>
 
         <div className="flex flex-wrap gap-2">
-          {(["", "TEXT", "VIDEO", "AUDIO"] as const).map((val) => {
+          {(["", "TEXT", "VIDEO"] as const).map((val) => {
             const label = {
               "": "All",
               TEXT: "Articles",
               VIDEO: "Videos",
-              AUDIO: "Audio",
             }[val];
             return (
               <Link

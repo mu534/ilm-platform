@@ -2,7 +2,6 @@ import Link from "next/link";
 import Image from "next/image";
 import {
   FiVideo,
-  FiHeadphones,
   FiFileText,
   FiEye,
   FiMessageCircle,
@@ -12,13 +11,11 @@ import { formatDate } from "../../utils/api";
 
 const typeIcons: Record<LectureType, React.ReactElement> = {
   VIDEO: <FiVideo className="text-gold-400" size={14} />,
-  AUDIO: <FiHeadphones className="text-gold-400" size={14} />,
   TEXT: <FiFileText className="text-gold-400" size={14} />,
 };
 
 const typeLabels: Record<LectureType, string> = {
   VIDEO: "Video",
-  AUDIO: "Audio",
   TEXT: "Article",
 };
 

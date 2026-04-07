@@ -32,7 +32,7 @@ export const lectureSchema = z.object({
     .min(10, "Description must be at least 10 characters")
     .max(2000, "Description must be less than 2000 characters"),
   content: z.string().optional(),
-  type: z.enum(["TEXT", "VIDEO", "AUDIO"]),
+  type: z.enum(["TEXT", "VIDEO"]),
   tags: z.array(z.string()).max(10, "Maximum 10 tags").default([]),
   published: z.boolean().default(false),
   featured: z.boolean().default(false),

@@ -1,7 +1,7 @@
 import type { DefaultJWT } from "next-auth/jwt";
 
 export type UserRole = "ADMIN" | "SCHOLAR" | "USER";
-export type LectureType = "TEXT" | "VIDEO" | "AUDIO";
+export type LectureType = "TEXT" | "VIDEO";
 
 export interface SessionUser {
   id: string;

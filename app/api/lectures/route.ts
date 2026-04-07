@@ -11,7 +11,7 @@ import {
 } from "../../utils/api";
 import type { SessionUser } from "../../types/next-auth";
 
-type LectureType = "TEXT" | "VIDEO" | "AUDIO";
+type LectureType = "TEXT" | "VIDEO";
 
 interface LectureWhereInput {
   published?: boolean;

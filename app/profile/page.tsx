@@ -1,7 +1,7 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { FiMail, FiEdit2, FiCheck, FiAlertCircle } from "react-icons/fi";
@@ -19,21 +19,35 @@ const roleBadgeColors: Record<UserRole, string> = {
 interface ApiResponse {
   success: boolean;
   error?: string;
+  data?: {
+    name?: string | null;
+    email?: string | null;
+    image?: string | null;
+  };
 }
 
 export default function ProfilePage() {
-  const { data: session, update } = useSession();
+  const { data: session, status: authStatus, update } = useSession();
   const router = useRouter();
 
   const user = session?.user as SessionUser | undefined;
 
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({ name: user?.name ?? "", bio: "" });
+  const [form, setForm] = useState({ name: user?.name ?? "" });
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState("");
 
-  if (!session) {
-    router.push("/login");
+  useEffect(() => {
+    setForm({ name: user?.name ?? "" });
+  }, [user?.name]);
+
+  useEffect(() => {
+    if (authStatus === "unauthenticated") {
+      router.push("/login");
+    }
+  }, [authStatus, router]);
+
+  if (authStatus === "loading" || authStatus === "unauthenticated") {
     return null;
   }
 
@@ -43,15 +57,23 @@ export default function ProfilePage() {
       const res = await fetch(`/api/users/${user?.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ name: form.name }),
       });
 
       const data = (await res.json()) as ApiResponse;
       if (!data.success) throw new Error(data.error ?? "Update failed");
 
-      await update({ name: form.name });
+      const updatedName = data.data?.name ?? form.name;
+      await update({
+        name: updatedName,
+        email: data.data?.email ?? user?.email,
+        image: data.data?.image ?? user?.image,
+      });
+
+      setForm({ name: updatedName });
       setStatus("success");
       setEditing(false);
+      router.refresh();
       setTimeout(() => setStatus("idle"), 2000);
     } catch (err) {
       const message =

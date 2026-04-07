@@ -94,6 +94,26 @@ export async function PATCH(
       },
     });
 
+    // Auto-create Scholar profile if role was changed to SCHOLAR
+    if (data.role === "SCHOLAR") {
+      const existingScholar = await prisma.scholar.findUnique({
+        where: { userId: id },
+      });
+
+      if (!existingScholar) {
+        await prisma.scholar.create({
+          data: {
+            userId: id,
+            bio: "Scholar profile awaiting completion.",
+            topics: [],
+            photo: null,
+            qualifications: [],
+            featured: false,
+          },
+        });
+      }
+    }
+
     return successResponse(user);
   } catch (error) {
     return handleApiError(error);

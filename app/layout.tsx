@@ -108,7 +108,7 @@ export default function RootLayout({
       lang="en"
       className={`${cormorant.variable} ${dmSans.variable} ${amiri.variable}`}
     >
-      <body className="w-full">
+      <body className="w-full bg-[var(--bg-primary)] text-[var(--text-primary)] transition-colors duration-300">
         <Providers>
           <div className="flex flex-col min-h-screen w-full">
             <Navbar />

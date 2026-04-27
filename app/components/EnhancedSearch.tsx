@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { FiSearch, FiFilter, FiX, FiArrowRight } from "react-icons/fi";
+
 import { prisma } from "@/app/lib/prism";
 
 interface SearchResult {
@@ -96,7 +97,7 @@ export function EnhancedSearch({ initialQuery = "" }: EnhancedSearchProps) {
         <div className="flex items-center gap-2 w-full">
           <div className="relative flex-1 min-w-0">
             <FiSearch
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-400 pointer-events-none"
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-muted pointer-events-none"
               size={17}
             />
             <input
@@ -105,13 +106,13 @@ export function EnhancedSearch({ initialQuery = "" }: EnhancedSearchProps) {
               onChange={(e) => setQuery(e.target.value)}
               onFocus={() => query.length >= 2 && setShowResults(true)}
               placeholder="Search lectures, scholars, topics..."
-              className="w-full pl-11 pr-12 py-3.5 bg-ink-800/80 border border-white/10 rounded-xl text-white placeholder-ink-500 focus:outline-none focus:border-gold-500/40 text-sm backdrop-blur-sm transition-colors"
+              className="w-full pl-11 pr-12 py-3.5 bg-card border border-theme rounded-xl text-primary placeholder-muted focus:outline-none focus:border-accent text-sm backdrop-blur-sm transition-colors"
             />
             {query && (
               <button
                 type="button"
                 onClick={clearSearch}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-ink-400 hover:text-white transition-colors"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-muted hover:text-primary transition-colors"
               >
                 <FiX size={16} />
               </button>
@@ -123,8 +124,8 @@ export function EnhancedSearch({ initialQuery = "" }: EnhancedSearchProps) {
             onClick={() => setShowFilters(!showFilters)}
             className={`flex-shrink-0 p-3.5 border rounded-xl transition-all duration-200 ${
               showFilters
-                ? "bg-gold-600 border-gold-500 text-white"
-                : "border-white/10 bg-ink-800/80 text-ink-400 hover:border-gold-500/30 hover:bg-white/5"
+                ? "bg-accent border-accent text-primary"
+                : "border-theme bg-card text-muted hover:border-accent hover:bg-card-hover"
             }`}
           >
             <FiFilter size={16} />
@@ -132,7 +133,7 @@ export function EnhancedSearch({ initialQuery = "" }: EnhancedSearchProps) {
 
           <button
             type="submit"
-            className="flex-shrink-0 px-5 py-3.5 bg-gold-600 hover:bg-gold-500 active:bg-gold-700 text-white rounded-xl text-sm font-medium transition-colors"
+            className="flex-shrink-0 px-5 py-3.5 bg-accent hover:bg-accent-light active:bg-accent text-primary rounded-xl text-sm font-medium transition-colors"
           >
             Search
           </button>
@@ -141,14 +142,14 @@ export function EnhancedSearch({ initialQuery = "" }: EnhancedSearchProps) {
 
       {/* Filters Panel */}
       {showFilters && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-ink-800/95 backdrop-blur-sm border border-white/10 rounded-xl p-4 z-50">
+        <div className="absolute top-full left-0 right-0 mt-2 bg-card backdrop-blur-sm border border-theme rounded-xl p-4 z-50">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs text-ink-400 mb-2">Content Type</label>
+              <label className="block text-xs text-muted mb-2">Content Type</label>
               <select
                 value={filters.type}
                 onChange={(e) => setFilters(prev => ({ ...prev, type: e.target.value }))}
-                className="w-full px-3 py-2 bg-ink-900/80 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-gold-500/40"
+                className="w-full px-3 py-2 bg-card border border-theme rounded-lg text-primary text-sm focus:outline-none focus:border-accent"
               >
                 <option value="all">All Types</option>
                 <option value="TEXT">Text</option>
@@ -156,11 +157,11 @@ export function EnhancedSearch({ initialQuery = "" }: EnhancedSearchProps) {
               </select>
             </div>
             <div>
-              <label className="block text-xs text-ink-400 mb-2">Scholar</label>
+              <label className="block text-xs text-muted mb-2">Scholar</label>
               <select
                 value={filters.scholar}
                 onChange={(e) => setFilters(prev => ({ ...prev, scholar: e.target.value }))}
-                className="w-full px-3 py-2 bg-ink-900/80 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-gold-500/40"
+                className="w-full px-3 py-2 bg-card border border-theme rounded-lg text-primary text-sm focus:outline-none focus:border-accent"
               >
                 <option value="all">All Scholars</option>
                 {/* This would be populated dynamically */}
@@ -174,11 +175,11 @@ export function EnhancedSearch({ initialQuery = "" }: EnhancedSearchProps) {
 
       {/* Search Results */}
       {showResults && (results.length > 0 || isLoading) && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-ink-800/95 backdrop-blur-sm border border-white/10 rounded-xl overflow-hidden z-50 max-h-96 overflow-y-auto">
+        <div className="absolute top-full left-0 right-0 mt-2 bg-card backdrop-blur-sm border border-theme rounded-xl overflow-hidden z-50 max-h-96 overflow-y-auto">
           {isLoading ? (
             <div className="p-4 text-center">
-              <div className="w-6 h-6 border-2 border-gold-400/30 border-t-gold-400 rounded-full animate-spin mx-auto mb-2"></div>
-              <p className="text-ink-400 text-sm">Searching...</p>
+              <div className="w-6 h-6 border-2 border-accent/30 border-t-accent rounded-full animate-spin mx-auto mb-2"></div>
+              <p className="text-muted text-sm">Searching...</p>
             </div>
           ) : results.length > 0 ? (
             <>
@@ -186,28 +187,28 @@ export function EnhancedSearch({ initialQuery = "" }: EnhancedSearchProps) {
                 <Link
                   key={result.id}
                   href={`/lectures/${result.slug}`}
-                  className="block p-4 hover:bg-white/5 transition-colors border-b border-white/5 last:border-b-0"
+                  className="block p-4 hover:bg-card-hover transition-colors border-b border-theme last:border-b-0"
                   onClick={() => setShowResults(false)}
                 >
                   <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-gold-500/20 flex items-center justify-center text-gold-400 text-xs font-medium">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-accent/20 flex items-center justify-center text-accent text-xs font-medium">
                       {result.type === "VIDEO" ? "🎥" : "📄"}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h4 className="text-white text-sm font-medium truncate">{result.title}</h4>
-                      <p className="text-ink-400 text-xs truncate mt-1">{result.description}</p>
+                      <h4 className="text-primary text-sm font-medium truncate">{result.title}</h4>
+                      <p className="text-muted text-xs truncate mt-1">{result.description}</p>
                       {result.scholar && (
-                        <p className="text-gold-400 text-xs mt-1">{result.scholar.user.name}</p>
+                        <p className="text-accent text-xs mt-1">{result.scholar.user.name}</p>
                       )}
                     </div>
-                    <FiArrowRight className="flex-shrink-0 text-ink-400 text-sm mt-1" />
+                    <FiArrowRight className="flex-shrink-0 text-muted text-sm mt-1" />
                   </div>
                 </Link>
               ))}
-              <div className="p-3 border-t border-white/5">
+              <div className="p-3 border-t border-theme">
                 <Link
                   href={`/lectures?search=${encodeURIComponent(query)}`}
-                  className="block text-center text-gold-400 hover:text-gold-300 text-sm font-medium transition-colors"
+                  className="block text-center text-accent hover:text-accent-light text-sm font-medium transition-colors"
                   onClick={() => setShowResults(false)}
                 >
                   View all results
@@ -216,8 +217,8 @@ export function EnhancedSearch({ initialQuery = "" }: EnhancedSearchProps) {
             </>
           ) : (
             <div className="p-4 text-center">
-              <p className="text-ink-400 text-sm">No results found</p>
-              <p className="text-ink-500 text-xs mt-1">Try different keywords or filters</p>
+              <p className="text-muted text-sm">No results found</p>
+              <p className="text-secondary text-xs mt-1">Try different keywords or filters</p>
             </div>
           )}
         </div>

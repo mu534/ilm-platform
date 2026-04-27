@@ -19,13 +19,13 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className="flex flex-col gap-1.5">
         {label && (
-          <label htmlFor={inputId} className="text-xs font-medium text-ink-400">
+          <label htmlFor={inputId} className="text-xs font-medium text-muted">
             {label}
           </label>
         )}
         <div className="relative">
           {leftIcon && (
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-500">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted">
               {leftIcon}
             </span>
           )}
@@ -33,12 +33,12 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             id={inputId}
             className={cn(
-              "w-full bg-ink-800/80 border rounded-xl text-white text-sm",
-              "placeholder-ink-600 transition-colors",
-              "focus:outline-none focus:ring-2 focus:ring-gold-500/30",
+              "w-full bg-card border rounded-xl text-primary text-sm",
+              "placeholder-muted transition-colors",
+              "focus:outline-none focus:ring-2 focus:ring-accent/30",
               error
                 ? "border-red-500/40 focus:border-red-500/60"
-                : "border-white/10 focus:border-gold-500/50",
+                : "border-theme focus:border-accent",
               leftIcon ? "pl-10" : "pl-4",
               rightIcon ? "pr-10" : "pr-4",
               "py-2.5",
@@ -47,7 +47,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             {...props}
           />
           {rightIcon && (
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-500">
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted">
               {rightIcon}
             </span>
           )}

@@ -58,7 +58,7 @@ function LoginForm() {
         {/* Logo */}
         <div className="text-center mb-8">
           <GiMoon className="text-gold-400 text-4xl mx-auto mb-3" />
-          <h1 className="font-display text-3xl font-bold text-white">
+          <h1 className="font-display text-3xl font-bold text-primary">
             Welcome Back
           </h1>
           <p className="text-ink-400 text-sm mt-2">Sign in to your account</p>
@@ -78,7 +78,7 @@ function LoginForm() {
               </label>
               <div className="relative">
                 <FiMail
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-500"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-muted"
                   size={15}
                 />
                 <input
@@ -86,19 +86,19 @@ function LoginForm() {
                   required
                   value={form.email}
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  className="w-full pl-10 pr-4 py-2.5 bg-ink-800/80 border border-white/10 rounded-xl text-white text-sm placeholder-ink-600 focus:outline-none focus:border-gold-500/50 transition-colors"
+                  className="w-full pl-10 pr-4 py-2.5 bg-card border border-theme rounded-xl text-primary text-sm placeholder-muted focus:outline-none focus:border-accent transition-colors"
                   placeholder="you@example.com"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs text-ink-400 font-medium mb-1.5">
+              <label className="block text-xs text-muted font-medium mb-1.5">
                 Password
               </label>
               <div className="relative">
                 <FiLock
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-500"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-muted"
                   size={15}
                 />
                 <input
@@ -108,7 +108,7 @@ function LoginForm() {
                   onChange={(e) =>
                     setForm({ ...form, password: e.target.value })
                   }
-                  className="w-full pl-10 pr-4 py-2.5 bg-ink-800/80 border border-white/10 rounded-xl text-white text-sm placeholder-ink-600 focus:outline-none focus:border-gold-500/50 transition-colors"
+                  className="w-full pl-10 pr-4 py-2.5 bg-card border border-theme rounded-xl text-primary text-sm placeholder-muted focus:outline-none focus:border-accent transition-colors"
                   placeholder="••••••••"
                 />
               </div>
@@ -117,17 +117,17 @@ function LoginForm() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-2.5 bg-gold-600 hover:bg-gold-500 disabled:opacity-60 disabled:cursor-not-allowed text-white rounded-xl font-medium transition-colors text-sm mt-2"
+              className="w-full py-2.5 bg-accent hover:bg-accent-light disabled:opacity-60 disabled:cursor-not-allowed text-primary rounded-xl font-medium transition-colors text-sm mt-2"
             >
               {loading ? "Signing in..." : "Sign In"}
             </button>
           </form>
 
-          <p className="text-center text-sm text-ink-500 mt-6">
+          <p className="text-center text-sm text-muted mt-6">
             Don not have an account?{" "}
             <Link
               href="/register"
-              className="text-gold-400 hover:text-gold-300 transition-colors"
+              className="text-accent hover:text-accent-light transition-colors"
             >
               Create one
             </Link>

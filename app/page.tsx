@@ -11,7 +11,7 @@ import { PopularTopics } from "@/app/components/PopularTopics";
 import { QuickAccess } from "@/app/components/QuickAccess";
 import type { Lecture, Scholar } from "@/app/types/auth.types";
 import {
-  FiSearch,
+
   FiArrowRight,
   FiBookOpen,
   FiUsers,
@@ -211,17 +211,17 @@ function SectionHeader({
   return (
     <div className="flex items-end justify-between mb-8 gap-4">
       <div>
-        <p className="text-xs text-gold-400 uppercase tracking-widest font-semibold mb-1.5">
+        <p className="text-xs text-accent uppercase tracking-widest font-semibold mb-1.5">
           {eyebrow}
         </p>
-        <h2 className="font-display text-2xl sm:text-3xl font-semibold text-white leading-tight">
+        <h2 className="font-display text-2xl sm:text-3xl font-semibold text-primary leading-tight">
           {title}
         </h2>
       </div>
       {href && linkLabel && (
         <Link
           href={href}
-          className="flex-shrink-0 flex items-center gap-1.5 text-sm text-gold-400 hover:text-gold-300 transition-colors group"
+          className="flex-shrink-0 flex items-center gap-1.5 text-sm text-accent hover:text-accent-light transition-colors group"
         >
           {linkLabel}
           <FiArrowRight
@@ -244,12 +244,12 @@ function StatCard({
   label: string;
 }) {
   return (
-    <div className="flex flex-col items-center gap-2 p-4 sm:p-6 rounded-2xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.04] hover:border-gold-500/20 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-gold-500/10">
-      <div className="text-gold-400 text-xl transition-transform duration-300 hover:scale-110">{icon}</div>
-      <div className="font-display text-2xl sm:text-4xl font-bold text-white tabular-nums transition-colors duration-300">
+    <div className="flex flex-col items-center gap-2 p-4 sm:p-6 rounded-2xl border border-theme bg-card/[0.02] hover:bg-card/[0.04] hover:border-accent transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-accent/10">
+      <div className="text-accent text-xl transition-transform duration-300 hover:scale-110">{icon}</div>
+      <div className="font-display text-2xl sm:text-4xl font-bold text-primary tabular-nums transition-colors duration-300">
         {count.toLocaleString()}
       </div>
-      <div className="text-xs sm:text-sm text-ink-400">{label}</div>
+      <div className="text-xs sm:text-sm text-muted">{label}</div>
     </div>
   );
 }
@@ -326,29 +326,29 @@ export default async function HomePage() {
       {/* ── Hero ── */}
       <section className="relative overflow-hidden py-20 sm:py-28 md:py-36 w-full animate-fadeInUp">
         <div className="absolute inset-0 pattern-overlay opacity-40" />
-        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-gold-600/5 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-accent/5 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-ink-950 to-transparent pointer-events-none" />
 
         <div className="relative w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-gold-500/20 bg-gold-500/5 mb-8">
-            <GiStarFormation className="text-gold-400 text-xs" />
-            <span className="text-xs tracking-widest text-gold-400 uppercase font-semibold">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-accent/20 bg-accent/5 mb-8">
+            <GiStarFormation className="text-accent text-xs" />
+            <span className="text-xs tracking-widest text-accent uppercase font-semibold">
               Knowledge is Light
             </span>
-            <GiStarFormation className="text-gold-400 text-xs" />
+            <GiStarFormation className="text-accent text-xs" />
           </div>
 
-          <p className="arabic-bismillah text-2xl sm:text-3xl mb-6 text-gold-300/80">
+          <p className="arabic-bismillah text-2xl sm:text-3xl mb-6 text-accent/80">
             بِسْمِ اللّٰهِ الرَّحْمَنِ الرَّحِيْمِ
           </p>
 
-          <h1 className="font-display text-4xl sm:text-5xl md:text-7xl font-bold text-white leading-[1.1] tracking-tight mb-6">
+          <h1 className="font-display text-4xl sm:text-5xl md:text-7xl font-bold gradient-text leading-[1.1] tracking-tight mb-6">
             Seek Knowledge
             <br />
             with <span className="gradient-text">Clarity</span>
           </h1>
 
-          <p className="text-base sm:text-lg text-ink-300 max-w-xl mb-10 leading-relaxed">
+          <p className="text-base sm:text-lg text-secondary max-w-xl mb-10 leading-relaxed">
             Access authentic Islamic lectures, connect with qualified scholars,
             and deepen your understanding of the Deen.
           </p>
@@ -360,13 +360,13 @@ export default async function HomePage() {
           <div className="flex flex-wrap items-center justify-center gap-3">
             <Link
               href="/lectures"
-              className="flex items-center gap-2 px-6 py-3 bg-gold-600 hover:bg-gold-500 active:bg-gold-700 text-white rounded-xl font-medium transition-colors text-sm"
+              className="flex items-center gap-2 px-6 py-3 bg-accent hover:bg-accent-light active:bg-accent text-primary rounded-xl font-medium transition-colors text-sm"
             >
               Explore Lectures <FiArrowRight size={15} />
             </Link>
             <Link
               href="/scholars"
-              className="flex items-center gap-2 px-6 py-3 border border-white/10 hover:border-gold-500/30 hover:bg-white/5 text-white rounded-xl font-medium transition-colors text-sm"
+              className="flex items-center gap-2 px-6 py-3 border border-theme hover:border-accent hover:bg-card-hover text-primary rounded-xl font-medium transition-colors text-sm"
             >
               Meet Scholars
             </Link>
@@ -417,7 +417,7 @@ export default async function HomePage() {
       )}
 
       {/* ── Latest Lectures ── */}
-      <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 border-t border-white/5 animate-fadeInUp delay-300">
+      <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 border-t border-theme animate-fadeInUp delay-300">
         <SectionHeader
           eyebrow="Most recent"
           title="Latest Lectures"
@@ -439,7 +439,7 @@ export default async function HomePage() {
 
       {/* ── Featured Scholars ── */}
       {mappedScholars.length > 0 && (
-        <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 border-t border-white/5 animate-fadeInUp delay-100">
+        <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 border-t border-theme animate-fadeInUp delay-100">
           <SectionHeader
             eyebrow="Learn from the best"
             title="Featured Scholars"
@@ -466,29 +466,29 @@ export default async function HomePage() {
     
       <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 animate-fadeInUp delay-200">
         <div className="relative rounded-3xl overflow-hidden border border-gold-500/20 bg-gradient-to-br from-gold-900/20 via-ink-900 to-ink-900 hover:border-gold-500/30 transition-all duration-500 hover:shadow-2xl hover:shadow-gold-500/20">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-32 bg-gold-500/10 blur-3xl pointer-events-none" />
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-32 bg-accent/10 blur-3xl pointer-events-none" />
           <div className="absolute inset-0 pattern-overlay opacity-20" />
           <div className="relative px-6 py-14 sm:py-20 flex flex-col items-center text-center">
-            <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gold-500/10 border border-gold-500/20 mb-6 hover:bg-gold-500/20 transition-colors duration-300">
-              <GiMoon className="text-gold-400 text-2xl" />
+            <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-accent/10 border border-accent/20 mb-6 hover:bg-accent/20 transition-colors duration-300">
+              <GiMoon className="text-accent text-2xl" />
             </div>
-            <h2 className="font-display text-3xl sm:text-4xl font-bold text-white mb-4 leading-tight">
+            <h2 className="font-display text-3xl sm:text-4xl font-bold text-primary mb-4 leading-tight">
               Start Your Journey Today
             </h2>
-            <p className="text-ink-300 mb-8 max-w-sm text-sm sm:text-base leading-relaxed">
+            <p className="text-secondary mb-8 max-w-sm text-sm sm:text-base leading-relaxed">
               Join thousands of students seeking authentic Islamic knowledge
               from qualified scholars.
             </p>
             <div className="flex flex-wrap items-center justify-center gap-3">
               <Link
                 href="/register"
-                className="inline-flex items-center gap-2 px-7 py-3.5 bg-gold-600 hover:bg-gold-500 active:bg-gold-700 text-white rounded-xl font-medium transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-gold-500/25 text-sm"
+                className="inline-flex items-center gap-2 px-7 py-3.5 bg-accent hover:bg-accent-light active:bg-accent text-primary rounded-xl font-medium transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-accent/25 text-sm"
               >
                 Create Free Account <FiArrowRight size={15} />
               </Link>
               <Link
                 href="/lectures"
-                className="inline-flex items-center gap-2 px-7 py-3.5 border border-white/10 hover:border-gold-500/30 hover:bg-white/5 text-white rounded-xl font-medium transition-all duration-300 hover:scale-105 text-sm"
+                className="inline-flex items-center gap-2 px-7 py-3.5 border border-theme hover:border-accent hover:bg-card-hover text-primary rounded-xl font-medium transition-all duration-300 hover:scale-105 text-sm"
               >
                 Browse Lectures
               </Link>

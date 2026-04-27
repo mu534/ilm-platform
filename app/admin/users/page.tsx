@@ -69,8 +69,8 @@ export default function AdminUsersPage() {
   return (
     <div className="p-8">
       <div className="mb-8">
-        <h1 className="font-display text-3xl font-bold text-white">Users</h1>
-        <p className="text-ink-400 text-sm mt-1">
+        <h1 className="font-display text-3xl font-bold text-primary">Users</h1>
+        <p className="text-muted text-sm mt-1">
           Manage platform users and roles
         </p>
       </div>
@@ -79,20 +79,20 @@ export default function AdminUsersPage() {
       <div className="flex gap-3 mb-6">
         <div className="relative flex-1 max-w-xs">
           <FiSearch
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-400"
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-muted"
             size={14}
           />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search users..."
-            className="w-full pl-9 pr-4 py-2 bg-ink-800/80 border border-white/10 rounded-xl text-white text-sm placeholder-ink-500 focus:outline-none focus:border-gold-500/40"
+            className="w-full pl-9 pr-4 py-2 bg-card border border-theme rounded-xl text-primary text-sm placeholder-muted focus:outline-none focus:border-accent"
           />
         </div>
         <select
           value={roleFilter}
           onChange={(e) => setRoleFilter(e.target.value)}
-          className="px-3 py-2 bg-ink-800/80 border border-white/10 rounded-xl text-sm text-white focus:outline-none"
+          className="px-3 py-2 bg-card border border-theme rounded-xl text-sm text-primary focus:outline-none"
         >
           <option value="">All Roles</option>
           <option value="ADMIN">Admin</option>
@@ -103,68 +103,68 @@ export default function AdminUsersPage() {
 
       <div className="glass-card rounded-xl overflow-hidden border border-white/5">
         {loading ? (
-          <div className="p-8 text-center text-ink-500">Loading...</div>
+          <div className="p-8 text-center text-muted">Loading...</div>
         ) : (
           <table className="w-full">
             <thead>
-              <tr className="border-b border-white/5">
-                <th className="text-left p-4 text-xs text-ink-500 uppercase tracking-wider">
+              <tr className="border-b border-theme">
+                <th className="text-left p-4 text-xs text-muted uppercase tracking-wider">
                   User
                 </th>
-                <th className="text-left p-4 text-xs text-ink-500 uppercase tracking-wider">
+                <th className="text-left p-4 text-xs text-muted uppercase tracking-wider">
                   Role
                 </th>
-                <th className="text-left p-4 text-xs text-ink-500 uppercase tracking-wider">
+                <th className="text-left p-4 text-xs text-muted uppercase tracking-wider">
                   Content
                 </th>
-                <th className="text-left p-4 text-xs text-ink-500 uppercase tracking-wider">
+                <th className="text-left p-4 text-xs text-muted uppercase tracking-wider">
                   Joined
                 </th>
                 <th className="p-4" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5">
+            <tbody className="divide-y divide-theme">
               {users.map((user) => (
-                <tr key={user.id} className="hover:bg-white/2">
+                <tr key={user.id} className="hover:bg-card-hover">
                   <td className="p-4">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-full bg-gold-700/30 flex items-center justify-center text-gold-400 text-sm font-bold">
                         {user.name[0]}
                       </div>
                       <div>
-                        <p className="text-sm text-white">{user.name}</p>
-                        <p className="text-xs text-ink-500">{user.email}</p>
+                        <p className="text-sm text-primary">{user.name}</p>
+                        <p className="text-xs text-muted">{user.email}</p>
                       </div>
                     </div>
                   </td>
                   <td className="p-4">{roleBadge(user.role)}</td>
-                  <td className="p-4 text-xs text-ink-500">
+                  <td className="p-4 text-xs text-muted">
                     {user._count.lectures} lectures · {user._count.comments}{" "}
                     comments
                   </td>
-                  <td className="p-4 text-xs text-ink-500">
+                  <td className="p-4 text-xs text-muted">
                     {formatDate(user.createdAt)}
                   </td>
                   <td className="p-4">
                     <DropdownMenu.Root>
                       <DropdownMenu.Trigger asChild>
-                        <button className="p-1.5 text-ink-500 hover:text-white hover:bg-white/5 rounded-lg">
+                        <button className="p-1.5 text-muted hover:text-primary hover:bg-card-hover rounded-lg">
                           <FiMoreVertical size={16} />
                         </button>
                       </DropdownMenu.Trigger>
                       <DropdownMenu.Portal>
                         <DropdownMenu.Content
-                          className="glass-card gold-border rounded-xl p-1.5 min-w-[160px] shadow-2xl"
+                          className="glass-card border-accent rounded-xl p-1.5 min-w-[160px] shadow-2xl"
                           sideOffset={4}
                           align="end"
                         >
-                          <p className="px-3 py-1 text-xs text-ink-500">
+                          <p className="px-3 py-1 text-xs text-muted">
                             Change Role
                           </p>
                           {["ADMIN", "SCHOLAR", "USER"].map((role) => (
                             <DropdownMenu.Item
                               key={role}
-                              className={`flex items-center gap-2 px-3 py-2 text-sm hover:bg-white/5 rounded-lg cursor-pointer transition-colors ${user.role === role ? "text-gold-400" : "text-ink-300 hover:text-white"}`}
+                              className={`flex items-center gap-2 px-3 py-2 text-sm hover:bg-card-hover rounded-lg cursor-pointer transition-colors ${user.role === role ? "text-accent" : "text-muted hover:text-primary"}`}
                               onClick={() => updateRole(user.id, role)}
                             >
                               <FiShield size={12} /> {role}

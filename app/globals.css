@@ -1,226 +1,340 @@
 @import "tailwindcss";
 
-
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
 
   html {
     scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
   }
 
   body {
     font-family: var(--font-body);
     background-color: var(--bg-primary);
     color: var(--text-primary);
-    min-height: 100vh;
+    min-height: 100dvh;
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
 
+  section {
+    width: 100%;
+  }
+
+  main {
+    width: 100%;
+    display: block;
+  }
+
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: var(--bg-primary); }
+  ::-webkit-scrollbar-thumb {
+    background: var(--accent);
+    border-radius: 99px;
+  }
+
+  /* ── Heading defaults: always heavy, never faded ── */
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1.15;
+  }
+
+  h1 { font-family: var(--font-display); font-size: clamp(2.5rem, 6vw, 5rem); }
+  h2 { font-family: var(--font-display); font-size: clamp(1.75rem, 3.5vw, 2.5rem); }
+  h3 { font-family: var(--font-display); font-size: clamp(1.25rem, 2.5vw, 1.75rem); }
+}
+
 @theme {
-  --color-gold-300: #e9c34f;
-  --color-gold-400: #c8871a;
-  --color-gold-500: #b87516;
-  --color-gold-600: #a06412;
-  --color-gold-700: #8a5510;
-  --color-gold-800: #6b3f0a;
-  --color-gold-900: #4a2a06;
+  /* ── Sapphire / Islamic Blue palette ── */
+  --color-blue-50:  #f0f5ff;
+  --color-blue-100: #ddeafd;
+  --color-blue-200: #b8d0fa;
+  --color-blue-300: #7aaef5;
+  --color-blue-400: #4a8de8;
+  --color-blue-500: #2563c8;
+  --color-blue-600: #1a4fa6;
+  --color-blue-700: #153d82;
+  --color-blue-800: #0f2a5c;
+  --color-blue-900: #091a38;
+  --color-blue-950: #040e1e;
 
-  --color-ink-200: #d4cec6;
-  --color-ink-300: #b8b0a6;
-  --color-ink-400: #a09080;
-  --color-ink-500: #857568;
-  --color-ink-600: #6b5d52;
-  --color-ink-800: #2a2420;
-  --color-ink-900: #1a1510;
-  --color-ink-950: #0a0a0a;
+  /* ── Pearl / Neutral palette ── */
+  --color-pearl-50:  #ffffff;
+  --color-pearl-100: #f7f8fc;
+  --color-pearl-200: #edf0f7;
+  --color-pearl-300: #d8dde8;
+  --color-pearl-400: #b4bccc;
+  --color-pearl-500: #8a94a8;
+  --color-pearl-600: #626c80;
+  --color-pearl-700: #404854;
+  --color-pearl-800: #252a33;
+  --color-pearl-900: #121519;
+  --color-pearl-950: #07080a;
 
+  /* ── Emerald accent (Islamic green) ── */
+  --color-emerald-400: #34d399;
+  --color-emerald-500: #10b981;
+  --color-emerald-600: #059669;
+
+  /* ── Fonts ── */
   --font-display: "Cormorant Garamond", Georgia, serif;
-  --font-body: "DM Sans", system-ui, sans-serif;
-  --font-arabic: "Amiri", serif;
+  --font-body:    "DM Sans", system-ui, sans-serif;
+  --font-arabic:  "Amiri", serif;
 }
 
+/* ─────────────────────────────────────────────────────────────
+   DEFAULT (Light) — White & Islamic Blue
+   Clean, luminous; suitable for Islamic lecture content
+───────────────────────────────────────────────────────────── */
 :root {
-  --bg-primary: #0a0a0a;
-  --bg-secondary: #111111;
-  --bg-card: #161616;
-  --border: rgba(255, 255, 255, 0.08);
-  --text-primary: #f5f0e8;
-  --text-secondary: #a09080;
-  --accent: #c8871a;
-  --accent-light: #e9c34f;
+  --bg-primary:      #f7f9fe;
+  --bg-secondary:    #edf1fb;
+  --bg-card:         #ffffff;
+  --bg-card-hover:   #f0f5ff;
+  --bg-elevated:     #ffffff;
+
+  --border:          rgba(37, 99, 200, 0.14);
+  --border-subtle:   rgba(37, 99, 200, 0.07);
+  --border-strong:   rgba(37, 99, 200, 0.32);
+
+  /* Darker, heavier text so headings never wash out on light bg */
+  --text-primary:    #080f1e;      /* almost black-navy            */
+  --text-secondary:  #1e2d47;      /* dark navy, readable body     */
+  --text-muted:      #5a6880;      /* muted but still legible      */
+  --text-accent:     #1a4fa6;      /* blue accent for h2/h3        */
+
+  --accent:          #1a4fa6;      /* stronger blue (was #2563c8)  */
+  --accent-light:    #2563c8;
+  --accent-dim:      rgba(26, 79, 166, 0.10);
+
+  --shadow-sm:       0 1px 3px rgba(8, 15, 30, 0.08);
+  --shadow-md:       0 4px 16px rgba(8, 15, 30, 0.10);
+  --shadow-lg:       0 8px 40px rgba(8, 15, 30, 0.14);
+  --shadow-accent:   0 0 30px rgba(26, 79, 166, 0.14);
 }
 
-.light {
-  --bg-primary: #ffffff;
-  --bg-secondary: #f8f9fa;
-  --bg-card: #ffffff;
-  --border: rgba(0, 0, 0, 0.08);
-  --text-primary: #1a1510;
-  --text-secondary: #6b5d52;
-  --accent: #c8871a;
-  --accent-light: #e9c34f;
+/* ─────────────────────────────────────────────────────────────
+   DARK TOGGLE — Ink Black & Pure White
+   Stark, high-contrast monochrome
+───────────────────────────────────────────────────────────── */
+.dark {
+  --bg-primary:      #0a0a0a;
+  --bg-secondary:    #111111;
+  --bg-card:         #181818;
+  --bg-card-hover:   #212121;
+  --bg-elevated:     #1c1c1c;
+
+  --border:          rgba(255, 255, 255, 0.10);
+  --border-subtle:   rgba(255, 255, 255, 0.05);
+  --border-strong:   rgba(255, 255, 255, 0.25);
+
+  /* Pure white primary so "Seek Knowledge with" is fully visible */
+  --text-primary:    #ffffff;
+  --text-secondary:  #d0d0d0;      /* light grey body text         */
+  --text-muted:      #888888;
+  --text-accent:     #e8e8e8;      /* near-white for h2/h3         */
+
+  --accent:          #ffffff;      /* accent word = pure white     */
+  --accent-light:    #ffffff;
+  --accent-dim:      rgba(255, 255, 255, 0.08);
+
+  --shadow-sm:       0 1px 3px rgba(0, 0, 0, 0.5);
+  --shadow-md:       0 4px 16px rgba(0, 0, 0, 0.6);
+  --shadow-lg:       0 8px 40px rgba(0, 0, 0, 0.75);
+  --shadow-accent:   0 0 30px rgba(255, 255, 255, 0.05);
 }
 
-.light body {
-  background-color: var(--bg-primary);
-  color: var(--text-primary);
+/* ── Tailwind utility overrides for dark mode ── */
+.dark .text-white          { color: var(--text-primary)   !important; }
+.dark .bg-white\/5         { background: var(--accent-dim) !important; }
+.dark .border-white\/5     { border-color: var(--border)   !important; }
+.dark .border-white\/10    { border-color: var(--border)   !important; }
+.dark .text-pearl-300,
+.dark .text-pearl-400,
+.dark .text-pearl-500      { color: var(--text-secondary)  !important; }
+.dark .text-pearl-600,
+.dark .text-pearl-800,
+.dark .text-pearl-900      { color: var(--text-muted)      !important; }
+.dark .bg-pearl-800\/60,
+.dark .bg-pearl-800\/80    { background: var(--bg-secondary) !important; }
+
+/* ── Custom utility classes ── */
+.glass-card {
+  background:    var(--bg-card);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-md);
+  transition: box-shadow 0.25s ease, transform 0.25s ease;
 }
 
-.light .text-white {
-  color: var(--text-primary) !important;
+.glass-card:hover {
+  box-shadow: var(--shadow-lg);
 }
 
-.light .text-ink-300,
-.light .text-ink-400,
-.light .text-ink-500,
-.light .text-ink-600,
-.light .text-ink-800,
-.light .text-ink-900 {
-  color: var(--text-secondary) !important;
+.accent-border {
+  border: 1px solid var(--border-strong);
 }
 
-section {
-  width: 100%;
+/* ── Hero heading — solid, high-contrast, never faded ── */
+/* Use .hero-heading on the main <h1> wrapper                */
+.hero-heading {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--text-primary);         /* near-black in light, near-white in dark */
+  line-height: 1.1;
 }
 
-main {
-  width: 100%;
-  display: block;
+/* The accent word ("Clarity") gets this class */
+.hero-heading-accent {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-style: italic;
+  color: var(--accent);               /* deep blue in light */
+  -webkit-text-fill-color: var(--accent);
 }
 
-.pattern-overlay {
-  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23c8871a' fill-opacity='0.04'%3E%3Cpath d='M30 0l8.66 5v10L30 20l-8.66-5V5L30 0zm0 40l8.66 5v10L30 60l-8.66-5V45L30 40zM0 20l8.66 5v10L0 40l-8.66-5V25L0 20zm60 0l8.66 5v10L60 40l-8.66-5V25L60 20z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+.dark .hero-heading-accent {
+  color: #ffffff;
+  -webkit-text-fill-color: #ffffff;
 }
 
+/* ── Gradient text: blue shades in light, white in dark ── */
+/* NOTE: avoid on dark backgrounds — text becomes invisible  */
 .gradient-text {
-  background: linear-gradient(135deg, var(--accent-light), var(--accent));
+  background: linear-gradient(
+    135deg,
+    #1a4fa6 0%,   /* deep blue start   */
+    #2563c8 50%,  /* mid blue          */
+    #153d82 100%  /* navy end          */
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 700;
+}
+
+.dark .gradient-text {
+  background: linear-gradient(
+    135deg,
+    #ffffff 0%,
+    #e8e8e8 50%,
+    #c4c4c4 100%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 700;
+}
+
+.gradient-text-emerald {
+  background: linear-gradient(135deg, #34d399, #059669);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
-.glass-card {
-  background: rgba(22, 22, 22, 0.8);
-  backdrop-filter: blur(12px);
-  border: 1px solid var(--border);
+/* ── Islamic geometric pattern overlay ── */
+.pattern-overlay {
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%232563c8' fill-opacity='0.04'%3E%3Cpath d='M30 0l8.66 5v10L30 20l-8.66-5V5L30 0zm0 40l8.66 5v10L30 60l-8.66-5V45L30 40zM0 20l8.66 5v10L0 40l-8.66-5V25L0 20zm60 0l8.66 5v10L60 40l-8.66-5V25L60 20z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
 }
 
-.light .glass-card {
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(12px);
-  border: 1px solid var(--border);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  transition: all 0.3s ease;
-}
-
-.light .glass-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-}
-
-.light button:hover {
-  transform: scale(1.02);
-  transition: all 0.2s ease;
-}
-
-.light a:hover {
-  transform: translateY(-1px);
-  transition: all 0.2s ease;
-}
-
-.light .gradient-text {
-  animation: gradientShift 3s ease-in-out infinite;
-}
-
-@keyframes gradientShift {
-  0%, 100% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-}
-
-.gold-border {
-  border: 1px solid rgba(200, 135, 26, 0.3);
+.dark .pattern-overlay {
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M30 0l8.66 5v10L30 20l-8.66-5V5L30 0zm0 40l8.66 5v10L30 60l-8.66-5V45L30 40zM0 20l8.66 5v10L0 40l-8.66-5V25L0 20zm60 0l8.66 5v10L60 40l-8.66-5V25L60 20z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
 }
 
 .arabic-bismillah {
   font-family: var(--font-arabic);
   font-size: 2rem;
-  color: var(--accent-light);
+  color: var(--accent);
   text-align: center;
   letter-spacing: 0.05em;
+  line-height: 1.6;
 }
 
-::-webkit-scrollbar {
-  width: 6px;
-}
-::-webkit-scrollbar-track {
-  background: var(--bg-primary);
-}
-::-webkit-scrollbar-thumb {
-  background: var(--accent);
-  border-radius: 3px;
+.dark .arabic-bismillah {
+  color: var(--text-primary);
 }
 
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.animate-fadeInUp {
-  animation: fadeInUp 0.6s ease-out forwards;
-}
-.delay-100 {
-  animation-delay: 0.1s;
-}
-.delay-200 {
-  animation-delay: 0.2s;
-}
-.delay-300 {
-  animation-delay: 0.3s;
-}
-
+/* ── Lecture content prose ── */
 .lecture-prose {
   font-family: var(--font-display);
   font-size: 1.125rem;
-  line-height: 1.8;
+  line-height: 1.85;
   color: var(--text-primary);
 }
-.lecture-prose p {
-  margin-bottom: 1.5rem;
+.lecture-prose p  { margin-bottom: 1.5rem; }
+.lecture-prose h2 { font-size: 1.75rem;  margin: 2.5rem 0 1rem;   color: var(--text-accent); }
+.lecture-prose h3 { font-size: 1.375rem; margin: 1.75rem 0 0.75rem; }
+.lecture-prose blockquote {
+  border-left: 3px solid var(--accent);
+  padding-left: 1.25rem;
+  color: var(--text-secondary);
+  font-style: italic;
+  margin: 1.5rem 0;
 }
-.lecture-prose h2 {
-  font-size: 1.75rem;
-  margin: 2rem 0 1rem;
-  color: var(--accent-light);
-}
-.lecture-prose h3 {
-  font-size: 1.375rem;
-  margin: 1.5rem 0 0.75rem;
+
+/* ── Animations ── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0);    }
 }
 
 @keyframes shimmer {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
 }
+
+@keyframes gradientShift {
+  0%, 100% { background-position: 0%   50%; }
+  50%       { background-position: 100% 50%; }
+}
+
+@keyframes pulse-accent {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(37, 99, 200, 0.35); }
+  50%       { box-shadow: 0 0 0 8px rgba(37, 99, 200, 0);  }
+}
+
+.dark .animate-pulse-accent {
+  animation-name: pulse-accent-dark;
+}
+
+@keyframes pulse-accent-dark {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.20); }
+  50%       { box-shadow: 0 0 0 8px rgba(255, 255, 255, 0);  }
+}
+
+.animate-fadeInUp   { animation: fadeInUp 0.5s ease-out forwards; }
+.delay-100          { animation-delay: 0.1s; }
+.delay-200          { animation-delay: 0.2s; }
+.delay-300          { animation-delay: 0.3s; }
+.animate-pulse-accent { animation: pulse-accent 2s ease-in-out infinite; }
 
 .shimmer {
   background: linear-gradient(
     90deg,
     var(--bg-card) 25%,
-    rgba(200, 135, 26, 0.1) 50%,
+    rgba(37, 99, 200, 0.07) 50%,
     var(--bg-card) 75%
   );
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
+}
+
+.dark .shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--bg-card) 25%,
+    rgba(255, 255, 255, 0.05) 50%,
+    var(--bg-card) 75%
+  );
+  background-size: 200% 100%;
 }

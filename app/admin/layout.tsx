@@ -28,11 +28,11 @@ export default async function AdminLayout({
   return (
     <div className="flex min-h-screen">
       {/* Sidebar */}
-      <aside className="w-56 border-r border-white/5 bg-ink-900/50 flex flex-col">
-        <div className="p-6 border-b border-white/5">
+      <aside className="w-56 border-r border-theme bg-secondary flex flex-col">
+        <div className="p-6 border-b border-theme">
           <div className="flex items-center gap-2">
-            <GiMoon className="text-gold-400" />
-            <span className="font-display text-sm font-semibold text-white">
+            <GiMoon className="text-accent" />
+            <span className="font-display text-sm font-semibold text-primary">
               {user?.role === "ADMIN" ? "Admin Panel" : "Scholar Panel"}
             </span>
           </div>
@@ -49,17 +49,17 @@ export default async function AdminLayout({
               <Link
                 key={item.href}
                 href={item.href}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-ink-400 hover:text-white hover:bg-white/5 transition-colors mb-1"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-muted hover:text-primary hover:bg-card-hover transition-colors mb-1"
               >
                 {item.icon}
                 {item.label}
               </Link>
             ))}
         </nav>
-        <div className="p-4 border-t border-white/5">
+        <div className="p-4 border-t border-theme">
           <Link
             href="/"
-            className="text-xs text-ink-500 hover:text-ink-300 transition-colors"
+            className="text-xs text-muted hover:text-secondary transition-colors"
           >
             ← Back to site
           </Link>

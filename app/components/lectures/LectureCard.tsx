@@ -80,7 +80,7 @@ export function LectureCard({
 
   return (
     <Link href={`/lectures/${lecture.slug}`} className="group block">
-      <article className="flex gap-4 p-4 rounded-xl border border-white/5 hover:border-gold-500/20 hover:bg-white/2 transition-all duration-200">
+      <article className="flex gap-4 p-4 rounded-xl border border-theme hover:border-accent hover:bg-card transition-all duration-200">
         {lecture.thumbnailUrl && (
           <div className="relative w-24 h-20 rounded-lg overflow-hidden flex-shrink-0">
             <Image
@@ -93,19 +93,19 @@ export function LectureCard({
         )}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <span className="flex items-center gap-1 text-xs text-gold-400">
+            <span className="flex items-center gap-1 text-xs text-accent">
               {typeIcons[lecture.type]} {typeLabels[lecture.type]}
             </span>
             {lecture.tags.slice(0, 2).map((tag: string) => (
               <span
                 key={tag}
-                className="text-xs text-ink-500 bg-white/5 px-2 py-0.5 rounded-full"
+                className="text-xs text-muted bg-card px-2 py-0.5 rounded-full"
               >
                 {tag}
               </span>
             ))}
           </div>
-          <h3 className="font-medium text-sm text-white group-hover:text-gold-300 transition-colors line-clamp-1 mb-1">
+          <h3 className="font-medium text-sm text-primary group-hover:text-accent transition-colors line-clamp-1 mb-1">
             {lecture.title}
           </h3>
           <p className="text-xs text-ink-500 line-clamp-1">

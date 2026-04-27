@@ -24,7 +24,7 @@ export function TestimonialsSection({ testimonials }: TestimonialsSectionProps) 
         <p className="text-xs text-gold-400 uppercase tracking-widest font-semibold mb-1.5">
           What our students say
         </p>
-        <h2 className="font-display text-3xl sm:text-4xl font-bold text-white leading-tight">
+        <h2 className="font-display text-3xl sm:text-4xl font-bold text-primary leading-tight">
           Trusted by Thousands
         </h2>
       </div>
@@ -41,7 +41,7 @@ export function TestimonialsSection({ testimonials }: TestimonialsSectionProps) 
               ))}
             </div>
 
-            <blockquote className="text-ink-200 text-sm leading-relaxed mb-6">
+            <blockquote className="text-secondary text-sm leading-relaxed mb-6">
               "{testimonial.content}"
             </blockquote>
 
@@ -50,8 +50,8 @@ export function TestimonialsSection({ testimonials }: TestimonialsSectionProps) 
                 {testimonial.name.charAt(0)}
               </div>
               <div>
-                <div className="font-medium text-white text-sm">{testimonial.name}</div>
-                <div className="text-ink-400 text-xs">{testimonial.role}</div>
+                <div className="font-medium text-primary text-sm">{testimonial.name}</div>
+                <div className="text-muted text-xs">{testimonial.role}</div>
               </div>
             </div>
           </div>

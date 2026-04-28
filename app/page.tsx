@@ -464,13 +464,13 @@ export default async function HomePage() {
       <NewsletterSignup />
 
     
-      <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 animate-fadeInUp delay-200">
-        <div className="relative rounded-3xl overflow-hidden border border-gold-500/20 bg-gradient-to-br from-gold-900/20 via-ink-900 to-ink-900 hover:border-gold-500/30 transition-all duration-500 hover:shadow-2xl hover:shadow-gold-500/20">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-32 bg-accent/10 blur-3xl pointer-events-none" />
-          <div className="absolute inset-0 pattern-overlay opacity-20" />
+       <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+         <div className="relative rounded-3xl overflow-hidden border border-[var(--border-strong)]">
+  <div className="absolute inset-0 hero-bg opacity-80" />
+        <div className="absolute inset-0 pattern-overlay opacity-20" />
           <div className="relative px-6 py-14 sm:py-20 flex flex-col items-center text-center">
-            <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-accent/10 border border-accent/20 mb-6 hover:bg-accent/20 transition-colors duration-300">
-              <GiMoon className="text-accent text-2xl" />
+           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[var(--accent-dim)] border border-[var(--border-strong)] animate-pulse-accent">
+              <GiMoon className="text-[var(--accent)] text-2xl" />
             </div>
             <h2 className="font-display text-3xl sm:text-4xl font-bold text-primary mb-4 leading-tight">
               Start Your Journey Today

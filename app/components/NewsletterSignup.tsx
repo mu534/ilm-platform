@@ -2,19 +2,17 @@
 
 import { useState } from "react";
 import { FiMail, FiCheck } from "react-icons/fi";
+import { GiStarFormation } from "react-icons/gi";
 
 export function NewsletterSignup() {
-  const [email, setEmail] = useState("");
+  const [email,        setEmail]        = useState("");
   const [isSubscribed, setIsSubscribed] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading,    setIsLoading]    = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || isSubscribed) return;
-
     setIsLoading(true);
-
-   
     setTimeout(() => {
       setIsSubscribed(true);
       setIsLoading(false);
@@ -24,45 +22,92 @@ export function NewsletterSignup() {
 
   return (
     <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
-      <div className="relative rounded-3xl overflow-hidden border border-gold-500/20 bg-gradient-to-r from-gold-900/10 via-ink-900 to-ink-900">
-        <div className="absolute inset-0 pattern-overlay opacity-10" />
-        <div className="relative px-6 py-12 sm:py-16 flex flex-col items-center text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gold-500/10 border border-gold-500/20 mb-6">
-            <FiMail className="text-gold-400 text-2xl" />
+      <div className="relative rounded-3xl overflow-hidden border border-[var(--border-strong)]">
+
+        {/* ── Background — matches hero-bg token ── */}
+        <div className="absolute inset-0 hero-bg opacity-80" />
+        <div className="absolute inset-0 pattern-overlay opacity-20" />
+
+        {/* Radial glow center */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background:
+              "radial-gradient(ellipse 70% 80% at 50% 100%, var(--accent-dim), transparent)",
+          }}
+        />
+
+        {/* Light mode — top gold strip */}
+        <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-transparent via-gold-400 to-transparent opacity-60" />
+
+        <div className="relative px-6 py-14 sm:py-20 flex flex-col items-center text-center">
+
+          {/* Icon */}
+          <div className="relative mb-6">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[var(--accent-dim)] border border-[var(--border-strong)] animate-pulse-accent">
+              <FiMail className="text-[var(--accent)] text-2xl" />
+            </div>
+            <GiStarFormation className="absolute -top-1 -right-2 text-gold-400 text-xs animate-spin-slow" />
+            <GiStarFormation className="absolute -bottom-1 -left-2 text-gold-400 text-xs animate-spin-slow" style={{ animationDirection: "reverse" }} />
           </div>
 
-          <h2 className="font-display text-2xl sm:text-3xl font-bold text-white mb-3 leading-tight">
+          {/* Eyebrow */}
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[var(--border)] bg-[var(--accent-dim)] mb-4">
+            <span className="text-xs tracking-widest text-[var(--accent)] uppercase font-semibold">
+              Stay Connected
+            </span>
+          </div>
+
+          <h2 className="font-display text-2xl sm:text-3xl font-bold text-[var(--text-primary)] mb-3 leading-tight">
             Stay Updated with New Knowledge
           </h2>
 
-          <p className="text-ink-300 mb-8 max-w-md text-sm sm:text-base leading-relaxed">
-            Get notified about new lectures, featured scholars, and exclusive content
-            delivered to your inbox.
+          <p className="text-[var(--text-secondary)] mb-8 max-w-md text-sm sm:text-base leading-relaxed">
+            Get notified about new lectures, featured scholars, and exclusive
+            content delivered to your inbox.
           </p>
 
           {isSubscribed ? (
-            <div className="flex items-center gap-3 px-6 py-4 bg-green-500/10 border border-green-500/20 rounded-xl">
-              <FiCheck className="text-green-400 text-lg" />
-              <span className="text-green-400 font-medium">Successfully subscribed!</span>
+            <div className="flex items-center gap-3 px-6 py-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl">
+              <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                <FiCheck className="text-emerald-400 text-base" />
+              </div>
+              <div className="text-left">
+                <p className="text-emerald-400 font-semibold text-sm">Successfully subscribed!</p>
+                <p className="text-emerald-400/70 text-xs">JazakAllahu Khayran for joining us.</p>
+              </div>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="w-full max-w-md">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 p-1.5 rounded-2xl border border-[var(--border-strong)] bg-[var(--bg-card)]/80 backdrop-blur-sm shadow-[var(--shadow-md)]">
                 <div className="flex-1 relative">
-                  <FiMail className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-400 pointer-events-none" size={16} />
+                  <FiMail
+                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none"
+                    size={15}
+                  />
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="Enter your email address"
-                    className="w-full pl-11 pr-4 py-3.5 bg-ink-800/80 border border-white/10 rounded-xl text-white placeholder-ink-500 focus:outline-none focus:border-gold-500/40 text-sm backdrop-blur-sm transition-colors"
+                    className="w-full pl-10 pr-3 py-3 bg-transparent text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none text-sm transition-colors"
                     required
                   />
                 </div>
                 <button
                   type="submit"
                   disabled={isLoading || !email}
-                  className="flex-shrink-0 px-6 py-3.5 bg-gold-600 hover:bg-gold-500 disabled:bg-ink-600 disabled:cursor-not-allowed text-white rounded-xl text-sm font-medium transition-all duration-300 hover:scale-105 disabled:hover:scale-100"
+                  className="
+                    flex-shrink-0 px-5 py-3 rounded-xl text-sm font-semibold
+                    bg-gradient-to-r from-gold-500 to-gold-600
+                    hover:from-gold-400 hover:to-gold-500
+                    disabled:from-[var(--bg-elevated)] disabled:to-[var(--bg-elevated)]
+                    disabled:text-[var(--text-muted)] disabled:cursor-not-allowed
+                    text-white shadow-md shadow-gold-600/30
+                    transition-all duration-300 hover:scale-105 hover:shadow-gold-500/40
+                    disabled:hover:scale-100 disabled:shadow-none
+                    active:scale-95
+                  "
                 >
                   {isLoading ? (
                     <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -74,8 +119,10 @@ export function NewsletterSignup() {
             </form>
           )}
 
-          <p className="text-ink-400 text-xs mt-4">
+          <p className="text-[var(--text-muted)] text-xs mt-5 flex items-center gap-1.5">
+            <GiStarFormation className="text-gold-500 text-xs" />
             We respect your privacy. Unsubscribe at any time.
+            <GiStarFormation className="text-gold-500 text-xs" />
           </p>
         </div>
       </div>

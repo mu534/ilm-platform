@@ -1,45 +1,77 @@
 import Link from "next/link";
-import { GiMoon } from "react-icons/gi";
-import { FiMail, FiGithub } from "react-icons/fi";
+import { GiMoon, GiStarFormation } from "react-icons/gi";
+import { FiMail, FiGithub, FiHeart } from "react-icons/fi";
+
+const exploreLinks = [
+  { href: "/",         label: "Home"     },
+  { href: "/lectures", label: "Lectures" },
+  { href: "/scholars", label: "Scholars" },
+];
+
+const accountLinks = [
+  { href: "/login",    label: "Sign In"    },
+  { href: "/register", label: "Register"   },
+  { href: "/profile",  label: "My Profile" },
+];
 
 export function Footer() {
   return (
-    <footer className="border-t border-[var(--border)] bg-[var(--bg-secondary)] mt-16">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          {/* Brand */}
+    <footer className="relative mt-16 border-t border-[var(--border)] overflow-hidden">
+      {/* Light mode — warm gradient background */}
+      <div className="absolute inset-0 bg-[var(--bg-secondary)]" />
+      <div className="absolute inset-0 pattern-overlay opacity-30" />
+
+      {/* Light mode sunburst at top */}
+      <div className="absolute inset-x-0 top-0 h-48 pointer-events-none"
+        style={{
+          background: "radial-gradient(ellipse 60% 100% at 50% 0%, var(--accent-dim), transparent)"
+        }}
+      />
+
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-14 pb-10">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-10 mb-12">
+
+          {/* ── Brand ── */}
           <div className="col-span-1 md:col-span-2">
-            <div className="flex items-center gap-2 mb-3 group">
-              <GiMoon className="text-gold-400 text-xl group-hover:rotate-12 transition-transform duration-300" />
-              <span className="font-display text-lg font-semibold">
-                <span className="gradient-text">Ilm</span> Platform
+            <Link href="/" className="inline-flex items-center gap-2.5 group mb-4">
+              <div className="relative">
+                <GiMoon className="text-gold-500 text-2xl group-hover:rotate-12 transition-transform duration-300" />
+                <div className="absolute inset-0 bg-gold-400/20 rounded-full blur-md scale-150 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
+              <span className="font-display text-xl font-semibold">
+                <span className="gradient-text">Ilm</span>
+                <span className="text-[var(--text-secondary)] ml-1">Platform</span>
               </span>
+            </Link>
+
+            <p className="text-sm text-[var(--text-secondary)] leading-relaxed max-w-xs mb-5">
+              Connecting seekers of knowledge with authentic Islamic scholarship.
+              Free, accessible education for all.
+            </p>
+
+            {/* Arabic */}
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-[var(--accent-dim)] border border-[var(--border)]">
+              <GiStarFormation className="text-gold-500 text-xs flex-shrink-0" />
+              <p className="arabic-bismillah text-base" style={{ margin: 0, fontSize: "1.1rem" }}>
+                بِسْمِ اللّٰهِ الرَّحْمَنِ الرَّحِيْمِ
+              </p>
+              <GiStarFormation className="text-gold-500 text-xs flex-shrink-0" />
             </div>
-            <p className="text-sm text-[var(--text-secondary)] leading-relaxed max-w-xs">
-              Connecting seekers of knowledge with authentic Islamic
-              scholarship. Free, accessible education for all.
-            </p>
-            <p className="arabic-bismillah text-lg mt-4">
-              بِسْمِ اللّٰهِ الرَّحْمَنِ الرَّحِيْمِ
-            </p>
           </div>
 
-          {/* Links */}
+          {/* ── Explore ── */}
           <div>
-            <h4 className="text-sm font-semibold text-[var(--text-primary)] mb-4 tracking-wider uppercase">
+            <h4 className="text-xs font-bold text-[var(--text-primary)] mb-4 tracking-widest uppercase">
               Explore
             </h4>
-            <ul className="space-y-2">
-              {[
-                ["/", "Home"],
-                ["/lectures", "Lectures"],
-                ["/scholars", "Scholars"],
-              ].map(([href, label]) => (
+            <ul className="space-y-2.5">
+              {exploreLinks.map(({ href, label }) => (
                 <li key={href}>
                   <Link
                     href={href}
-                    className="text-sm text-[var(--text-secondary)] hover:text-gold-400 transition-colors hover:translate-x-1 transform duration-200"
+                    className="group flex items-center gap-1.5 text-sm text-[var(--text-secondary)] hover:text-[var(--accent)] transition-colors duration-200"
                   >
+                    <span className="w-0 h-px bg-gold-500 group-hover:w-3 transition-all duration-300 rounded-full" />
                     {label}
                   </Link>
                 </li>
@@ -47,22 +79,19 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Account */}
+          {/* ── Account ── */}
           <div>
-            <h4 className="text-sm font-semibold text-[var(--text-primary)] mb-4 tracking-wider uppercase">
+            <h4 className="text-xs font-bold text-[var(--text-primary)] mb-4 tracking-widest uppercase">
               Account
             </h4>
-            <ul className="space-y-2">
-              {[
-                ["/login", "Sign In"],
-                ["/register", "Register"],
-                ["/profile", "My Profile"],
-              ].map(([href, label]) => (
+            <ul className="space-y-2.5">
+              {accountLinks.map(({ href, label }) => (
                 <li key={href}>
                   <Link
                     href={href}
-                    className="text-sm text-[var(--text-secondary)] hover:text-gold-400 transition-colors hover:translate-x-1 transform duration-200"
+                    className="group flex items-center gap-1.5 text-sm text-[var(--text-secondary)] hover:text-[var(--accent)] transition-colors duration-200"
                   >
+                    <span className="w-0 h-px bg-gold-500 group-hover:w-3 transition-all duration-300 rounded-full" />
                     {label}
                   </Link>
                 </li>
@@ -71,22 +100,29 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="border-t border-[var(--border)] mt-8 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-xs text-[var(--text-secondary)]">
-            © {new Date().getFullYear()} Ilm Platform. All rights reserved.
+        {/* ── Bottom bar ── */}
+        <div className="border-t border-[var(--border)] pt-6 flex flex-col md:flex-row items-center justify-between gap-4">
+          <p className="text-xs text-[var(--text-muted)] flex items-center gap-1.5">
+            © {new Date().getFullYear()} Ilm Platform. Made with
+            <FiHeart className="text-gold-500 animate-pulse" size={11} />
+            for the Ummah.
           </p>
-          <div className="flex items-center gap-4">
-            <a
-              href="mailto:info@ilmplatform.com"
-              className="text-[var(--text-secondary)] hover:text-gold-400 transition-colors hover:scale-110 transform duration-200"
+          <div className="flex items-center gap-3">
+            
+             <a href="mailto:info@ilmplatform.com"
+              className="p-2 rounded-lg text-[var(--text-muted)] hover:text-[var(--accent)] hover:bg-[var(--accent-dim)] transition-all duration-200 hover:scale-110"
+              aria-label="Email"
             >
-              <FiMail size={16} />
+              <FiMail size={15} />
             </a>
-            <a
-              href="https://github.com"
-              className="text-[var(--text-secondary)] hover:text-gold-400 transition-colors hover:scale-110 transform duration-200"
+            
+             <a href="https://github.com/mu534/ilm-platform"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-2 rounded-lg text-[var(--text-muted)] hover:text-[var(--accent)] hover:bg-[var(--accent-dim)] transition-all duration-200 hover:scale-110"
+              aria-label="GitHub"
             >
-              <FiGithub size={16} />
+              <FiGithub size={15} />
             </a>
           </div>
         </div>

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { FiTrendingUp, FiHash } from "react-icons/fi";
+import { GiStarFormation } from "react-icons/gi";
 
 interface Topic {
   name: string;
@@ -27,51 +28,58 @@ export function PopularTopics({ topics }: PopularTopicsProps) {
   }
 
   return (
-    <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
-      <div className="text-center mb-8">
-        <p className="text-xs text-gold-400 uppercase tracking-widest font-semibold mb-1.5">
-          Explore Topics
+   <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 border-t border-[var(--border)]">
+  <div className="text-center mb-10">
+    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[var(--border)] bg-[var(--accent-dim)] mb-3">
+      <GiStarFormation className="text-gold-400 text-xs" />
+      <span className="text-xs tracking-widest text-[var(--accent)] uppercase font-semibold">
+        Explore Topics
+      </span>
+      <GiStarFormation className="text-gold-400 text-xs" />
+    </div>
+    <h2 className="font-display text-3xl sm:text-4xl font-bold text-[var(--text-primary)] leading-tight">
+      Popular Subjects
+    </h2>
+    <p className="text-[var(--text-secondary)] mt-2 text-sm">
+      Discover lectures by topic and deepen your knowledge
+    </p>
+  </div>
+
+  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+    {topics.map((topic, index) => (
+      <Link
+        key={topic.name}
+        href={`/lectures?topic=${encodeURIComponent(topic.name)}`}
+        className="group relative rounded-xl p-4 border border-[var(--border)] bg-[var(--bg-card)] hover:border-[var(--border-strong)] hover:bg-[var(--bg-card-hover)] hover:shadow-[var(--shadow-md)] hover:-translate-y-0.5 transition-all duration-300 animate-fadeInUp"
+        style={{ animationDelay: `${index * 50}ms` }}
+      >
+        {/* Top gold strip on hover */}
+        <div className="absolute inset-x-0 top-0 h-0.5 rounded-t-xl bg-gradient-to-r from-gold-400 to-gold-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+
+        <div className="flex items-center justify-between mb-3">
+          <FiHash className="text-[var(--accent)] opacity-70" size={16} />
+          <FiTrendingUp className="text-[var(--accent)] opacity-40 group-hover:opacity-70 transition-opacity" size={14} />
+        </div>
+
+        <h3 className="font-semibold text-[var(--text-primary)] text-sm mb-1 group-hover:text-[var(--accent)] transition-colors">
+          {topic.name}
+        </h3>
+
+        <p className="text-xs text-[var(--text-muted)]">
+          {topic.count} lecture{topic.count !== 1 ? "s" : ""}
         </p>
-        <h2 className="font-display text-3xl sm:text-4xl font-bold text-white leading-tight">
-          Popular Subjects
-        </h2>
-        <p className="text-ink-300 mt-2 text-sm">
-          Discover lectures by topic and deepen your knowledge
-        </p>
-      </div>
+      </Link>
+    ))}
+  </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-        {topics.map((topic, index) => (
-          <Link
-            key={topic.name}
-            href={`/lectures?topic=${encodeURIComponent(topic.name)}`}
-            className={`group glass-card gold-border rounded-xl p-4 hover:bg-white/[0.03] transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-gold-500/10 animate-fadeInUp ${topicColors[index % topicColors.length]}`}
-            style={{ animationDelay: `${index * 50}ms` }}
-          >
-            <div className="flex items-center justify-between mb-2">
-              <FiHash className="text-current opacity-60" size={16} />
-              <FiTrendingUp className="text-current opacity-40 group-hover:opacity-60 transition-opacity" size={14} />
-            </div>
-
-            <h3 className="font-medium text-white text-sm mb-1 group-hover:text-gold-300 transition-colors">
-              {topic.name}
-            </h3>
-
-            <p className="text-xs opacity-70">
-              {topic.count} lecture{topic.count !== 1 ? 's' : ''}
-            </p>
-          </Link>
-        ))}
-      </div>
-
-      <div className="text-center mt-8">
-        <Link
-          href="/lectures"
-          className="inline-flex items-center gap-2 px-6 py-3 border border-white/10 hover:border-gold-500/30 hover:bg-white/5 text-white rounded-xl font-medium transition-all duration-300 hover:scale-105 text-sm"
-        >
-          Browse All Lectures
-        </Link>
-      </div>
-    </section>
+  <div className="text-center mt-8">
+    <Link
+      href="/lectures"
+      className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-medium border border-[var(--border-strong)] text-[var(--text-primary)] hover:border-[var(--accent)] hover:bg-[var(--accent-dim)] transition-all duration-300 hover:scale-105 active:scale-95"
+    >
+      Browse All Lectures
+    </Link>
+  </div>
+</section>
   );
 }

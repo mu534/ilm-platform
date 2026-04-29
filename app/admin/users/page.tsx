@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { formatDate } from "../../utils/api";
@@ -17,82 +17,144 @@ interface User {
 
 export default function AdminUsersPage() {
   const router = useRouter();
-  const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
+  const [users, setUsers]           = useState<User[]>([]);
+  const [loading, setLoading]       = useState(true);
+  const [search, setSearch]         = useState("");
   const [roleFilter, setRoleFilter] = useState("");
 
-  const fetchUsers = async () => {
+  // ── Stable fetch function for mutations to call ──────────────────────────
+  const refetch = useCallback(async (q: string, role: string) => {
     setLoading(true);
-    const params = new URLSearchParams();
-    if (search) params.set("search", search);
-    if (roleFilter) params.set("role", roleFilter);
-    const res = await fetch(`/api/users?${params}`);
-    const data = await res.json();
-    if (data.success) setUsers(data.data.items);
-    setLoading(false);
-  };
+    try {
+      const params = new URLSearchParams();
+      if (q)    params.set("search", q);
+      if (role) params.set("role", role);
+      const res  = await fetch(`/api/users?${params}`);
+      const data = await res.json();
+      if (data.success) setUsers(data.data.items);
+    } catch (err) {
+      console.error("Failed to fetch users:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
+  // ── Initial load + re-fetch on filter change ─────────────────────────────
   useEffect(() => {
-    fetchUsers();
+    let cancelled = false;
+
+    async function load() {
+      setLoading(true);
+      try {
+        const params = new URLSearchParams();
+        if (search)     params.set("search", search);
+        if (roleFilter) params.set("role", roleFilter);
+        const res  = await fetch(`/api/users?${params}`);
+        const data = await res.json();
+        if (!cancelled && data.success) setUsers(data.data.items);
+      } catch (err) {
+        console.error("Failed to fetch users:", err);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    load();
+    return () => { cancelled = true; };
   }, [search, roleFilter]);
 
+  // ── Mutations ─────────────────────────────────────────────────────────────
   const updateRole = async (userId: string, role: string) => {
-    await fetch(`/api/users/${userId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ role }),
-    });
-    fetchUsers();
+    // Optimistic update — immediately reflect in UI
+    setUsers(prev =>
+      prev.map(u => u.id === userId ? { ...u, role: role as User["role"] } : u)
+    );
+
+    try {
+      const res = await fetch(`/api/users/${userId}`, {
+        method:  "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ role }),
+      });
+
+      if (!res.ok) {
+        // Revert on failure
+        await refetch(search, roleFilter);
+        return;
+      }
+
+      // Refresh server components (scholars page etc.) so they pick up the change
+      router.refresh();
+    } catch (err) {
+      console.error("Failed to update role:", err);
+      await refetch(search, roleFilter);
+    }
   };
 
   const deleteUser = async (userId: string) => {
     if (!confirm("Delete this user?")) return;
-    await fetch(`/api/users/${userId}`, { method: "DELETE" });
-    fetchUsers();
+
+    // Optimistic remove
+    setUsers(prev => prev.filter(u => u.id !== userId));
+
+    try {
+      const res = await fetch(`/api/users/${userId}`, { method: "DELETE" });
+      if (!res.ok) await refetch(search, roleFilter); // revert on failure
+      else router.refresh();
+    } catch (err) {
+      console.error("Failed to delete user:", err);
+      await refetch(search, roleFilter);
+    }
   };
 
+  // ── Role badge ────────────────────────────────────────────────────────────
   const roleBadge = (role: string) => {
-    const styles =
-      {
-        ADMIN: "bg-red-900/30 text-red-400 border-red-700/30",
-        SCHOLAR: "bg-gold-900/30 text-gold-400 border-gold-700/30",
-        USER: "bg-blue-900/20 text-blue-400 border-blue-700/20",
-      }[role] ?? "";
+    const styles: Record<string, string> = {
+      ADMIN:   "bg-red-500/10 text-red-400 border-red-500/20",
+      SCHOLAR: "bg-[var(--accent-dim)] text-[var(--accent)] border-[var(--border-strong)]",
+      USER:    "bg-[var(--bg-secondary)] text-[var(--text-muted)] border-[var(--border)]",
+    };
     return (
-      <span className={`text-xs px-2 py-0.5 rounded-full border ${styles}`}>
+      <span className={`text-xs px-2.5 py-0.5 rounded-full border font-medium ${styles[role] ?? styles["USER"]}`}>
         {role}
       </span>
     );
   };
 
   return (
-    <div className="p-8">
+    <div className="p-6 sm:p-8">
+
+      {/* ── Header ── */}
       <div className="mb-8">
-        <h1 className="font-display text-3xl font-bold text-primary">Users</h1>
-        <p className="text-muted text-sm mt-1">
+        <p className="text-xs text-[var(--accent)] uppercase tracking-widest font-semibold mb-1">
+          Manage
+        </p>
+        <h1 className="font-display text-2xl sm:text-3xl font-bold text-[var(--text-primary)]">
+          Users
+        </h1>
+        <p className="text-[var(--text-muted)] text-sm mt-1">
           Manage platform users and roles
         </p>
       </div>
 
-      {/* Filters */}
+      {/* ── Filters ── */}
       <div className="flex gap-3 mb-6">
         <div className="relative flex-1 max-w-xs">
           <FiSearch
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-muted"
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"
             size={14}
           />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search users..."
-            className="w-full pl-9 pr-4 py-2 bg-card border border-theme rounded-xl text-primary text-sm placeholder-muted focus:outline-none focus:border-accent"
+            className="w-full pl-9 pr-4 py-2 bg-[var(--bg-card)] border border-[var(--border)] rounded-xl text-[var(--text-primary)] text-sm placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] transition-colors"
           />
         </div>
         <select
           value={roleFilter}
           onChange={(e) => setRoleFilter(e.target.value)}
-          className="px-3 py-2 bg-card border border-theme rounded-xl text-sm text-primary focus:outline-none"
+          className="px-3 py-2 bg-[var(--bg-card)] border border-[var(--border)] rounded-xl text-sm text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)] transition-colors"
         >
           <option value="">All Roles</option>
           <option value="ADMIN">Admin</option>
@@ -101,78 +163,101 @@ export default function AdminUsersPage() {
         </select>
       </div>
 
-      <div className="glass-card rounded-xl overflow-hidden border border-white/5">
+      {/* ── Table ── */}
+      <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] overflow-hidden">
         {loading ? (
-          <div className="p-8 text-center text-muted">Loading...</div>
+          <div className="divide-y divide-[var(--border)]">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="p-4 h-16 shimmer" />
+            ))}
+          </div>
+        ) : users.length === 0 ? (
+          <div className="py-16 text-center text-[var(--text-muted)] text-sm">
+            No users found.
+          </div>
         ) : (
           <table className="w-full">
             <thead>
-              <tr className="border-b border-theme">
-                <th className="text-left p-4 text-xs text-muted uppercase tracking-wider">
-                  User
-                </th>
-                <th className="text-left p-4 text-xs text-muted uppercase tracking-wider">
-                  Role
-                </th>
-                <th className="text-left p-4 text-xs text-muted uppercase tracking-wider">
-                  Content
-                </th>
-                <th className="text-left p-4 text-xs text-muted uppercase tracking-wider">
-                  Joined
-                </th>
-                <th className="p-4" />
+              <tr className="border-b border-[var(--border)]">
+                {["User", "Role", "Content", "Joined", ""].map((h) => (
+                  <th
+                    key={h}
+                    className="text-left px-5 py-3 text-xs text-[var(--text-muted)] uppercase tracking-wider font-medium"
+                  >
+                    {h}
+                  </th>
+                ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-theme">
+            <tbody className="divide-y divide-[var(--border)]">
               {users.map((user) => (
-                <tr key={user.id} className="hover:bg-card-hover">
-                  <td className="p-4">
+                <tr
+                  key={user.id}
+                  className="hover:bg-[var(--bg-card-hover)] transition-colors"
+                >
+                  {/* User */}
+                  <td className="px-5 py-3.5">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-gold-700/30 flex items-center justify-center text-gold-400 text-sm font-bold">
-                        {user.name[0]}
+                      <div className="w-8 h-8 rounded-full bg-[var(--accent-dim)] border border-[var(--border-strong)] flex items-center justify-center text-[var(--accent)] text-sm font-bold flex-shrink-0">
+                        {user.name[0]?.toUpperCase()}
                       </div>
                       <div>
-                        <p className="text-sm text-primary">{user.name}</p>
-                        <p className="text-xs text-muted">{user.email}</p>
+                        <p className="text-sm font-medium text-[var(--text-primary)]">
+                          {user.name}
+                        </p>
+                        <p className="text-xs text-[var(--text-muted)]">
+                          {user.email}
+                        </p>
                       </div>
                     </div>
                   </td>
-                  <td className="p-4">{roleBadge(user.role)}</td>
-                  <td className="p-4 text-xs text-muted">
-                    {user._count.lectures} lectures · {user._count.comments}{" "}
-                    comments
+
+                  {/* Role */}
+                  <td className="px-5 py-3.5">{roleBadge(user.role)}</td>
+
+                  {/* Content */}
+                  <td className="px-5 py-3.5 text-xs text-[var(--text-muted)]">
+                    {user._count.lectures} lectures · {user._count.comments} comments
                   </td>
-                  <td className="p-4 text-xs text-muted">
+
+                  {/* Joined */}
+                  <td className="px-5 py-3.5 text-xs text-[var(--text-muted)]">
                     {formatDate(user.createdAt)}
                   </td>
-                  <td className="p-4">
+
+                  {/* Actions */}
+                  <td className="px-5 py-3.5">
                     <DropdownMenu.Root>
                       <DropdownMenu.Trigger asChild>
-                        <button className="p-1.5 text-muted hover:text-primary hover:bg-card-hover rounded-lg">
+                        <button className="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-dim)] rounded-lg transition-colors">
                           <FiMoreVertical size={16} />
                         </button>
                       </DropdownMenu.Trigger>
                       <DropdownMenu.Portal>
                         <DropdownMenu.Content
-                          className="glass-card border-accent rounded-xl p-1.5 min-w-[160px] shadow-2xl"
+                          className="rounded-xl border border-[var(--border-strong)] bg-[var(--bg-elevated)] shadow-[var(--shadow-lg)] p-1.5 min-w-[160px] z-50"
                           sideOffset={4}
                           align="end"
                         >
-                          <p className="px-3 py-1 text-xs text-muted">
+                          <p className="px-3 py-1 text-xs text-[var(--text-muted)] font-medium">
                             Change Role
                           </p>
-                          {["ADMIN", "SCHOLAR", "USER"].map((role) => (
+                          {(["ADMIN", "SCHOLAR", "USER"] as const).map((role) => (
                             <DropdownMenu.Item
                               key={role}
-                              className={`flex items-center gap-2 px-3 py-2 text-sm hover:bg-card-hover rounded-lg cursor-pointer transition-colors ${user.role === role ? "text-accent" : "text-muted hover:text-primary"}`}
+                              className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg cursor-pointer outline-none transition-colors ${
+                                user.role === role
+                                  ? "text-[var(--accent)] bg-[var(--accent-dim)]"
+                                  : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-hover)]"
+                              }`}
                               onClick={() => updateRole(user.id, role)}
                             >
                               <FiShield size={12} /> {role}
                             </DropdownMenu.Item>
                           ))}
-                          <DropdownMenu.Separator className="my-1 border-t border-white/5" />
+                          <DropdownMenu.Separator className="my-1 h-px bg-[var(--border)]" />
                           <DropdownMenu.Item
-                            className="flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-red-900/10 rounded-lg cursor-pointer"
+                            className="flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 rounded-lg cursor-pointer outline-none transition-colors"
                             onClick={() => deleteUser(user.id)}
                           >
                             <FiTrash2 size={12} /> Delete User

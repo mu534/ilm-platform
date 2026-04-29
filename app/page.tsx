@@ -281,11 +281,8 @@ export default async function HomePage() {
     <div className="min-h-screen w-full">
 
       {/* ── Hero ── */}
-      <section className="relative overflow-hidden py-20 sm:py-28 md:py-36 w-full animate-fadeInUp">
+      <section className="relative overflow-hidden py-20  md: w-full animate-fadeInUp">
         <div className="absolute inset-0 pattern-overlay opacity-40" />
-        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[var(--accent-dim)] rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[var(--bg-primary)] to-transparent pointer-events-none" />
-
         <div className="relative w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center text-center">
           {/* Eyebrow */}
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-[var(--border-strong)] bg-[var(--accent-dim)] mb-8">

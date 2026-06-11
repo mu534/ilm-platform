@@ -6,15 +6,10 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { FiMail, FiEdit2, FiCheck, FiAlertCircle } from "react-icons/fi";
 import * as Avatar from "@radix-ui/react-avatar";
-import type { SessionUser, UserRole } from "../types/auth.types";
+import { RoleBadge } from "../components/ui/Badge";
+import type { SessionUser } from "../types/auth.types";
 
 type Status = "idle" | "saving" | "success" | "error";
-
-const roleBadgeColors: Record<UserRole, string> = {
-  ADMIN: "bg-red-900/30 text-red-400 border-red-700/30",
-  SCHOLAR: "bg-gold-900/30 text-gold-400 border-gold-700/30",
-  USER: "bg-blue-900/20 text-blue-400 border-blue-700/20",
-};
 
 interface ApiResponse {
   success: boolean;
@@ -83,8 +78,6 @@ export default function ProfilePage() {
     }
   };
 
-  const badgeColor = roleBadgeColors[user?.role ?? "USER"];
-
   return (
     <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <div className="mb-8">
@@ -115,11 +108,7 @@ export default function ProfilePage() {
               <FiMail size={13} /> {user?.email}
             </p>
             <div className="mt-2">
-              <span
-                className={`text-xs px-2 py-0.5 rounded-full border font-medium ${badgeColor}`}
-              >
-                {user?.role}
-              </span>
+              <RoleBadge role={user?.role ?? "USER"} />
             </div>
           </div>
         </div>

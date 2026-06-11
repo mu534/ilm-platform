@@ -22,14 +22,14 @@ export default function AdminUsersPage() {
   const [users, setUsers]           = useState<User[]>([]);
   const [loading, setLoading]       = useState(true);
   const [search, setSearch]         = useState("");
-  const [roleFilter, setRoleFilter] = useState("");
+  const [roleFilter, setRoleFilter] = useState<Role | "">("");
 
   // ── Stable fetch function for mutations to call ──────────────────────────
-  const refetch = useCallback(async (q: string, role: string) => {
+  const refetch = useCallback(async (q: string, role: Role | "") => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      if (q)    params.set("search", q);
+      if (q) params.set("search", q);
       if (role) params.set("role", role);
       const res  = await fetch(`/api/users?${params}`);
       const data = await res.json();
@@ -66,10 +66,10 @@ export default function AdminUsersPage() {
   }, [search, roleFilter]);
 
   // ── Mutations ─────────────────────────────────────────────────────────────
-  const updateRole = async (userId: string, role: string) => {
+  const updateRole = async (userId: string, role: Role) => {
     // Optimistic update — immediately reflect in UI
     setUsers(prev =>
-      prev.map(u => u.id === userId ? { ...u, role: role as User["role"] } : u)
+      prev.map(u => u.id === userId ? { ...u, role } : u)
     );
 
     try {
@@ -143,7 +143,7 @@ export default function AdminUsersPage() {
         </div>
         <select
           value={roleFilter}
-          onChange={(e) => setRoleFilter(e.target.value)}
+          onChange={(e) => setRoleFilter(e.target.value as Role | "")}
           className="px-3 py-2 bg-[var(--bg-card)] border border-[var(--border)] rounded-xl text-sm text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)] transition-colors"
         >
           <option value="">All Roles</option>

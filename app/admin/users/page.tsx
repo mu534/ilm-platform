@@ -22,10 +22,10 @@ export default function AdminUsersPage() {
   const [users, setUsers]           = useState<User[]>([]);
   const [loading, setLoading]       = useState(true);
   const [search, setSearch]         = useState("");
-  const [roleFilter, setRoleFilter] = useState<Role | "">("");
+  const [roleFilter, setRoleFilter] = useState("");
 
   // ── Stable fetch function for mutations to call ──────────────────────────
-  const refetch = useCallback(async (q: string, role: Role | "") => {
+  const refetch = useCallback(async (q: string, role: string) => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
@@ -143,7 +143,7 @@ export default function AdminUsersPage() {
         </div>
         <select
           value={roleFilter}
-          onChange={(e) => setRoleFilter(e.target.value as Role | "")}
+          onChange={(e) => setRoleFilter(e.target.value)}
           className="px-3 py-2 bg-[var(--bg-card)] border border-[var(--border)] rounded-xl text-sm text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)] transition-colors"
         >
           <option value="">All Roles</option>

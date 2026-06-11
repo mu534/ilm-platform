@@ -5,12 +5,14 @@ import { useRouter } from "next/navigation";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { formatDate } from "../../utils/api";
 import { FiSearch, FiMoreVertical, FiTrash2, FiShield } from "react-icons/fi";
+import { RoleBadge } from "../../components/ui/Badge";
+import type { Role } from "../../../generated/prisma/enums";
 
 interface User {
   id: string;
   name: string;
   email: string;
-  role: "ADMIN" | "SCHOLAR" | "USER";
+  role: Role;
   createdAt: string;
   _count: { lectures: number; comments: number };
 }
@@ -107,19 +109,7 @@ export default function AdminUsersPage() {
     }
   };
 
-  // ── Role badge ────────────────────────────────────────────────────────────
-  const roleBadge = (role: string) => {
-    const styles: Record<string, string> = {
-      ADMIN:   "bg-red-500/10 text-red-400 border-red-500/20",
-      SCHOLAR: "bg-[var(--accent-dim)] text-[var(--accent)] border-[var(--border-strong)]",
-      USER:    "bg-[var(--bg-secondary)] text-[var(--text-muted)] border-[var(--border)]",
-    };
-    return (
-      <span className={`text-xs px-2.5 py-0.5 rounded-full border font-medium ${styles[role] ?? styles["USER"]}`}>
-        {role}
-      </span>
-    );
-  };
+  // Role badge: use centralized `RoleBadge` from UI components
 
   return (
     <div className="p-6 sm:p-8">
@@ -213,7 +203,7 @@ export default function AdminUsersPage() {
                   </td>
 
                   {/* Role */}
-                  <td className="px-5 py-3.5">{roleBadge(user.role)}</td>
+                  <td className="px-5 py-3.5"><RoleBadge role={user.role} /></td>
 
                   {/* Content */}
                   <td className="px-5 py-3.5 text-xs text-[var(--text-muted)]">

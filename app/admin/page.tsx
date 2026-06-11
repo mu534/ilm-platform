@@ -14,6 +14,8 @@ import {
   FiTrendingUp,
 } from "react-icons/fi";
 import type { SessionUser } from "@/app/types/auth.types";
+import { RoleBadge } from "../components/ui/Badge";
+import type { Role } from "../../generated/prisma/enums";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -31,7 +33,7 @@ type RecentUser = {
   id: string;
   name: string;
   email: string;
-  role: string;
+  role: Role;
   createdAt: Date;
 };
 
@@ -131,24 +133,7 @@ function StatCard({
   );
 }
 
-function RoleBadge({ role }: { role: string }) {
-  const styles: Record<string, string> = {
-    ADMIN:
-      "bg-red-500/10 text-red-400 border-red-500/20",
-    SCHOLAR:
-      "bg-[var(--accent-dim)] text-[var(--accent)] border-[var(--border-strong)]",
-    USER:
-      "bg-[var(--bg-secondary)] text-[var(--text-muted)] border-[var(--border)]",
-  };
-
-  return (
-    <span
-      className={`text-xs px-2.5 py-0.5 rounded-full border font-medium ${styles[role] ?? styles["USER"]}`}
-    >
-      {role}
-    </span>
-  );
-}
+// centralized `RoleBadge` component imported from UI
 
 // ─── Page ──────────────────────────────────────────────────────────────────────
 

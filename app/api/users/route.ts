@@ -12,7 +12,7 @@ import {
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user || (session.user as any).role !== "ADMIN") {
+    if (!session?.user || (session.user as { role?: string }).role !== "ADMIN") {
       return errorResponse("Forbidden", 403);
     }
 
@@ -22,14 +22,17 @@ export async function GET(req: NextRequest) {
     const search = searchParams.get("search") ?? "";
     const role = searchParams.get("role") ?? "";
 
-    const where: any = {};
+    const where: {
+      OR?: Array<{ name?: { contains: string; mode: "insensitive" }; email?: { contains: string; mode: "insensitive" } }>;
+      role?: "ADMIN" | "SCHOLAR" | "USER";
+    } = {};
     if (search) {
       where.OR = [
         { name: { contains: search, mode: "insensitive" } },
         { email: { contains: search, mode: "insensitive" } },
       ];
     }
-    if (role) where.role = role;
+    if (role) where.role = role as "ADMIN" | "SCHOLAR" | "USER";
 
     const [total, items] = await Promise.all([
       prisma.user.count({ where }),

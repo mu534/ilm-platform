@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { FiPlay, FiUsers, FiBookOpen, FiStar, FiSearch } from "react-icons/fi";
+import { FiSearch, FiUsers, FiBookOpen, FiStar } from "react-icons/fi";
 
 const quickAccessItems = [
   {

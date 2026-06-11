@@ -4,8 +4,8 @@ import Link from "next/link";
 import { prisma } from "../../lib/prism";
 import { CommentSection } from "../../components/CommentSection";
 import { formatDate } from "../../utils/api";
-import { FiEye, FiCalendar, FiTag, FiUser } from "react-icons/fi";
-import { GiBookmark } from "react-icons/gi";
+import { sanitizeHtml } from "../../utils/sanitize";
+import { FiEye, FiCalendar, FiTag } from "react-icons/fi";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -40,10 +40,8 @@ export default async function LecturePage({ params }: Props) {
   const lecture = await getLecture(slug);
   if (!lecture) notFound();
 
-  // Increment views
-  await prisma.lecture
-    .update({ where: { id: lecture.id }, data: { views: { increment: 1 } } })
-    .catch(() => {});
+  // View increment is handled by the API route GET /api/lectures/[id]
+  // Incrementing here only when fetching directly via Prisma (server-rendered page)
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -142,7 +140,7 @@ export default async function LecturePage({ params }: Props) {
       {lecture.content && (
         <div
           className="lecture-prose mb-12"
-          dangerouslySetInnerHTML={{ __html: lecture.content }}
+          dangerouslySetInnerHTML={{ __html: sanitizeHtml(lecture.content) }}
         />
       )}
 

@@ -11,17 +11,6 @@ interface PopularTopicsProps {
   topics: Topic[];
 }
 
-const topicColors = [
-  "bg-blue-500/20 text-blue-400 border-blue-500/30",
-  "bg-green-500/20 text-green-400 border-green-500/30",
-  "bg-purple-500/20 text-purple-400 border-purple-500/30",
-  "bg-gold-500/20 text-gold-400 border-gold-500/30",
-  "bg-red-500/20 text-red-400 border-red-500/30",
-  "bg-indigo-500/20 text-indigo-400 border-indigo-500/30",
-  "bg-pink-500/20 text-pink-400 border-pink-500/30",
-  "bg-teal-500/20 text-teal-400 border-teal-500/30",
-];
-
 export function PopularTopics({ topics }: PopularTopicsProps) {
   if (topics.length === 0) {
     return null; // Don't render if no topics
@@ -49,7 +38,7 @@ export function PopularTopics({ topics }: PopularTopicsProps) {
     {topics.map((topic, index) => (
       <Link
         key={topic.name}
-        href={`/lectures?topic=${encodeURIComponent(topic.name)}`}
+        href={`/lectures?tag=${encodeURIComponent(topic.name)}`}
         className="group relative rounded-xl p-4 border border-[var(--border)] bg-[var(--bg-card)] hover:border-[var(--border-strong)] hover:bg-[var(--bg-card-hover)] hover:shadow-[var(--shadow-md)] hover:-translate-y-0.5 transition-all duration-300 animate-fadeInUp"
         style={{ animationDelay: `${index * 50}ms` }}
       >

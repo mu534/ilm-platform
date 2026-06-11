@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { FiMail, FiCheck } from "react-icons/fi";
+import { FiMail } from "react-icons/fi";
 import { GiStarFormation } from "react-icons/gi";
 
 export function NewsletterSignup() {

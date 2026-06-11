@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/app/lib/prism";
+import type { Prisma } from "../../../generated/prisma/client";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest) {
 
   try {
     // Build where clause
-    const where: any = {
+    const where: Prisma.LectureWhereInput = {
       published: true,
       OR: [
         { title: { contains: query, mode: "insensitive" } },
@@ -24,7 +25,7 @@ export async function GET(request: NextRequest) {
 
     // Add type filter
     if (type !== "all") {
-      where.type = type;
+      where.type = type as "TEXT" | "VIDEO";
     }
 
     // Add scholar filter

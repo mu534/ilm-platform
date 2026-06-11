@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import Image from "next/image";
 import { FiUploadCloud, FiX, FiFile } from "react-icons/fi";
 
 interface FileUploaderProps {
@@ -70,11 +71,15 @@ export function FileUploader({
       {preview ? (
         <div className="relative rounded-xl overflow-hidden border border-gold-500/20 group">
           {isImage && (
-            <img
-              src={preview}
-              alt="Preview"
-              className="w-full h-48 object-cover"
-            />
+            <div className="relative w-full h-48">
+              <Image
+                src={preview}
+                alt="Preview"
+                fill
+                className="object-cover"
+                unoptimized
+              />
+            </div>
           )}
           {isVideo && (
             <video

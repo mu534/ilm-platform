@@ -6,6 +6,8 @@ import { formatDate } from "../../utils/api";
 import { AdminLectureActions } from "../../components/admin/LectureActions";
 import { FiPlus, FiEye, FiMessageCircle } from "react-icons/fi";
 
+import type { SessionUser } from "../../types/auth.types";
+
 async function getLectures(role: string, userId: string) {
   const where = role === "ADMIN" ? {} : { authorId: userId };
   return prisma.lecture.findMany({
@@ -20,8 +22,8 @@ async function getLectures(role: string, userId: string) {
 
 export default async function AdminLecturesPage() {
   const session = await getServerSession(authOptions);
-  const user = session?.user as any;
-  const lectures = await getLectures(user?.role, user?.id);
+  const user = session?.user as SessionUser | undefined;
+  const lectures = await getLectures(user?.role ?? "USER", user?.id ?? "");
 
   return (
     <div className="p-8">
@@ -111,7 +113,7 @@ export default async function AdminLecturesPage() {
                   {formatDate(lecture.createdAt)}
                 </td>
                 <td className="p-4">
-                  <AdminLectureActions lecture={lecture as any} />
+                  <AdminLectureActions lecture={lecture} />
                 </td>
               </tr>
             ))}

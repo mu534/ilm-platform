@@ -40,25 +40,23 @@ export function EnhancedSearch({ initialQuery = "" }: EnhancedSearchProps) {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (query.length >= 2) performSearch();
-      else { setResults([]); setShowResults(false); }
+      if (query.length >= 2) {
+        setIsLoading(true);
+        fetch(`/api/search?q=${encodeURIComponent(query)}&type=${filters.type}&scholar=${filters.scholar}`)
+          .then((res) => res.json())
+          .then((data: SearchResult[]) => {
+            setResults(data.slice(0, 5));
+            setShowResults(true);
+          })
+          .catch(() => setResults([]))
+          .finally(() => setIsLoading(false));
+      } else {
+        setResults([]);
+        setShowResults(false);
+      }
     }, 300);
     return () => clearTimeout(timer);
   }, [query, filters]);
-
-  const performSearch = async () => {
-    setIsLoading(true);
-    try {
-      const res  = await fetch(`/api/search?q=${encodeURIComponent(query)}&type=${filters.type}&scholar=${filters.scholar}`);
-      const data = await res.json() as SearchResult[];
-      setResults(data.slice(0, 5));
-      setShowResults(true);
-    } catch {
-      setResults([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

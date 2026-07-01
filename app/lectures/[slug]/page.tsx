@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { prisma } from "../../lib/prism";
 import { CommentSection } from "../../components/CommentSection";
+import { LikeButton } from "../../components/lectures/LikeButton";
 import { formatDate } from "../../utils/api";
 import { sanitizeHtml } from "../../utils/sanitize";
 import { FiEye, FiCalendar, FiTag } from "react-icons/fi";
@@ -109,6 +110,7 @@ export default async function LecturePage({ params }: Props) {
           <span className="flex items-center gap-1">
             <FiEye size={13} /> {lecture.views} views
           </span>
+          <LikeButton lectureId={lecture.id} />
         </div>
       </header>
 

@@ -1,9 +1,12 @@
 import { notFound } from "next/navigation";
 import Image from "next/image";
+import { getServerSession } from "next-auth";
+import { authOptions } from "../../lib/auth";
 import { prisma } from "../../lib/prism";
 import { LectureCard } from "../../components/lectures/LectureCard";
-import { FiBookOpen, FiStar } from "react-icons/fi";
-import type { Lecture, LectureType } from "../../types/auth.types";
+import { FollowButton } from "../../components/scholars/FollowButton";
+import { FiBookOpen, FiStar, FiUsers } from "react-icons/fi";
+import type { Lecture, LectureType, SessionUser } from "../../types/auth.types";
 
 interface Props {
   params: { id: string };
@@ -75,7 +78,7 @@ async function getScholar(id: string) {
           _count: { select: { comments: true } },
         },
       },
-      _count: { select: { lectures: true } },
+      _count: { select: { lectures: true, followers: true, courses: true } },
     },
   });
 }
@@ -89,6 +92,15 @@ export async function generateMetadata({ params }: Props) {
 export default async function ScholarPage({ params }: Props) {
   const scholar = await getScholar(params.id);
   if (!scholar) notFound();
+
+  const session = await getServerSession(authOptions);
+  const currentUser = session?.user as SessionUser | undefined;
+
+  const isFollowing = currentUser
+    ? !!(await prisma.scholarFollow.findUnique({
+        where: { userId_scholarId: { userId: currentUser.id, scholarId: scholar.id } },
+      }))
+    : false;
 
   const photoSrc = scholar.photo ?? scholar.user.image;
   const lectures = scholar.lectures.map(mapLecture);
@@ -121,6 +133,11 @@ export default async function ScholarPage({ params }: Props) {
                 <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-gold-900/30 text-gold-400 text-xs border border-gold-700/30">
                   <FiStar size={10} /> Featured Scholar
                 </span>
+                {scholar.verified && (
+                  <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-900/30 text-emerald-400 text-xs border border-emerald-700/30">
+                    ✓ Verified
+                  </span>
+                )}
               </div>
             )}
 
@@ -131,11 +148,25 @@ export default async function ScholarPage({ params }: Props) {
             <div className="flex items-center justify-center md:justify-start gap-1 text-sm text-ink-400 mb-4">
               <FiBookOpen size={14} />
               <span>{scholar._count.lectures} lectures</span>
+              <span className="mx-1">·</span>
+              <FiUsers size={14} />
+              <span>{scholar._count.followers} followers</span>
             </div>
 
             <p className="text-ink-300 leading-relaxed mb-6 max-w-2xl">
               {scholar.bio}
             </p>
+
+            {/* Follow button */}
+            {currentUser && currentUser.id !== scholar.userId && (
+              <div className="mb-4 flex justify-center md:justify-start">
+                <FollowButton
+                  scholarId={scholar.id}
+                  initialFollowing={isFollowing}
+                  initialCount={scholar._count.followers}
+                />
+              </div>
+            )}
 
             {/* Topics */}
             <div className="mb-4">

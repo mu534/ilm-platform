@@ -9,6 +9,7 @@ interface Scholar {
   bio: string;
   topics: string[];
   featured: boolean;
+  verified?: boolean;
   photo?: string;
   user: { name: string; email: string };
   _count: { lectures: number };
@@ -51,11 +52,14 @@ export default function AdminScholarsPage() {
     return () => { cancelled = true; };
   }, []);
 
-  const toggle = async (id: string, field: "featured", value: boolean) => {
-    await fetch(`/api/scholars/${id}`, {
+  const toggle = async (id: string, field: "featured" | "verified", value: boolean) => {
+    const endpoint = field === "verified"
+      ? `/api/scholars/${id}/verify`
+      : `/api/scholars/${id}`;
+    await fetch(endpoint, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ [field]: !value }),
+      body: JSON.stringify(field === "verified" ? {} : { [field]: !value }),
     });
     fetchScholars();
   };
@@ -160,6 +164,13 @@ export default function AdminScholarsPage() {
                           className={scholar.featured ? "text-[var(--accent)]" : ""}
                         />
                         {scholar.featured ? "Unfeature" : "Feature"}
+                      </DropdownMenu.Item>
+                      <DropdownMenu.Item
+                        className="flex items-center gap-2 px-3 py-2 text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-hover)] rounded-lg cursor-pointer outline-none transition-colors"
+                        onClick={() => toggle(scholar.id, "verified", scholar.verified ?? false)}
+                      >
+                        <span className={`text-xs ${scholar.verified ? "text-emerald-400" : ""}`}>✓</span>
+                        {scholar.verified ? "Remove Verification" : "Verify Scholar"}
                       </DropdownMenu.Item>
                       <DropdownMenu.Separator className="my-1 h-px bg-[var(--border)]" />
                       <DropdownMenu.Item

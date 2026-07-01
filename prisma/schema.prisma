@@ -193,7 +193,7 @@ model Course {
   scholar           Scholar?     @relation(fields: [scholarId], references: [id])
   authorId          String
   author            User         @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  // Content approval
+  // Content approvalx
   approvalStatus    ContentApprovalStatus @default(DRAFT)
   approvalNote      String?
   reviewedAt        DateTime?

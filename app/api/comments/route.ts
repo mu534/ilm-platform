@@ -8,7 +8,8 @@ import {
   errorResponse,
   handleApiError,
 } from "../../utils/api";
-import type { SessionUser } from "../../types/next-auth";
+import { checkRateLimit } from "../../lib/rateLimit";
+import type { SessionUser } from "../../types/auth.types";
 
 export async function GET(req: NextRequest) {
   try {
@@ -38,6 +39,10 @@ export async function POST(req: NextRequest) {
     }
 
     const { id: authorId } = session.user as SessionUser;
+
+    // Rate limit: 10 comments per user per minute
+    const rl = checkRateLimit(`comment:${authorId}`, { limit: 10, window: 60 });
+    if (!rl.success) return errorResponse("Too many comments. Please slow down.", 429);
 
     const body = (await req.json()) as unknown;
     const data = commentSchema.parse(body);

@@ -7,9 +7,17 @@ import {
   errorResponse,
   handleApiError,
 } from "../../../utils/api";
+import { checkRateLimit, getClientIp } from "../../../lib/rateLimit";
 
 export async function POST(req: NextRequest) {
   try {
+    // Rate limit: 5 registrations per IP per 15 minutes
+    const ip     = getClientIp(req);
+    const rl     = checkRateLimit(`register:${ip}`, { limit: 5, window: 900 });
+    if (!rl.success) {
+      return errorResponse("Too many registration attempts. Please try again later.", 429);
+    }
+
     const body = await req.json();
     const data = registerSchema.parse(body);
 

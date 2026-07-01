@@ -8,6 +8,7 @@ import Link from "next/link";
 import type { Comment, SessionUser } from "../types/auth.types";
 import { formatDate } from "../utils/api";
 import { FiSend, FiTrash2, FiMessageCircle } from "react-icons/fi";
+import { ReportButton } from "./ReportButton";
 
 interface CommentSectionProps {
   lectureId: string;
@@ -190,14 +191,17 @@ export function CommentSection({ lectureId }: CommentSectionProps) {
                   {comment.body}
                 </p>
               </div>
-              {(user?.id === comment.author.id || user?.role === "ADMIN") && (
-                <button
-                  onClick={() => deleteComment.mutate(comment.id)}
-                  className="opacity-0 group-hover:opacity-100 p-1 text-ink-600 hover:text-red-400 transition-all"
-                >
-                  <FiTrash2 size={14} />
-                </button>
-              )}
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <ReportButton commentId={comment.id} />
+                {(user?.id === comment.author.id || user?.role === "ADMIN") && (
+                  <button
+                    onClick={() => deleteComment.mutate(comment.id)}
+                    className="opacity-0 group-hover:opacity-100 p-1 text-ink-600 hover:text-red-400 transition-all"
+                  >
+                    <FiTrash2 size={14} />
+                  </button>
+                )}
+              </div>
             </div>
           ))}
         </div>

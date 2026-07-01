@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/app/lib/prism";
-import type { Prisma } from "../../../generated/prisma/client";
+import type { LectureWhereInput } from "../../../generated/prisma/models/Lecture";
+import { LectureType } from "../../../generated/prisma/enums";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -13,8 +14,8 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Build where clause
-    const where: Prisma.LectureWhereInput = {
+    // Build where clause using the generated Prisma type directly
+    const where: LectureWhereInput = {
       published: true,
       OR: [
         { title: { contains: query, mode: "insensitive" } },
@@ -23,9 +24,9 @@ export async function GET(request: NextRequest) {
       ],
     };
 
-    // Add type filter
-    if (type !== "all") {
-      where.type = type as "TEXT" | "VIDEO";
+    // Add type filter — cast through the generated enum
+    if (type !== "all" && (type === "TEXT" || type === "VIDEO")) {
+      where.type = LectureType[type];
     }
 
     // Add scholar filter
@@ -46,19 +47,19 @@ export async function GET(request: NextRequest) {
         scholar: {
           select: {
             user: {
-              select: {
-                name: true,
-              },
+              select: { name: true },
             },
           },
         },
       },
     });
 
-    // Add caching headers for better performance
     const response = NextResponse.json(lectures);
-    response.headers.set("Cache-Control", "public, s-maxage=300, stale-while-revalidate=600"); // Cache for 5 minutes, serve stale for 10 minutes
-
+    // Cache for 5 minutes, serve stale for 10 minutes
+    response.headers.set(
+      "Cache-Control",
+      "public, s-maxage=300, stale-while-revalidate=600",
+    );
     return response;
   } catch (error) {
     console.error("Search API error:", error);

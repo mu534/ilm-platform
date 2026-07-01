@@ -1,4 +1,3 @@
-// src/app/api/users/route.ts
 import { NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../lib/auth";
@@ -8,11 +7,16 @@ import {
   errorResponse,
   handleApiError,
 } from "../../utils/api";
+import type { SessionUser } from "../../types/auth.types";
+import type { UserWhereInput } from "../../../generated/prisma/models/User";
+import { Role } from "../../../generated/prisma/enums";
 
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user || (session.user as { role?: string }).role !== "ADMIN") {
+    const user = session?.user as SessionUser | undefined;
+
+    if (!user || user.role !== "ADMIN") {
       return errorResponse("Forbidden", 403);
     }
 
@@ -20,19 +24,21 @@ export async function GET(req: NextRequest) {
     const page = Math.max(1, Number(searchParams.get("page") ?? 1));
     const pageSize = Math.min(50, Number(searchParams.get("pageSize") ?? 20));
     const search = searchParams.get("search") ?? "";
-    const role = searchParams.get("role") ?? "";
+    const roleParam = searchParams.get("role") ?? "";
 
-    const where: {
-      OR?: Array<{ name?: { contains: string; mode: "insensitive" }; email?: { contains: string; mode: "insensitive" } }>;
-      role?: "ADMIN" | "SCHOLAR" | "USER";
-    } = {};
+    const where: UserWhereInput = {};
+
     if (search) {
       where.OR = [
         { name: { contains: search, mode: "insensitive" } },
         { email: { contains: search, mode: "insensitive" } },
       ];
     }
-    if (role) where.role = role as "ADMIN" | "SCHOLAR" | "USER";
+
+    // Validate role param against the enum before using it
+    if (roleParam && roleParam in Role) {
+      where.role = Role[roleParam as keyof typeof Role];
+    }
 
     const [total, items] = await Promise.all([
       prisma.user.count({ where }),

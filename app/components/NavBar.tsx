@@ -13,7 +13,8 @@ import { GiMoon, GiSun } from "react-icons/gi";
 import { useTheme } from "./ThemeProvider";
 
 const navLinks = [
-  { href: "/",        label: "Home"     },
+  { href: "/",         label: "Home"     },
+  { href: "/courses",  label: "Courses"  },
   { href: "/lectures", label: "Lectures" },
   { href: "/scholars", label: "Scholars" },
 ];
@@ -119,6 +120,11 @@ export function Navbar() {
                     <DropdownMenu.Item asChild>
                       <Link href="/profile" className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-dim)] rounded-xl cursor-pointer transition-colors">
                         <FiUser size={14} /> Profile
+                      </Link>
+                    </DropdownMenu.Item>
+                    <DropdownMenu.Item asChild>
+                      <Link href="/dashboard" className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-dim)] rounded-xl cursor-pointer transition-colors">
+                        <FiBookOpen size={14} /> My Learning
                       </Link>
                     </DropdownMenu.Item>
                     {["ADMIN", "SCHOLAR"].includes(user?.role) && (

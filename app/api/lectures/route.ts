@@ -9,7 +9,8 @@ import {
   handleApiError,
   slugify,
 } from "../../utils/api";
-import type { SessionUser } from "../../types/next-auth";
+import { notifyScholarFollowers } from "../../lib/notifications";
+import type { SessionUser } from "../../types/auth.types";
 
 type LectureType = "TEXT" | "VIDEO";
 
@@ -135,6 +136,20 @@ export async function POST(req: NextRequest) {
         authorId,
       },
     });
+
+    // Notify scholar's followers when published
+    if (data.published) {
+      const scholar = await prisma.scholar.findUnique({ where: { userId: authorId } });
+      if (scholar) {
+        void notifyScholarFollowers(
+          scholar.id,
+          "NEW_LECTURE",
+          "New Lecture Published",
+          `${lecture.title} is now available.`,
+          `/lectures/${lecture.slug}`,
+        );
+      }
+    }
 
     return successResponse(lecture, 201);
   } catch (error) {

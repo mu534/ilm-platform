@@ -1,5 +1,6 @@
-export type UserRole = "ADMIN" | "SCHOLAR" | "USER";
-export type LectureType = "TEXT" | "VIDEO" | "AUDIO" | "PDF";
+export type UserRole      = "ADMIN" | "SCHOLAR" | "USER";
+export type LectureType   = "TEXT" | "VIDEO" | "AUDIO" | "PDF";
+export type DifficultyLevel = "BEGINNER" | "INTERMEDIATE" | "ADVANCED";
 
 export interface SessionUser {
   id: string;

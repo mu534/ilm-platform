@@ -4,14 +4,16 @@ import { FiMail, FiGithub, FiHeart } from "react-icons/fi";
 
 const exploreLinks = [
   { href: "/",         label: "Home"     },
+  { href: "/courses",  label: "Courses"  },
   { href: "/lectures", label: "Lectures" },
   { href: "/scholars", label: "Scholars" },
 ];
 
 const accountLinks = [
-  { href: "/login",    label: "Sign In"    },
-  { href: "/register", label: "Register"   },
-  { href: "/profile",  label: "My Profile" },
+  { href: "/login",      label: "Sign In"        },
+  { href: "/register",   label: "Register"       },
+  { href: "/profile",    label: "My Profile"     },
+  { href: "/dashboard",  label: "My Learning"    },
 ];
 
 export function Footer() {

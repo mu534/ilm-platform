@@ -3,15 +3,16 @@ import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { authOptions } from "../lib/auth";
 import Link from "next/link";
-import { FiGrid, FiBookOpen, FiUsers, FiStar } from "react-icons/fi";
+import { FiGrid, FiBookOpen, FiUsers, FiStar, FiLayout } from "react-icons/fi";
 import { GiMoon } from "react-icons/gi";
 import type { SessionUser } from "@/app/types/auth.types";
 
 const adminNav = [
-  { href: "/admin",          icon: <FiGrid />,     label: "Overview" },
-  { href: "/admin/lectures", icon: <FiBookOpen />, label: "Lectures" },
-  { href: "/admin/users",    icon: <FiUsers />,    label: "Users"    },
-  { href: "/admin/scholars", icon: <FiStar />,     label: "Scholars" },
+  { href: "/admin",          icon: <FiGrid />,     label: "Overview",  adminOnly: true  },
+  { href: "/admin/courses",  icon: <FiLayout />,   label: "Courses",   adminOnly: false },
+  { href: "/admin/lectures", icon: <FiBookOpen />, label: "Lectures",  adminOnly: false },
+  { href: "/admin/users",    icon: <FiUsers />,    label: "Users",     adminOnly: true  },
+  { href: "/admin/scholars", icon: <FiStar />,     label: "Scholars",  adminOnly: true  },
 ];
 
 export default async function AdminLayout({
@@ -49,12 +50,7 @@ export default async function AdminLayout({
         {/* Nav */}
         <nav className="p-3 flex-1 flex flex-col gap-0.5">
           {adminNav
-            .filter(
-              (item) =>
-                isAdmin ||
-                item.href === "/admin/lectures" ||
-                item.href === "/admin"
-            )
+            .filter((item) => isAdmin || !item.adminOnly)
             .map((item) => (
               <Link
                 key={item.href}

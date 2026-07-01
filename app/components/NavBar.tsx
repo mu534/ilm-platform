@@ -11,6 +11,7 @@ import {
 } from "react-icons/fi";
 import { GiMoon, GiSun } from "react-icons/gi";
 import { useTheme } from "./ThemeProvider";
+import { NotificationBell } from "./NotificationBell";
 
 const navLinks = [
   { href: "/",         label: "Home"     },
@@ -96,7 +97,9 @@ export function Navbar() {
           {/* ── Auth ── */}
           <div className="hidden md:flex items-center gap-3">
             {session ? (
-              <DropdownMenu.Root>
+              <>
+                <NotificationBell />
+                <DropdownMenu.Root>
                 <DropdownMenu.Trigger asChild>
                   <button className="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-[var(--accent-dim)] border border-transparent hover:border-[var(--border)] transition-all duration-200">
                     <Avatar.Root className="w-7 h-7 rounded-full overflow-hidden ring-2 ring-gold-400/30">
@@ -151,6 +154,7 @@ export function Navbar() {
                   </DropdownMenu.Content>
                 </DropdownMenu.Portal>
               </DropdownMenu.Root>
+              </>
             ) : (
               <div className="flex items-center gap-2">
                 <Link

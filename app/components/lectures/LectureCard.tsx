@@ -5,18 +5,24 @@ import {
   FiFileText,
   FiEye,
   FiMessageCircle,
+  FiHeadphones,
+  FiFile,
 } from "react-icons/fi";
 import type { Lecture, LectureType } from "../../types/auth.types";
 import { formatDate } from "../../utils/api";
 
 const typeIcons: Record<LectureType, React.ReactElement> = {
   VIDEO: <FiVideo className="text-gold-400" size={14} />,
-  TEXT: <FiFileText className="text-gold-400" size={14} />,
+  TEXT:  <FiFileText className="text-gold-400" size={14} />,
+  AUDIO: <FiHeadphones className="text-gold-400" size={14} />,
+  PDF:   <FiFile className="text-gold-400" size={14} />,
 };
 
 const typeLabels: Record<LectureType, string> = {
   VIDEO: "Video",
-  TEXT: "Article",
+  TEXT:  "Article",
+  AUDIO: "Audio",
+  PDF:   "PDF",
 };
 
 interface LectureCardProps {

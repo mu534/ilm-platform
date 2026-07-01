@@ -1,5 +1,5 @@
 export type UserRole = "ADMIN" | "SCHOLAR" | "USER";
-export type LectureType = "TEXT" | "VIDEO";
+export type LectureType = "TEXT" | "VIDEO" | "AUDIO" | "PDF";
 
 export interface SessionUser {
   id: string;

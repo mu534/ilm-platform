@@ -115,7 +115,7 @@ async function getHomeData() {
 
 type PrismaLecture = {
   id: string; title: string; slug: string; description: string;
-  content: string | null; type: "TEXT" | "VIDEO";
+  content: string | null; type: "TEXT" | "VIDEO" | "AUDIO" | "PDF";
   mediaUrl: string | null; thumbnailUrl: string | null;
   tags: string[]; published: boolean; featured: boolean;
   views: number; createdAt: Date;

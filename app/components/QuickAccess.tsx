@@ -10,10 +10,17 @@ const quickAccessItems = [
     color: "hover:bg-accent/10 hover:border-accent/30",
   },
   {
+    title: "Browse Courses",
+    description: "Structured learning paths from qualified scholars",
+    icon: <FiBookOpen className="text-accent" size={20} />,
+    href: "/courses",
+    color: "hover:bg-accent/10 hover:border-accent/30",
+  },
+  {
     title: "Featured Content",
-    description: "Handpicked lectures from our scholars",
+    description: "Handpicked lectures and courses from our scholars",
     icon: <FiStar className="text-accent" size={20} />,
-    href: "/lectures?featured=true",
+    href: "/courses?featured=true",
     color: "hover:bg-accent/10 hover:border-accent/30",
   },
   {
@@ -21,13 +28,6 @@ const quickAccessItems = [
     description: "Connect with qualified Islamic scholars",
     icon: <FiUsers className="text-accent" size={20} />,
     href: "/scholars",
-    color: "hover:bg-accent/10 hover:border-accent/30",
-  },
-  {
-    title: "Beginner Guides",
-    description: "Start your Islamic learning journey",
-    icon: <FiBookOpen className="text-accent" size={20} />,
-    href: "/lectures?level=beginner",
     color: "hover:bg-accent/10 hover:border-accent/30",
   },
 ];

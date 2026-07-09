@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/app/lib/prism";
 import { LectureCard } from "@/app/components/lectures/LectureCard";
 import { ScholarCard } from "@/app/components/scholars/ScholarCard";
+import { CourseCard } from "@/app/components/courses/CourseCard";
 import { TestimonialsSection } from "@/app/components/TestimonialsSection";
 import { NewsletterSignup } from "@/app/components/NewsletterSignup";
 import { EnhancedSearch } from "@/app/components/EnhancedSearch";
@@ -23,6 +24,7 @@ import { GiMoon, GiStarFormation } from "react-icons/gi";
 async function getHomeData() {
   const [
     featuredLectures, latestLectures, featuredScholars,
+    featuredCourses,
     counts, recentStats, popularTopics, recentActivity, testimonials,
   ] = await Promise.all([
     prisma.lecture.findMany({
@@ -51,6 +53,18 @@ async function getHomeData() {
       include: {
         user:   { select: { name: true, email: true, image: true } },
         _count: { select: { lectures: true } },
+      },
+    }),
+    // Featured courses
+    prisma.course.findMany({
+      where: { published: true, featured: true, status: "PUBLISHED" },
+      take: 3,
+      orderBy: { createdAt: "desc" },
+      include: {
+        category: { select: { id: true, name: true, slug: true, icon: true, color: true } },
+        author:   { select: { id: true, name: true, image: true } },
+        scholar:  { select: { id: true, photo: true, verified: true, user: { select: { name: true } } } },
+        _count:   { select: { modules: true, enrollments: true, ratings: true } },
       },
     }),
     Promise.all([
@@ -107,6 +121,7 @@ async function getHomeData() {
 
   return {
     featuredLectures, latestLectures, featuredScholars,
+    featuredCourses,
     counts, recentStats, popularTopics, recentActivity, testimonials,
   };
 }
@@ -210,6 +225,7 @@ export default async function HomePage() {
 
   const {
     featuredLectures, latestLectures, featuredScholars,
+    featuredCourses,
     counts, recentStats, popularTopics, recentActivity, testimonials,
   } = await getHomeData();
 
@@ -399,9 +415,25 @@ export default async function HomePage() {
     </div>
   )}
 </section>
+      {/* ── Featured Courses ── */}
+      {featuredCourses.length > 0 && (
+        <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 border-t border-[var(--border)]">
+          <SectionHeader
+            eyebrow="Structured Learning"
+            title="Featured Courses"
+            href="/courses"
+            linkLabel="All Courses"
+          />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {featuredCourses.map((course) => (
+              <CourseCard key={course.id} course={course} />
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* ── Popular Topics ── */}
       <PopularTopics topics={processedPopularTopics} />
-
       {/* ── Quick Access ── */}
       <QuickAccess />
 

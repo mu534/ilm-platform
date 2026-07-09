@@ -4,166 +4,224 @@ import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { FiMail, FiEdit2, FiCheck, FiAlertCircle } from "react-icons/fi";
+import {
+  FiMail, FiEdit2, FiCheck, FiAlertCircle,
+  FiBookOpen, FiBookmark, FiAward, FiActivity,
+} from "react-icons/fi";
 import * as Avatar from "@radix-ui/react-avatar";
 import { RoleBadge } from "../components/ui/Badge";
+import { FileUploader } from "../components/FileUploader";
 import type { SessionUser } from "../types/auth.types";
 
-type Status = "idle" | "saving" | "success" | "error";
+type SaveStatus = "idle" | "saving" | "success" | "error";
+
+interface FormState {
+  name:  string;
+  bio:   string;
+  image: string;
+}
 
 interface ApiResponse {
   success: boolean;
-  error?: string;
-  data?: {
-    name?: string | null;
-    email?: string | null;
-    image?: string | null;
-  };
+  error?:  string;
+  data?:   { name?: string | null; email?: string | null; image?: string | null; bio?: string | null };
 }
 
 export default function ProfilePage() {
   const { data: session, status: authStatus, update } = useSession();
   const router = useRouter();
+  const user   = session?.user as SessionUser | undefined;
 
-  const user = session?.user as SessionUser | undefined;
+  const [editing,    setEditing]    = useState(false);
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
+  const [error,      setError]      = useState("");
+  const [form,       setForm]       = useState<FormState>({
+    name:  user?.name  ?? "",
+    bio:   "",
+    image: user?.image ?? "",
+  });
 
-  const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({ name: user?.name ?? "" });
-  const [status, setStatus] = useState<Status>("idle");
-  const [error, setError] = useState("");
-
+  // Sync form when session loads
   useEffect(() => {
-    setForm({ name: user?.name ?? "" });
-  }, [user?.name]);
-
-  useEffect(() => {
-    if (authStatus === "unauthenticated") {
-      router.push("/login");
+    if (user) {
+      setForm({ name: user.name ?? "", bio: "", image: user.image ?? "" });
+      // Load bio from API
+      fetch(`/api/users/${user.id}`)
+        .then((r) => r.json())
+        .then((d) => {
+          if (d.success) setForm((prev) => ({ ...prev, bio: d.data?.bio ?? "" }));
+        })
+        .catch(() => {});
     }
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (authStatus === "unauthenticated") router.push("/login");
   }, [authStatus, router]);
 
-  if (authStatus === "loading" || authStatus === "unauthenticated") {
-    return null;
-  }
+  if (authStatus === "loading" || authStatus === "unauthenticated") return null;
 
   const handleSave = async () => {
-    setStatus("saving");
+    setSaveStatus("saving");
+    setError("");
     try {
       const res = await fetch(`/api/users/${user?.id}`, {
-        method: "PATCH",
+        method:  "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: form.name }),
+        body:    JSON.stringify({ name: form.name, bio: form.bio, image: form.image }),
       });
-
       const data = (await res.json()) as ApiResponse;
       if (!data.success) throw new Error(data.error ?? "Update failed");
 
-      const updatedName = data.data?.name ?? form.name;
       await update({
-        name: updatedName,
+        name:  data.data?.name  ?? form.name,
         email: data.data?.email ?? user?.email,
-        image: data.data?.image ?? user?.image,
+        image: data.data?.image ?? form.image,
       });
 
-      setForm({ name: updatedName });
-      setStatus("success");
+      setSaveStatus("success");
       setEditing(false);
       router.refresh();
-      setTimeout(() => setStatus("idle"), 2000);
+      setTimeout(() => setSaveStatus("idle"), 2500);
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Something went wrong";
-      setError(message);
-      setStatus("error");
+      setError(err instanceof Error ? err.message : "Something went wrong");
+      setSaveStatus("error");
     }
   };
 
+  const inputClass =
+    "w-full px-4 py-2.5 bg-[var(--bg-card)] border border-[var(--border)] rounded-xl text-[var(--text-primary)] text-sm focus:outline-none focus:border-[var(--accent)] transition-colors";
+
   return (
     <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <div className="mb-8">
-        <h1 className="font-display text-3xl font-bold text-white">
-          My Profile
-        </h1>
-      </div>
+      <h1 className="font-display text-3xl font-bold text-[var(--text-primary)] mb-8">
+        My Profile
+      </h1>
 
-      <div className="glass-card gold-border rounded-2xl p-8">
-        {/* Avatar & basic info */}
-        <div className="flex items-start gap-6 mb-8 pb-8 border-b border-white/5">
-          <Avatar.Root className="w-20 h-20 rounded-full overflow-hidden border-2 border-gold-500/30">
-            <Avatar.Image
-              src={user?.image ?? ""}
-              alt={user?.name ?? "User"}
-              className="w-full h-full object-cover"
-            />
-            <Avatar.Fallback className="w-full h-full flex items-center justify-center bg-gold-700 text-white text-2xl font-display font-bold">
-              {user?.name?.[0]?.toUpperCase()}
-            </Avatar.Fallback>
-          </Avatar.Root>
+      <div className="glass-card rounded-2xl p-8">
 
-          <div>
-            <h2 className="font-display text-2xl font-semibold text-white">
+        {/* ── Avatar + name ── */}
+        <div className="flex items-start gap-6 mb-8 pb-8 border-b border-[var(--border)]">
+          <div className="flex flex-col items-center gap-2">
+            <Avatar.Root className="w-20 h-20 rounded-full overflow-hidden border-2 border-[var(--border-strong)]">
+              <Avatar.Image
+                src={editing ? form.image : (user?.image ?? "")}
+                alt={user?.name ?? "User"}
+                className="w-full h-full object-cover"
+              />
+              <Avatar.Fallback className="w-full h-full flex items-center justify-center bg-[var(--accent-dim)] text-[var(--accent)] text-2xl font-display font-bold">
+                {user?.name?.[0]?.toUpperCase()}
+              </Avatar.Fallback>
+            </Avatar.Root>
+            {editing && (
+              <div className="w-48">
+                <FileUploader
+                  accept="image/*"
+                  folder="ilm-platform/avatars"
+                  label="Change photo"
+                  onUpload={(url) => setForm((f) => ({ ...f, image: url }))}
+                  currentUrl={form.image}
+                />
+              </div>
+            )}
+          </div>
+
+          <div className="flex-1">
+            <h2 className="font-display text-2xl font-semibold text-[var(--text-primary)] mb-1">
               {user?.name}
             </h2>
-            <p className="text-sm text-ink-400 flex items-center gap-1 mt-1">
+            <p className="text-sm text-[var(--text-muted)] flex items-center gap-1 mb-2">
               <FiMail size={13} /> {user?.email}
             </p>
-            <div className="mt-2">
-              <RoleBadge role={user?.role ?? "USER"} />
-            </div>
+            <RoleBadge role={user?.role ?? "USER"} />
           </div>
         </div>
 
-        {/* Status messages */}
-        {status === "success" && (
-          <div className="flex items-center gap-2 text-green-400 text-sm mb-4">
-            <FiCheck /> Profile updated!
+        {/* ── Status messages ── */}
+        {saveStatus === "success" && (
+          <div className="flex items-center gap-2 text-emerald-400 text-sm mb-5 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+            <FiCheck /> Profile updated successfully!
           </div>
         )}
-        {status === "error" && (
-          <div className="flex items-center gap-2 text-red-400 text-sm mb-4">
+        {saveStatus === "error" && (
+          <div className="flex items-center gap-2 text-red-400 text-sm mb-5 p-3 rounded-xl bg-red-500/10 border border-red-500/20">
             <FiAlertCircle /> {error}
           </div>
         )}
 
-        {/* Form fields */}
-        <div className="space-y-4">
+        {/* ── Edit form ── */}
+        <div className="space-y-5">
+          {/* Name */}
           <div>
-            <label className="block text-xs text-ink-400 font-medium mb-1.5">
+            <label className="block text-xs text-[var(--text-muted)] font-medium mb-1.5">
               Display Name
             </label>
             {editing ? (
               <input
                 value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                className="w-full px-4 py-2.5 bg-ink-800/80 border border-gold-500/30 rounded-xl text-white text-sm focus:outline-none"
+                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                className={inputClass}
+                placeholder="Your name"
               />
             ) : (
-              <p className="text-white">{user?.name}</p>
+              <p className="text-[var(--text-primary)]">{user?.name}</p>
             )}
           </div>
 
+          {/* Email (read-only) */}
           <div>
-            <label className="block text-xs text-ink-400 font-medium mb-1.5">
+            <label className="block text-xs text-[var(--text-muted)] font-medium mb-1.5">
               Email
             </label>
-            <p className="text-ink-300 text-sm">{user?.email}</p>
+            <p className="text-[var(--text-secondary)] text-sm">{user?.email}</p>
+          </div>
+
+          {/* Bio */}
+          <div>
+            <label className="block text-xs text-[var(--text-muted)] font-medium mb-1.5">
+              Bio
+            </label>
+            {editing ? (
+              <textarea
+                value={form.bio}
+                onChange={(e) => setForm((f) => ({ ...f, bio: e.target.value }))}
+                className={inputClass}
+                rows={3}
+                placeholder="Tell others about yourself..."
+                maxLength={500}
+              />
+            ) : (
+              <p className="text-[var(--text-secondary)] text-sm">
+                {form.bio || <span className="text-[var(--text-muted)] italic">No bio added</span>}
+              </p>
+            )}
+          </div>
+
+          {/* Role */}
+          <div>
+            <label className="block text-xs text-[var(--text-muted)] font-medium mb-1.5">
+              Role
+            </label>
+            <p className="text-[var(--text-secondary)] text-sm capitalize">
+              {user?.role?.toLowerCase()}
+            </p>
           </div>
         </div>
 
-        {/* Action buttons */}
+        {/* ── Actions ── */}
         <div className="flex gap-3 mt-8">
           {editing ? (
             <>
               <button
                 onClick={handleSave}
-                disabled={status === "saving"}
-                className="px-5 py-2 bg-gold-600 hover:bg-gold-500 text-white rounded-xl text-sm font-medium transition-colors disabled:opacity-60"
+                disabled={saveStatus === "saving"}
+                className="px-5 py-2 bg-[var(--accent)] hover:bg-[var(--accent-light)] text-white rounded-xl text-sm font-medium transition-colors disabled:opacity-60"
               >
-                {status === "saving" ? "Saving..." : "Save Changes"}
+                {saveStatus === "saving" ? "Saving…" : "Save Changes"}
               </button>
               <button
                 onClick={() => setEditing(false)}
-                className="px-5 py-2 border border-white/10 text-ink-300 hover:text-white rounded-xl text-sm transition-colors"
+                className="px-5 py-2 border border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-primary)] rounded-xl text-sm transition-colors"
               >
                 Cancel
               </button>
@@ -171,32 +229,70 @@ export default function ProfilePage() {
           ) : (
             <button
               onClick={() => setEditing(true)}
-              className="flex items-center gap-2 px-5 py-2 border border-white/10 hover:border-gold-500/30 text-ink-300 hover:text-white rounded-xl text-sm transition-colors"
+              className="flex items-center gap-2 px-5 py-2 border border-[var(--border)] hover:border-[var(--accent)] text-[var(--text-muted)] hover:text-[var(--text-primary)] rounded-xl text-sm transition-colors"
             >
               <FiEdit2 size={14} /> Edit Profile
             </button>
           )}
         </div>
 
-        {/* Role-based actions */}
+        {/* ── Quick links ── */}
+        <div className="mt-8 pt-8 border-t border-[var(--border)]">
+          <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold mb-4">
+            Quick Access
+          </p>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[
+              { href: "/dashboard",               icon: <FiActivity size={14} />,  label: "Dashboard"    },
+              { href: "/dashboard/bookmarks",     icon: <FiBookmark size={14} />,  label: "Bookmarks"    },
+              { href: "/dashboard/certificates",  icon: <FiAward size={14} />,     label: "Certificates" },
+              { href: "/courses",                 icon: <FiBookOpen size={14} />,  label: "Courses"      },
+            ].map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="flex flex-col items-center gap-2 p-3 rounded-xl border border-[var(--border)] hover:border-[var(--accent)] hover:bg-[var(--accent-dim)] transition-all text-center"
+              >
+                <span className="text-[var(--accent)]">{link.icon}</span>
+                <span className="text-xs text-[var(--text-muted)]">{link.label}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Scholar / Admin tools ── */}
         {(user?.role === "ADMIN" || user?.role === "SCHOLAR") && (
-          <div className="mt-8 pt-8 border-t border-white/5">
-            <p className="text-xs text-ink-500 uppercase tracking-wider font-semibold mb-3">
-              Actions
+          <div className="mt-6 pt-6 border-t border-[var(--border)]">
+            <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold mb-4">
+              Content Tools
             </p>
             <div className="flex flex-wrap gap-3">
               <Link
+                href="/admin/courses/new"
+                className="px-4 py-2 border border-[var(--border)] hover:border-[var(--accent)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-sm rounded-xl transition-colors"
+              >
+                + New Course
+              </Link>
+              <Link
                 href="/admin/lectures/new"
-                className="px-4 py-2 bg-ink-800/60 hover:bg-ink-700/60 text-sm text-white border border-white/10 rounded-xl transition-colors"
+                className="px-4 py-2 border border-[var(--border)] hover:border-[var(--accent)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-sm rounded-xl transition-colors"
               >
                 + New Lecture
               </Link>
+              {user?.role === "SCHOLAR" && (
+                <Link
+                  href="/dashboard/scholar"
+                  className="px-4 py-2 bg-[var(--accent-dim)] border border-[var(--border-strong)] text-[var(--accent)] text-sm rounded-xl transition-colors hover:bg-[var(--accent)] hover:text-white"
+                >
+                  Scholar Dashboard
+                </Link>
+              )}
               {user?.role === "ADMIN" && (
                 <Link
                   href="/admin"
-                  className="px-4 py-2 bg-gold-600/20 hover:bg-gold-600/30 text-sm text-gold-400 border border-gold-700/30 rounded-xl transition-colors"
+                  className="px-4 py-2 bg-[var(--accent-dim)] border border-[var(--border-strong)] text-[var(--accent)] text-sm rounded-xl transition-colors hover:bg-[var(--accent)] hover:text-white"
                 >
-                  Admin Dashboard
+                  Admin Panel
                 </Link>
               )}
             </div>

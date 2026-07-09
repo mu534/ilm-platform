@@ -66,10 +66,18 @@ export default async function AdminLayout({
         </nav>
 
         {/* Footer */}
-        <div className="p-4 border-t border-[var(--border)]">
+        <div className="p-4 border-t border-[var(--border)] space-y-2">
+          {!isAdmin && (
+            <Link
+              href="/dashboard/scholar"
+              className="block text-xs text-[var(--accent)] hover:text-[var(--accent-light)] transition-colors"
+            >
+              ↗ Scholar Dashboard
+            </Link>
+          )}
           <Link
             href="/"
-            className="text-xs text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors"
+            className="block text-xs text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors"
           >
             ← Back to site
           </Link>

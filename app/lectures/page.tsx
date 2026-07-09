@@ -4,86 +4,44 @@ import { prisma } from "@/app/lib/prism";
 import { LectureCard } from "@/app/components/lectures/LectureCard";
 import type { Lecture, LectureType } from "@/app/types/auth.types";
 
-type SearchParams = {
-  search?: string;
-  tag?: string;
-  type?: string;
-  featured?: string;
-  page?: string;
-};
+type SearchParams = { search?: string; tag?: string; type?: string; featured?: string; page?: string };
+interface Props { searchParams: Promise<SearchParams> }
 
-interface Props {
-  searchParams: Promise<SearchParams>;
-}
-
-const VALID_TYPES = new Set(["TEXT", "VIDEO"]);
-const PAGE_SIZE = 12;
+const VALID_TYPES = new Set(["TEXT", "VIDEO", "AUDIO", "PDF"]);
+const PAGE_SIZE   = 12;
 
 function mapLecture(l: {
-  id: string;
-  title: string;
-  slug: string;
-  description: string;
-  content: string | null;
-  type: LectureType;
-  mediaUrl: string | null;
-  thumbnailUrl: string | null;
-  tags: string[];
-  published: boolean;
-  featured: boolean;
-  views: number;
-  createdAt: Date;
-  updatedAt: Date;
+  id: string; title: string; slug: string; description: string;
+  content: string | null; type: LectureType; mediaUrl: string | null;
+  thumbnailUrl: string | null; tags: string[]; published: boolean;
+  featured: boolean; views: number; createdAt: Date; updatedAt: Date;
   author: { id: string; name: string; image: string | null };
-  scholar: {
-    id: string;
-    bio: string;
-    photo: string | null;
-    topics: string[];
-    qualifications: string[];
-    featured: boolean;
-    userId: string;
-    createdAt: Date;
-    updatedAt: Date;
-    user: { name: string };
-  } | null;
+  scholar: { id: string; bio: string; photo: string | null; topics: string[];
+    qualifications: string[]; featured: boolean; userId: string;
+    createdAt: Date; updatedAt: Date; user: { name: string } } | null;
   _count: { comments: number };
 }): Lecture {
   return {
-    id: l.id,
-    title: l.title,
-    slug: l.slug,
-    description: l.description,
-    content: l.content,
-    type: l.type as "TEXT" | "VIDEO",
-    mediaUrl: l.mediaUrl,
-    thumbnailUrl: l.thumbnailUrl,
-    tags: l.tags,
-    published: l.published,
-    featured: l.featured,
-    views: l.views,
+    id: l.id, title: l.title, slug: l.slug, description: l.description,
+    content: l.content, type: l.type, mediaUrl: l.mediaUrl,
+    thumbnailUrl: l.thumbnailUrl, tags: l.tags, published: l.published,
+    featured: l.featured, views: l.views,
     createdAt: l.createdAt.toISOString(),
     author: l.author,
     scholar: l.scholar
-      ? {
-          id: l.scholar.id,
-          bio: l.scholar.bio,
-          photo: l.scholar.photo,
-          topics: l.scholar.topics,
-          user: { name: l.scholar.user.name },
-        }
+      ? { id: l.scholar.id, bio: l.scholar.bio, photo: l.scholar.photo,
+          topics: l.scholar.topics, user: { name: l.scholar.user.name } }
       : null,
     _count: l._count,
   };
 }
 
 async function getLectures(params: SearchParams) {
-  const page = Math.max(1, Number(params.page ?? 1));
-  const search = params.search ?? "";
-  const tag = params.tag ?? "";
-  const type = params.type ?? "";
+  const page    = Math.max(1, Number(params.page ?? 1));
+  const search  = params.search ?? "";
+  const tag     = params.tag ?? "";
+  const type    = params.type ?? "";
   const featured = params.featured === "true";
-
   const typeFilter = VALID_TYPES.has(type) ? (type as LectureType) : undefined;
 
   const where = {
@@ -91,185 +49,135 @@ async function getLectures(params: SearchParams) {
     ...(featured && { featured: true }),
     ...(typeFilter && { type: typeFilter }),
     ...(tag && { tags: { has: tag } }),
-    ...(search && {
-      OR: [
-        { title: { contains: search, mode: "insensitive" as const } },
-        { description: { contains: search, mode: "insensitive" as const } },
-      ],
-    }),
+    ...(search && { OR: [
+      { title:       { contains: search, mode: "insensitive" as const } },
+      { description: { contains: search, mode: "insensitive" as const } },
+    ]}),
   };
 
   const [total, lectures] = await Promise.all([
     prisma.lecture.count({ where }),
     prisma.lecture.findMany({
-      where,
-      skip: (page - 1) * PAGE_SIZE,
-      take: PAGE_SIZE,
+      where, skip: (page - 1) * PAGE_SIZE, take: PAGE_SIZE,
       orderBy: { createdAt: "desc" },
       include: {
-        author: { select: { id: true, name: true, image: true } },
+        author:  { select: { id: true, name: true, image: true } },
         scholar: { include: { user: { select: { name: true } } } },
-        _count: { select: { comments: true } },
+        _count:  { select: { comments: true } },
       },
     }),
   ]);
 
-  const allTags = await prisma.lecture.findMany({
-    where: { published: true },
-    select: { tags: true },
-  });
-  const tagSet = new Set(allTags.flatMap((l) => l.tags));
+  const allTags = await prisma.lecture.findMany({ where: { published: true }, select: { tags: true } });
+  const tagSet  = new Set(allTags.flatMap((l) => l.tags));
 
-  return {
-    lectures: lectures.map(mapLecture),
-    total,
-    page,
-    totalPages: Math.ceil(total / PAGE_SIZE),
-    tags: Array.from(tagSet),
-  };
+  return { lectures: lectures.map(mapLecture), total, page, totalPages: Math.ceil(total / PAGE_SIZE), tags: Array.from(tagSet) };
 }
 
 export default async function LecturesPage({ searchParams }: Props) {
-  const sp = await searchParams;
+  const sp  = await searchParams;
   const { lectures, total, page, totalPages, tags } = await getLectures(sp);
 
   const buildUrl = (overrides: Record<string, string>) => {
     const merged: Record<string, string> = {};
-    for (const [k, v] of Object.entries(sp)) {
-      if (v !== undefined) merged[k] = v;
-    }
-    const urlParams = new URLSearchParams({ ...merged, ...overrides });
-    return `/lectures?${urlParams.toString()}`;
+    for (const [k, v] of Object.entries(sp)) { if (v !== undefined) merged[k] = v; }
+    return `/lectures?${new URLSearchParams({ ...merged, ...overrides }).toString()}`;
   };
+
+  const paginationClass = "px-4 py-2 text-sm border border-[var(--border)] rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:border-[var(--accent)] transition-colors";
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      {/* Header */}
       <div className="mb-10">
-        <p className="text-xs text-gold-400 uppercase tracking-wider font-semibold mb-2">
-          Library
-        </p>
-        <h1 className="font-display text-4xl font-bold text-white">Lectures</h1>
-        <p className="text-ink-400 mt-2">{total} lectures available</p>
+        <p className="text-xs text-[var(--accent)] uppercase tracking-wider font-semibold mb-2">Library</p>
+        <h1 className="font-display text-4xl font-bold text-[var(--text-primary)]">Lectures</h1>
+        <p className="text-[var(--text-muted)] mt-2">{total} lectures available</p>
       </div>
 
+      {/* Filters */}
       <div className="mb-8 space-y-4">
         <form className="flex gap-3">
           <div className="relative flex-1 max-w-md">
-            <FiSearch
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-400"
-              size={16}
-            />
+            <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" size={16} />
             <input
               name="search"
               defaultValue={sp.search}
-              placeholder="Search lectures..."
-              className="w-full pl-10 pr-4 py-2.5 bg-ink-800/80 border border-white/10 rounded-xl text-white text-sm placeholder-ink-500 focus:outline-none focus:border-gold-500/50"
+              placeholder="Search lectures…"
+              className="input-themed pl-10"
             />
           </div>
-          <button
-            type="submit"
-            className="px-5 py-2.5 bg-gold-600 hover:bg-gold-500 text-white rounded-xl text-sm font-medium transition-colors"
-          >
-            Search
-          </button>
+          <button type="submit" className="btn-primary px-5">Search</button>
         </form>
 
+        {/* Type filter */}
         <div className="flex flex-wrap gap-2">
-          {(["", "TEXT", "VIDEO"] as const).map((val) => {
-            const label = {
-              "": "All",
-              TEXT: "Articles",
-              VIDEO: "Videos",
-            }[val];
+          {(["", "TEXT", "VIDEO", "AUDIO", "PDF"] as const).map((val) => {
+            const label = { "": "All", TEXT: "Articles", VIDEO: "Videos", AUDIO: "Audio", PDF: "PDF" }[val];
             return (
-              <Link
-                key={val}
-                href={buildUrl({ type: val, page: "1" })}
+              <Link key={val} href={buildUrl({ type: val, page: "1" })}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                   (sp.type ?? "") === val
-                    ? "bg-gold-600 text-white"
-                    : "bg-ink-800/60 text-ink-300 hover:text-white border border-white/5"
+                    ? "bg-[var(--accent)] text-white"
+                    : "bg-[var(--bg-card)] text-[var(--text-muted)] border border-[var(--border)] hover:text-[var(--text-primary)] hover:border-[var(--accent)]"
                 }`}
               >
                 {label}
               </Link>
             );
           })}
-
-          {tags.slice(0, 10).map((tag) => (
-            <Link
-              key={tag}
-              href={buildUrl({ tag: sp.tag === tag ? "" : tag, page: "1" })}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                sp.tag === tag
-                  ? "bg-gold-600/20 text-gold-300 border border-gold-500/30"
-                  : "bg-ink-800/40 text-ink-400 hover:text-white border border-white/5"
-              }`}
-            >
-              {tag}
-            </Link>
-          ))}
         </div>
+
+        {/* Tag filter */}
+        {tags.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {tags.slice(0, 12).map((tag) => (
+              <Link key={tag} href={buildUrl({ tag: sp.tag === tag ? "" : tag, page: "1" })}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                  sp.tag === tag
+                    ? "tag-accent"
+                    : "tag"
+                }`}
+              >
+                {tag}
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
 
+      {/* Grid */}
       {lectures.length === 0 ? (
-        <div className="text-center py-24 text-ink-400">
-          <FiFilter className="mx-auto text-4xl mb-4 text-ink-600" />
-          <p className="text-lg font-display">No lectures found</p>
+        <div className="text-center py-24 text-[var(--text-muted)]">
+          <FiFilter className="mx-auto text-4xl mb-4 opacity-30" />
+          <p className="text-lg font-display text-[var(--text-primary)]">No lectures found</p>
           <p className="text-sm mt-2">Try adjusting your search or filters</p>
-          <Link
-            href="/lectures"
-            className="mt-4 inline-block text-gold-400 text-sm hover:text-gold-300"
-          >
+          <Link href="/lectures" className="mt-4 inline-block text-[var(--accent)] text-sm hover:text-[var(--accent-light)] transition-colors">
             Clear filters
           </Link>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {lectures.map((lecture) => (
-            <LectureCard
-              key={lecture.id}
-              lecture={lecture}
-              variant="featured"
-            />
-          ))}
+          {lectures.map((lecture) => <LectureCard key={lecture.id} lecture={lecture} variant="featured" />)}
         </div>
       )}
 
+      {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex justify-center gap-2 mt-12">
-          {page > 1 && (
-            <Link
-              href={buildUrl({ page: String(page - 1) })}
-              className="px-4 py-2 text-sm border border-white/10 rounded-lg text-ink-300 hover:text-white transition-colors"
+          {page > 1 && <Link href={buildUrl({ page: String(page - 1) })} className={paginationClass}>Previous</Link>}
+          {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => i + 1).map((p) => (
+            <Link key={p} href={buildUrl({ page: String(p) })}
+              className={`px-4 py-2 text-sm rounded-lg transition-colors ${
+                p === page
+                  ? "bg-[var(--accent)] text-white"
+                  : paginationClass
+              }`}
             >
-              Previous
+              {p}
             </Link>
-          )}
-          {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
-            const p = i + 1;
-            return (
-              <Link
-                key={p}
-                href={buildUrl({ page: String(p) })}
-                className={`px-4 py-2 text-sm rounded-lg transition-colors ${
-                  p === page
-                    ? "bg-gold-600 text-white"
-                    : "border border-white/10 text-ink-300 hover:text-white"
-                }`}
-              >
-                {p}
-              </Link>
-            );
-          })}
-          {page < totalPages && (
-            <Link
-              href={buildUrl({ page: String(page + 1) })}
-              className="px-4 py-2 text-sm border border-white/10 rounded-lg text-ink-300 hover:text-white transition-colors"
-            >
-              Next
-            </Link>
-          )}
+          ))}
+          {page < totalPages && <Link href={buildUrl({ page: String(page + 1) })} className={paginationClass}>Next</Link>}
         </div>
       )}
     </div>

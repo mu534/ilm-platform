@@ -35,13 +35,9 @@ export default async function ScholarsPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <div className="mb-10">
-        <p className="text-xs text-gold-400 uppercase tracking-wider font-semibold mb-2">
-          Learn from
-        </p>
-        <h1 className="font-display text-4xl font-bold text-white">
-          Our Scholars
-        </h1>
-        <p className="text-ink-400 mt-2">
+        <p className="text-xs text-[var(--accent)] uppercase tracking-wider font-semibold mb-2">Learn from</p>
+        <h1 className="font-display text-4xl font-bold text-[var(--text-primary)]">Our Scholars</h1>
+        <p className="text-[var(--text-muted)] mt-2">
           {scholars.length} scholars sharing their knowledge
         </p>
       </div>
@@ -60,6 +56,3 @@ export default async function ScholarsPage() {
           ))}
         </div>
       )}
-    </div>
-  );
-}

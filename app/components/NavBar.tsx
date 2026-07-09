@@ -1,4 +1,5 @@
 "use client";
+
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { useState } from "react";
@@ -7,7 +8,7 @@ import * as Avatar from "@radix-ui/react-avatar";
 import type { SessionUser } from "../types/auth.types";
 import {
   FiMenu, FiX, FiChevronDown, FiUser,
-  FiLogOut, FiSettings, FiBookOpen,
+  FiLogOut, FiSettings, FiBookOpen, FiActivity,
 } from "react-icons/fi";
 import { GiMoon, GiSun } from "react-icons/gi";
 import { useTheme } from "./ThemeProvider";
@@ -23,126 +24,132 @@ const navLinks = [
 ];
 
 export function Navbar() {
-  const { data: session }              = useSession();
-  const [mobileOpen, setMobileOpen]   = useState(false);
-  const { theme, toggleTheme }         = useTheme();
-  const user                           = session?.user as SessionUser;
-  const isLight                        = theme === "light";
+  const { data: session }            = useSession();
+  const [mobileOpen, setMobileOpen]  = useState(false);
+  const { theme, toggleTheme, isLight } = useTheme();
+  const user = session?.user as SessionUser | undefined;
 
   return (
-    <header className="sticky top-0 z-50 glass-card border-b border-[var(--border)]">
-      {/* Light mode — subtle top gradient strip */}
-      {isLight && (
-        <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-gold-400 via-gold-300 to-gold-500 opacity-70" />
-      )}
+    <header className="sticky top-0 z-50 border-b border-[var(--border)]"
+      style={{ background: isLight
+        ? "rgba(253,250,243,0.92)"
+        : "rgba(8,7,6,0.88)",
+        backdropFilter: "blur(20px)",
+        WebkitBackdropFilter: "blur(20px)",
+      }}
+    >
+      {/* Top accent strip */}
+      <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-[var(--accent)] to-transparent opacity-60" />
 
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
 
           {/* ── Logo ── */}
-          <Link href="/" className="flex items-center gap-2.5 group">
-            {isLight ? (
-              <div className="relative">
-                <GiSun className="text-gold-500 text-2xl group-hover:rotate-180 transition-transform duration-700" />
-                <div className="absolute inset-0 bg-gold-400/20 rounded-full blur-sm scale-150 opacity-0 group-hover:opacity-100 transition-opacity" />
-              </div>
-            ) : (
-              <GiMoon className="text-gold-400 text-2xl group-hover:rotate-12 transition-transform duration-300" />
-            )}
-            <span className="font-display text-xl font-semibold">
+          <Link href="/" className="flex items-center gap-2.5 group flex-shrink-0">
+            <div className="relative">
+              {isLight ? (
+                <GiSun className="text-[var(--accent)] text-2xl group-hover:rotate-180 transition-transform duration-700" />
+              ) : (
+                <GiMoon className="text-[var(--accent)] text-2xl group-hover:rotate-12 transition-transform duration-300" />
+              )}
+            </div>
+            <span className="font-display text-xl font-semibold tracking-tight">
               <span className="gradient-text">Ilm</span>
               <span className="text-[var(--text-secondary)] ml-1">Platform</span>
             </span>
           </Link>
 
-          {/* ── Desktop nav links ── */}
-          <div className="hidden md:flex items-center gap-6">
+          {/* ── Desktop nav ── */}
+          <div className="hidden lg:flex items-center gap-1">
             {navLinks.map((l) => (
               <Link
                 key={l.href}
                 href={l.href}
-                className="relative text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors duration-200 group"
+                className="relative px-3 py-1.5 text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] rounded-lg hover:bg-[var(--accent-dim)] transition-all duration-200"
               >
                 {l.label}
-                <span className="absolute -bottom-0.5 left-0 w-0 h-0.5 bg-gradient-to-r from-gold-400 to-gold-600 rounded-full group-hover:w-full transition-all duration-300" />
               </Link>
             ))}
             {user?.role === "ADMIN" && (
-              <Link
-                href="/admin"
-                className="text-sm font-medium text-gold-500 hover:text-gold-400 transition-colors"
-              >
+              <Link href="/admin" className="px-3 py-1.5 text-sm font-medium text-[var(--accent)] rounded-lg hover:bg-[var(--accent-dim)] transition-all">
                 Admin
               </Link>
             )}
-
-            {/* Theme toggle */}
-            <button
-              onClick={toggleTheme}
-              aria-label={`Switch to ${isLight ? "dark" : "light"} mode`}
-              className={`
-                relative p-2 rounded-xl transition-all duration-300 hover:scale-110 active:scale-95
-                ${isLight
-                  ? "bg-amber-50 border border-amber-200 hover:bg-amber-100 hover:border-amber-300 shadow-sm"
-                  : "bg-ink-800/60 border border-white/10 hover:bg-ink-700/60"
-                }
-              `}
-            >
-              {isLight ? (
-                <GiMoon className="text-ink-700 text-base" />
-              ) : (
-                <GiSun className="text-gold-400 text-base" />
-              )}
-            </button>
-            <LanguageSwitcher />
           </div>
 
-          {/* ── Auth ── */}
-          <div className="hidden md:flex items-center gap-3">
+          {/* ── Right side ── */}
+          <div className="hidden md:flex items-center gap-2">
+
+            {/* Language switcher */}
+            <LanguageSwitcher />
+
+            {/* Theme toggle — polished pill */}
+            <button
+              onClick={toggleTheme}
+              className="theme-toggle"
+              aria-label={`Switch to ${isLight ? "dark" : "light"} mode`}
+              title={`Switch to ${isLight ? "dark" : "light"} mode`}
+            >
+              <span className="theme-toggle__knob">
+                {isLight
+                  ? <GiMoon  className="text-[var(--text-muted)]"  size={12} />
+                  : <GiSun   className="text-[var(--accent-light)]" size={12} />
+                }
+              </span>
+            </button>
+
+            {/* Notifications */}
+            {session && <NotificationBell />}
+
+            {/* Auth */}
             {session ? (
-              <>
-                <NotificationBell />
-                <DropdownMenu.Root>
+              <DropdownMenu.Root>
                 <DropdownMenu.Trigger asChild>
-                  <button className="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-[var(--accent-dim)] border border-transparent hover:border-[var(--border)] transition-all duration-200">
-                    <Avatar.Root className="w-7 h-7 rounded-full overflow-hidden ring-2 ring-gold-400/30">
+                  <button className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl hover:bg-[var(--accent-dim)] border border-transparent hover:border-[var(--border)] transition-all duration-200 ml-1">
+                    <Avatar.Root className="w-7 h-7 rounded-full overflow-hidden ring-2 ring-[var(--border-strong)]">
                       <Avatar.Image src={user?.image ?? ""} className="w-full h-full object-cover" />
-                      <Avatar.Fallback className="w-full h-full flex items-center justify-center bg-gold-600 text-white text-xs font-bold">
+                      <Avatar.Fallback className="w-full h-full flex items-center justify-center bg-[var(--accent)] text-white text-xs font-bold">
                         {user?.name?.[0]?.toUpperCase()}
                       </Avatar.Fallback>
                     </Avatar.Root>
-                    <span className="text-sm text-[var(--text-primary)] font-medium">
+                    <span className="text-sm text-[var(--text-primary)] font-medium max-w-[80px] truncate">
                       {user?.name?.split(" ")[0]}
                     </span>
-                    <FiChevronDown className="text-[var(--text-muted)] text-xs" />
+                    <FiChevronDown className="text-[var(--text-muted)]" size={13} />
                   </button>
                 </DropdownMenu.Trigger>
                 <DropdownMenu.Portal>
                   <DropdownMenu.Content
-                    className="glass-card gold-border rounded-2xl p-1.5 min-w-[190px] shadow-2xl animate-fadeInUp z-50"
+                    className="glass-card gold-border rounded-2xl p-1.5 min-w-[200px] shadow-[var(--shadow-lg)] animate-fadeInUp z-50"
                     sideOffset={8}
                     align="end"
                   >
+                    {/* User info header */}
+                    <div className="px-3 py-2.5 border-b border-[var(--border)] mb-1">
+                      <p className="text-sm font-semibold text-[var(--text-primary)] truncate">{user?.name}</p>
+                      <p className="text-xs text-[var(--text-muted)] truncate">{user?.email}</p>
+                    </div>
+
                     <DropdownMenu.Item asChild>
                       <Link href="/profile" className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-dim)] rounded-xl cursor-pointer transition-colors">
-                        <FiUser size={14} /> Profile
+                        <FiUser size={14} className="text-[var(--accent)]" /> Profile
                       </Link>
                     </DropdownMenu.Item>
                     <DropdownMenu.Item asChild>
                       <Link href="/dashboard" className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-dim)] rounded-xl cursor-pointer transition-colors">
-                        <FiBookOpen size={14} /> My Learning
+                        <FiActivity size={14} className="text-[var(--accent)]" /> My Learning
                       </Link>
                     </DropdownMenu.Item>
-                    {["ADMIN", "SCHOLAR"].includes(user?.role) && (
+                    {["ADMIN", "SCHOLAR"].includes(user?.role ?? "") && (
                       <DropdownMenu.Item asChild>
                         <Link href="/admin/lectures/new" className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-dim)] rounded-xl cursor-pointer transition-colors">
-                          <FiBookOpen size={14} /> New Lecture
+                          <FiBookOpen size={14} className="text-[var(--accent)]" /> New Lecture
                         </Link>
                       </DropdownMenu.Item>
                     )}
                     {user?.role === "ADMIN" && (
                       <DropdownMenu.Item asChild>
-                        <Link href="/admin" className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-gold-500 hover:text-gold-400 hover:bg-[var(--accent-dim)] rounded-xl cursor-pointer transition-colors">
+                        <Link href="/admin" className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-[var(--accent)] hover:bg-[var(--accent-dim)] rounded-xl cursor-pointer transition-colors">
                           <FiSettings size={14} /> Admin Dashboard
                         </Link>
                       </DropdownMenu.Item>
@@ -157,25 +164,12 @@ export function Navbar() {
                   </DropdownMenu.Content>
                 </DropdownMenu.Portal>
               </DropdownMenu.Root>
-              </>
             ) : (
-              <div className="flex items-center gap-2">
-                <Link
-                  href="/login"
-                  className="px-4 py-1.5 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors font-medium"
-                >
+              <div className="flex items-center gap-2 ml-1">
+                <Link href="/login" className="px-4 py-1.5 text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] rounded-xl hover:bg-[var(--accent-dim)] transition-all">
                   Sign In
                 </Link>
-                <Link
-                  href="/register"
-                  className={`
-                    px-4 py-2 text-sm rounded-xl font-semibold transition-all duration-200 hover:scale-105 active:scale-95
-                    ${isLight
-                      ? "bg-gradient-to-r from-gold-500 to-gold-600 text-white shadow-md shadow-gold-500/30 hover:shadow-gold-500/50"
-                      : "bg-gold-600 hover:bg-gold-500 text-white"
-                    }
-                  `}
-                >
+                <Link href="/register" className="btn-primary px-4 py-2 text-sm rounded-xl">
                   Get Started
                 </Link>
               </div>
@@ -183,17 +177,26 @@ export function Navbar() {
           </div>
 
           {/* ── Mobile toggle ── */}
-          <button
-            className="md:hidden p-2 rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-dim)] transition-all"
-            onClick={() => setMobileOpen(!mobileOpen)}
-          >
-            {mobileOpen ? <FiX size={20} /> : <FiMenu size={20} />}
-          </button>
+          <div className="md:hidden flex items-center gap-2">
+            {/* Mobile theme pill */}
+            <button onClick={toggleTheme} className="theme-toggle" aria-label="Toggle theme">
+              <span className="theme-toggle__knob">
+                {isLight ? <GiMoon size={10} className="text-[var(--text-muted)]" /> : <GiSun size={10} className="text-[var(--accent-light)]" />}
+              </span>
+            </button>
+            <button
+              className="p-2 rounded-xl text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-dim)] transition-all"
+              onClick={() => setMobileOpen(!mobileOpen)}
+              aria-label="Menu"
+            >
+              {mobileOpen ? <FiX size={20} /> : <FiMenu size={20} />}
+            </button>
+          </div>
         </div>
 
         {/* ── Mobile menu ── */}
         {mobileOpen && (
-          <div className="md:hidden py-4 border-t border-[var(--border)] space-y-1 animate-fadeInUp">
+          <div className="md:hidden pb-4 pt-2 border-t border-[var(--border)] space-y-0.5 animate-fadeInUp">
             {navLinks.map((l) => (
               <Link
                 key={l.href}
@@ -204,29 +207,25 @@ export function Navbar() {
                 {l.label}
               </Link>
             ))}
-            <button
-              onClick={toggleTheme}
-              className="flex items-center gap-2 w-full px-3 py-2.5 rounded-xl text-sm text-[var(--text-secondary)] hover:bg-[var(--accent-dim)] transition-all"
-            >
-              {isLight ? <GiMoon size={15} /> : <GiSun size={15} />}
-              {isLight ? "Dark mode" : "Light mode"}
-            </button>
-            {session ? (
-              <>
-                <Link href="/profile" onClick={() => setMobileOpen(false)} className="block px-3 py-2.5 rounded-xl text-sm text-[var(--text-secondary)] hover:bg-[var(--accent-dim)] transition-all">Profile</Link>
-                {user?.role === "ADMIN" && (
-                  <Link href="/admin" onClick={() => setMobileOpen(false)} className="block px-3 py-2.5 rounded-xl text-sm text-gold-500 hover:bg-[var(--accent-dim)] transition-all">Admin</Link>
-                )}
-                <button onClick={() => signOut()} className="block w-full text-left px-3 py-2.5 rounded-xl text-sm text-red-400 hover:bg-red-500/10 transition-all">
-                  Sign Out
-                </button>
-              </>
-            ) : (
-              <div className="flex gap-2 pt-2">
-                <Link href="/login" onClick={() => setMobileOpen(false)} className="flex-1 text-center px-4 py-2 text-sm border border-[var(--border)] text-[var(--text-primary)] rounded-xl hover:bg-[var(--accent-dim)] transition-all">Sign In</Link>
-                <Link href="/register" onClick={() => setMobileOpen(false)} className="flex-1 text-center px-4 py-2 text-sm bg-gold-600 text-white rounded-xl hover:bg-gold-500 transition-all font-medium">Register</Link>
-              </div>
-            )}
+            <div className="pt-2 border-t border-[var(--border)] space-y-0.5 mt-2">
+              {session ? (
+                <>
+                  <Link href="/profile"    onClick={() => setMobileOpen(false)} className="block px-3 py-2.5 rounded-xl text-sm text-[var(--text-secondary)] hover:bg-[var(--accent-dim)] transition-all">Profile</Link>
+                  <Link href="/dashboard"  onClick={() => setMobileOpen(false)} className="block px-3 py-2.5 rounded-xl text-sm text-[var(--text-secondary)] hover:bg-[var(--accent-dim)] transition-all">My Learning</Link>
+                  {user?.role === "ADMIN" && (
+                    <Link href="/admin"    onClick={() => setMobileOpen(false)} className="block px-3 py-2.5 rounded-xl text-sm text-[var(--accent)] hover:bg-[var(--accent-dim)] transition-all">Admin</Link>
+                  )}
+                  <button onClick={() => signOut()} className="block w-full text-left px-3 py-2.5 rounded-xl text-sm text-red-400 hover:bg-red-500/10 transition-all">
+                    Sign Out
+                  </button>
+                </>
+              ) : (
+                <div className="flex gap-2 pt-1">
+                  <Link href="/login"    onClick={() => setMobileOpen(false)} className="flex-1 text-center px-4 py-2 text-sm border border-[var(--border)] text-[var(--text-primary)] rounded-xl hover:bg-[var(--accent-dim)] transition-all">Sign In</Link>
+                  <Link href="/register" onClick={() => setMobileOpen(false)} className="flex-1 text-center btn-primary py-2 text-sm rounded-xl">Register</Link>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </nav>

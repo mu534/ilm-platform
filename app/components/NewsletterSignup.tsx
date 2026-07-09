@@ -16,11 +16,20 @@ export function NewsletterSignup() {
     e.preventDefault();
     if (!email) return;
     setIsLoading(true);
-    setTimeout(() => {
-      setIsSubscribed(true);
+    try {
+      const res  = await fetch("/api/newsletter", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setIsSubscribed(true);
+        setEmail("");
+      }
+    } finally {
       setIsLoading(false);
-      setEmail("");
-    }, 1000);
+    }
   };
 
   return (

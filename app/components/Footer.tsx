@@ -7,6 +7,8 @@ const exploreLinks = [
   { href: "/courses",  label: "Courses"  },
   { href: "/lectures", label: "Lectures" },
   { href: "/scholars", label: "Scholars" },
+  { href: "/forum",    label: "Forum"    },
+  { href: "/activity", label: "Activity" },
 ];
 
 const accountLinks = [

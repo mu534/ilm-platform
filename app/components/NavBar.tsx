@@ -12,12 +12,14 @@ import {
 import { GiMoon, GiSun } from "react-icons/gi";
 import { useTheme } from "./ThemeProvider";
 import { NotificationBell } from "./NotificationBell";
+import { LanguageSwitcher } from "./LanguageSwitcher";
 
 const navLinks = [
   { href: "/",         label: "Home"     },
   { href: "/courses",  label: "Courses"  },
   { href: "/lectures", label: "Lectures" },
   { href: "/scholars", label: "Scholars" },
+  { href: "/forum",    label: "Forum"    },
 ];
 
 export function Navbar() {
@@ -92,6 +94,7 @@ export function Navbar() {
                 <GiSun className="text-gold-400 text-base" />
               )}
             </button>
+            <LanguageSwitcher />
           </div>
 
           {/* ── Auth ── */}

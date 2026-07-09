@@ -62,3 +62,21 @@ export async function POST(req: NextRequest) {
     return handleApiError(error);
   }
 }
+
+// DELETE /api/cms?key=xxx — admin only
+export async function DELETE(req: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+    const user = session?.user as SessionUser | undefined;
+    if (user?.role !== "ADMIN") return errorResponse("Forbidden", 403);
+
+    const { searchParams } = new URL(req.url);
+    const key = searchParams.get("key");
+    if (!key) return errorResponse("key is required", 400);
+
+    await prisma.cmsContent.delete({ where: { key } });
+    return successResponse({ message: "Deleted" });
+  } catch (error) {
+    return handleApiError(error);
+  }
+}

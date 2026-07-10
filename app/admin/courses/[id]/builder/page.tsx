@@ -1,0 +1,584 @@
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
+import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
+import {
+  FiPlus, FiTrash2, FiEdit2, FiChevronUp, FiChevronDown,
+  FiArrowLeft, FiSave, FiX, FiLoader, FiVideo,
+  FiFileText, FiHeadphones, FiFile, FiEye, FiEyeOff,
+  FiCheckCircle,
+} from "react-icons/fi";
+
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+interface LectureItem {
+  id:           string;
+  title:        string;
+  slug:         string;
+  type:         "TEXT" | "VIDEO" | "AUDIO" | "PDF";
+  published:    boolean;
+  duration:     number | null;
+  order:        number;
+}
+
+interface ModuleItem {
+  id:          string;
+  title:       string;
+  description: string | null;
+  order:       number;
+  lectures:    LectureItem[];
+  _count:      { lectures: number; quizzes: number };
+}
+
+interface Course {
+  id:    string;
+  title: string;
+  slug:  string;
+}
+
+const typeIcon: Record<string, React.ReactNode> = {
+  VIDEO: <FiVideo      size={12} />,
+  TEXT:  <FiFileText   size={12} />,
+  AUDIO: <FiHeadphones size={12} />,
+  PDF:   <FiFile       size={12} />,
+};
+
+const inputClass =
+  "w-full px-3 py-2 bg-[var(--bg-card)] border border-[var(--border)] rounded-xl text-[var(--text-primary)] text-sm placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] transition-colors";
+
+// ── Module form (inline) ──────────────────────────────────────────────────────
+function ModuleForm({
+  courseId,
+  initial,
+  onSave,
+  onCancel,
+}: {
+  courseId: string;
+  initial?: ModuleItem;
+  onSave:   () => void;
+  onCancel: () => void;
+}) {
+  const [title, setTitle]   = useState(initial?.title ?? "");
+  const [desc,  setDesc]    = useState(initial?.description ?? "");
+  const [saving, setSaving] = useState(false);
+  const [error,  setError]  = useState("");
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title.trim()) { setError("Title is required"); return; }
+    setSaving(true); setError("");
+    try {
+      const res = initial
+        ? await fetch(`/api/modules/${initial.id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ title: title.trim(), description: desc.trim() || undefined, courseId }),
+          })
+        : await fetch(`/api/courses/${courseId}/modules`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ title: title.trim(), description: desc.trim() || undefined, courseId, order: 0 }),
+          });
+      const data = await res.json();
+      if (!data.success) { setError(data.error ?? "Failed to save module"); return; }
+      onSave();
+    } catch { setError("Something went wrong"); }
+    finally   { setSaving(false); }
+  };
+
+  return (
+    <form onSubmit={submit} className="glass-card rounded-xl p-4 border border-[var(--border-strong)] space-y-3">
+      <div>
+        <label className="block text-xs text-[var(--text-muted)] font-medium mb-1">Module Title *</label>
+        <input value={title} onChange={(e) => setTitle(e.target.value)} className={inputClass} placeholder="e.g. Introduction to Tafsir" autoFocus />
+      </div>
+      <div>
+        <label className="block text-xs text-[var(--text-muted)] font-medium mb-1">Description</label>
+        <input value={desc} onChange={(e) => setDesc(e.target.value)} className={inputClass} placeholder="Brief description (optional)" />
+      </div>
+      {error && <p className="text-xs text-red-400">{error}</p>}
+      <div className="flex gap-2">
+        <button type="submit" disabled={saving} className="btn-primary text-xs px-4 py-2">
+          {saving ? <FiLoader className="animate-spin" size={13} /> : <FiSave size={13} />}
+          {saving ? "Saving…" : initial ? "Update" : "Add Module"}
+        </button>
+        <button type="button" onClick={onCancel} className="btn-secondary text-xs px-4 py-2">
+          <FiX size={13} /> Cancel
+        </button>
+      </div>
+    </form>
+  );
+}
+
+// ── Lecture form (inline, inside a module) ────────────────────────────────────
+function LectureForm({
+  moduleId,
+  courseId,
+  initial,
+  onSave,
+  onCancel,
+}: {
+  moduleId: string;
+  courseId: string;
+  initial?: LectureItem;
+  onSave:   () => void;
+  onCancel: () => void;
+}) {
+  const [title,     setTitle]     = useState(initial?.title ?? "");
+  const [type,      setType]      = useState<LectureItem["type"]>(initial?.type ?? "TEXT");
+  const [published, setPublished] = useState(initial?.published ?? false);
+  const [saving,    setSaving]    = useState(false);
+  const [error,     setError]     = useState("");
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title.trim()) { setError("Title is required"); return; }
+    setSaving(true); setError("");
+
+    // Generate a basic slug
+    const slug = title.toLowerCase().replace(/[^\w\s-]/g, "").replace(/[\s_]+/g, "-").replace(/^-+|-+$/g, "") + "-" + Date.now().toString(36);
+
+    try {
+      const endpoint = initial ? `/api/lectures/${initial.id}` : "/api/lectures";
+      const method   = initial ? "PATCH" : "POST";
+      const body     = initial
+        ? { title: title.trim(), type, published }
+        : { title: title.trim(), description: title.trim(), type, published, moduleId, authorId: "", slug, tags: [] };
+
+      const res  = await fetch(endpoint, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!data.success) { setError(data.error ?? "Failed to save lecture"); return; }
+      onSave();
+    } catch { setError("Something went wrong"); }
+    finally   { setSaving(false); }
+  };
+
+  const typeOptions: { value: LectureItem["type"]; label: string; icon: React.ReactNode }[] = [
+    { value: "TEXT",  label: "Article", icon: <FiFileText   size={13} /> },
+    { value: "VIDEO", label: "Video",   icon: <FiVideo       size={13} /> },
+    { value: "AUDIO", label: "Audio",   icon: <FiHeadphones  size={13} /> },
+    { value: "PDF",   label: "PDF",     icon: <FiFile        size={13} /> },
+  ];
+
+  return (
+    <form onSubmit={submit} className="mt-2 p-4 bg-[var(--bg-secondary)] rounded-xl border border-[var(--border)] space-y-3">
+      <div>
+        <label className="block text-xs text-[var(--text-muted)] font-medium mb-1">Lesson Title *</label>
+        <input value={title} onChange={(e) => setTitle(e.target.value)} className={inputClass} placeholder="e.g. Understanding the First Verse" autoFocus />
+      </div>
+      <div>
+        <label className="block text-xs text-[var(--text-muted)] font-medium mb-1">Content Type</label>
+        <div className="flex gap-2 flex-wrap">
+          {typeOptions.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => setType(opt.value)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                type === opt.value
+                  ? "bg-[var(--accent)] text-white"
+                  : "border border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+              }`}
+            >
+              {opt.icon} {opt.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      <label className="flex items-center gap-2 cursor-pointer">
+        <input type="checkbox" checked={published} onChange={(e) => setPublished(e.target.checked)} className="w-3.5 h-3.5 accent-[var(--accent)]" />
+        <span className="text-xs text-[var(--text-secondary)]">Publish immediately</span>
+      </label>
+      {error && <p className="text-xs text-red-400">{error}</p>}
+      <div className="flex gap-2">
+        <button type="submit" disabled={saving} className="btn-primary text-xs px-4 py-2">
+          {saving ? <FiLoader className="animate-spin" size={13} /> : <FiSave size={13} />}
+          {saving ? "Saving…" : initial ? "Update" : "Add Lesson"}
+        </button>
+        <button type="button" onClick={onCancel} className="btn-secondary text-xs px-4 py-2">
+          <FiX size={13} /> Cancel
+        </button>
+      </div>
+    </form>
+  );
+}
+
+// ── Main page ────────────────────────────────────────────────────────────────
+export default function CourseBuilderPage() {
+  const { id: courseId } = useParams<{ id: string }>();
+  const router = useRouter();
+
+  const [course,  setCourse]  = useState<Course | null>(null);
+  const [modules, setModules] = useState<ModuleItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // UI state
+  const [addingModule,    setAddingModule]    = useState(false);
+  const [editingModule,   setEditingModule]   = useState<string | null>(null);   // module id
+  const [addingLectureIn, setAddingLectureIn] = useState<string | null>(null);  // module id
+  const [editingLecture,  setEditingLecture]  = useState<string | null>(null);  // lecture id
+
+  // ── Load data ───────────────────────────────────────────────────────────────
+  const load = useCallback(async () => {
+    if (!courseId) return;
+    try {
+      const [courseRes, modulesRes] = await Promise.all([
+        fetch(`/api/courses/${courseId}`),
+        fetch(`/api/courses/${courseId}/modules`),
+      ]);
+      const cd = await courseRes.json();
+      const md = await modulesRes.json();
+      if (cd.success) setCourse({ id: cd.data.id, title: cd.data.title, slug: cd.data.slug });
+      if (md.success) setModules(md.data);
+    } finally {
+      setLoading(false);
+    }
+  }, [courseId]);
+
+  useEffect(() => { void load(); }, [load]);
+
+  // ── Module reorder ──────────────────────────────────────────────────────────
+  const reorderModule = async (index: number, direction: "up" | "down") => {
+    const next = [...modules];
+    const swap = direction === "up" ? index - 1 : index + 1;
+    if (swap < 0 || swap >= next.length) return;
+    [next[index], next[swap]] = [next[swap], next[index]];
+
+    // Optimistic update
+    setModules(next);
+
+    // Persist new orders
+    await Promise.all(
+      next.map((m, i) =>
+        fetch(`/api/modules/${m.id}`, {
+          method:  "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body:    JSON.stringify({ title: m.title, courseId, order: i }),
+        }),
+      ),
+    );
+  };
+
+  // ── Lecture reorder ─────────────────────────────────────────────────────────
+  const reorderLecture = async (moduleId: string, index: number, direction: "up" | "down") => {
+    const mod = modules.find((m) => m.id === moduleId);
+    if (!mod) return;
+    const lectures = [...mod.lectures];
+    const swap = direction === "up" ? index - 1 : index + 1;
+    if (swap < 0 || swap >= lectures.length) return;
+    [lectures[index], lectures[swap]] = [lectures[swap], lectures[index]];
+
+    setModules((prev) =>
+      prev.map((m) => m.id === moduleId ? { ...m, lectures } : m),
+    );
+
+    await Promise.all(
+      lectures.map((l, i) =>
+        fetch(`/api/lectures/${l.id}`, {
+          method:  "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body:    JSON.stringify({ order: i }),
+        }),
+      ),
+    );
+  };
+
+  // ── Delete module ───────────────────────────────────────────────────────────
+  const deleteModule = async (moduleId: string, title: string) => {
+    if (!confirm(`Delete module "${title}"? All lectures inside will also be deleted.`)) return;
+    await fetch(`/api/modules/${moduleId}`, { method: "DELETE" });
+    void load();
+  };
+
+  // ── Delete lecture ──────────────────────────────────────────────────────────
+  const deleteLecture = async (lectureId: string, title: string) => {
+    if (!confirm(`Delete lecture "${title}"?`)) return;
+    await fetch(`/api/lectures/${lectureId}`, { method: "DELETE" });
+    void load();
+  };
+
+  // ── Toggle lecture publish ──────────────────────────────────────────────────
+  const togglePublish = async (lectureId: string, current: boolean) => {
+    await fetch(`/api/lectures/${lectureId}`, {
+      method:  "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ published: !current }),
+    });
+    void load();
+  };
+
+  if (loading) {
+    return (
+      <div className="p-8 max-w-4xl space-y-4">
+        {[1, 2, 3].map((i) => <div key={i} className="h-20 rounded-2xl shimmer" />)}
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-6 sm:p-8 max-w-4xl">
+
+      {/* Header */}
+      <div className="flex items-start justify-between mb-8">
+        <div>
+          <Link
+            href="/admin/courses"
+            className="inline-flex items-center gap-1.5 text-xs text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors mb-3"
+          >
+            <FiArrowLeft size={12} /> All Courses
+          </Link>
+          <h1 className="font-display text-2xl sm:text-3xl font-bold text-[var(--text-primary)]">
+            Course Builder
+          </h1>
+          {course && (
+            <p className="text-[var(--text-muted)] text-sm mt-1">
+              {course.title} ·{" "}
+              <Link href={`/courses/${course.slug}`} target="_blank" className="text-[var(--accent)] hover:text-[var(--accent-light)] transition-colors">
+                Preview
+              </Link>{" "}·{" "}
+              <Link href={`/admin/courses/${courseId}/edit`} className="text-[var(--accent)] hover:text-[var(--accent-light)] transition-colors">
+                Edit Details
+              </Link>
+            </p>
+          )}
+        </div>
+        <button
+          onClick={() => setAddingModule(true)}
+          className="btn-primary text-sm"
+          disabled={addingModule}
+        >
+          <FiPlus size={14} /> Add Module
+        </button>
+      </div>
+
+      {/* Add module form */}
+      {addingModule && (
+        <div className="mb-6">
+          <ModuleForm
+            courseId={courseId}
+            onSave={() => { setAddingModule(false); void load(); }}
+            onCancel={() => setAddingModule(false)}
+          />
+        </div>
+      )}
+
+      {/* Empty state */}
+      {modules.length === 0 && !addingModule && (
+        <div className="glass-card rounded-2xl p-12 text-center">
+          <div className="w-14 h-14 rounded-2xl bg-[var(--accent-dim)] border border-[var(--border-strong)] flex items-center justify-center mx-auto mb-4">
+            <FiFileText className="text-[var(--accent)] text-xl" />
+          </div>
+          <p className="text-[var(--text-primary)] font-semibold mb-1">No modules yet</p>
+          <p className="text-[var(--text-muted)] text-sm mb-4">
+            Modules organise your course into sections. Add your first module to get started.
+          </p>
+          <button onClick={() => setAddingModule(true)} className="btn-primary text-sm">
+            <FiPlus size={14} /> Add First Module
+          </button>
+        </div>
+      )}
+
+      {/* Module list */}
+      <div className="space-y-4">
+        {modules.map((mod, modIdx) => (
+          <div key={mod.id} className="glass-card rounded-2xl overflow-hidden border border-[var(--border)]">
+
+            {/* Module header */}
+            <div className="flex items-start gap-3 px-5 py-4 bg-[var(--bg-secondary)]">
+              {/* Reorder */}
+              <div className="flex flex-col gap-0.5 flex-shrink-0 mt-0.5">
+                <button
+                  onClick={() => reorderModule(modIdx, "up")}
+                  disabled={modIdx === 0}
+                  className="p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)] disabled:opacity-30 disabled:cursor-not-allowed rounded transition-colors"
+                  title="Move up"
+                >
+                  <FiChevronUp size={14} />
+                </button>
+                <button
+                  onClick={() => reorderModule(modIdx, "down")}
+                  disabled={modIdx === modules.length - 1}
+                  className="p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)] disabled:opacity-30 disabled:cursor-not-allowed rounded transition-colors"
+                  title="Move down"
+                >
+                  <FiChevronDown size={14} />
+                </button>
+              </div>
+
+              {/* Module info */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-0.5">
+                  <span className="text-xs text-[var(--text-muted)] font-medium uppercase tracking-wide">
+                    Module {modIdx + 1}
+                  </span>
+                </div>
+                {editingModule === mod.id ? (
+                  <ModuleForm
+                    courseId={courseId}
+                    initial={mod}
+                    onSave={() => { setEditingModule(null); void load(); }}
+                    onCancel={() => setEditingModule(null)}
+                  />
+                ) : (
+                  <>
+                    <h3 className="font-semibold text-[var(--text-primary)] text-sm">{mod.title}</h3>
+                    {mod.description && (
+                      <p className="text-xs text-[var(--text-muted)] mt-0.5 line-clamp-1">{mod.description}</p>
+                    )}
+                    <p className="text-xs text-[var(--text-muted)] mt-1">
+                      {mod._count.lectures} lesson{mod._count.lectures !== 1 ? "s" : ""}
+                      {mod._count.quizzes > 0 && ` · ${mod._count.quizzes} quiz`}
+                    </p>
+                  </>
+                )}
+              </div>
+
+              {/* Module actions */}
+              {editingModule !== mod.id && (
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  <button
+                    onClick={() => setEditingModule(mod.id)}
+                    className="p-1.5 text-[var(--text-muted)] hover:text-[var(--accent)] hover:bg-[var(--accent-dim)] rounded-lg transition-colors"
+                    title="Edit module"
+                  >
+                    <FiEdit2 size={13} />
+                  </button>
+                  <button
+                    onClick={() => deleteModule(mod.id, mod.title)}
+                    className="p-1.5 text-[var(--text-muted)] hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                    title="Delete module"
+                  >
+                    <FiTrash2 size={13} />
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Lecture list */}
+            <div className="divide-y divide-[var(--border)]">
+              {mod.lectures.map((lecture, lIdx) => (
+                <div key={lecture.id} className="px-5 py-3">
+                  {editingLecture === lecture.id ? (
+                    <LectureForm
+                      moduleId={mod.id}
+                      courseId={courseId}
+                      initial={lecture}
+                      onSave={() => { setEditingLecture(null); void load(); }}
+                      onCancel={() => setEditingLecture(null)}
+                    />
+                  ) : (
+                    <div className="flex items-center gap-3">
+                      {/* Reorder */}
+                      <div className="flex flex-col gap-0 flex-shrink-0">
+                        <button
+                          onClick={() => reorderLecture(mod.id, lIdx, "up")}
+                          disabled={lIdx === 0}
+                          className="p-0.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] disabled:opacity-30 rounded transition-colors"
+                        >
+                          <FiChevronUp size={12} />
+                        </button>
+                        <button
+                          onClick={() => reorderLecture(mod.id, lIdx, "down")}
+                          disabled={lIdx === mod.lectures.length - 1}
+                          className="p-0.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] disabled:opacity-30 rounded transition-colors"
+                        >
+                          <FiChevronDown size={12} />
+                        </button>
+                      </div>
+
+                      {/* Type icon */}
+                      <span className="text-[var(--text-muted)] flex-shrink-0">
+                        {typeIcon[lecture.type]}
+                      </span>
+
+                      {/* Title */}
+                      <span className="flex-1 text-sm text-[var(--text-primary)] truncate">
+                        {lecture.title}
+                      </span>
+
+                      {/* Published badge */}
+                      <span className={`text-xs px-2 py-0.5 rounded-full border flex-shrink-0 ${
+                        lecture.published
+                          ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                          : "bg-[var(--bg-secondary)] text-[var(--text-muted)] border-[var(--border)]"
+                      }`}>
+                        {lecture.published ? "Live" : "Draft"}
+                      </span>
+
+                      {/* Actions */}
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        <button
+                          onClick={() => togglePublish(lecture.id, lecture.published)}
+                          className="p-1.5 text-[var(--text-muted)] hover:text-[var(--accent)] hover:bg-[var(--accent-dim)] rounded-lg transition-colors"
+                          title={lecture.published ? "Unpublish" : "Publish"}
+                        >
+                          {lecture.published ? <FiEyeOff size={12} /> : <FiEye size={12} />}
+                        </button>
+                        <Link
+                          href={`/admin/lectures/${lecture.id}/edit`}
+                          className="p-1.5 text-[var(--text-muted)] hover:text-[var(--accent)] hover:bg-[var(--accent-dim)] rounded-lg transition-colors"
+                          title="Edit lecture content"
+                        >
+                          <FiEdit2 size={12} />
+                        </Link>
+                        <button
+                          onClick={() => deleteLecture(lecture.id, lecture.title)}
+                          className="p-1.5 text-[var(--text-muted)] hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                          title="Delete lecture"
+                        >
+                          <FiTrash2 size={12} />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Add lecture form / button */}
+            <div className="px-5 py-3 border-t border-[var(--border)]">
+              {addingLectureIn === mod.id ? (
+                <LectureForm
+                  moduleId={mod.id}
+                  courseId={courseId}
+                  onSave={() => { setAddingLectureIn(null); void load(); }}
+                  onCancel={() => setAddingLectureIn(null)}
+                />
+              ) : (
+                <button
+                  onClick={() => setAddingLectureIn(mod.id)}
+                  className="flex items-center gap-1.5 text-xs text-[var(--accent)] hover:text-[var(--accent-light)] transition-colors py-1"
+                >
+                  <FiPlus size={12} /> Add Lesson
+                </button>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Summary */}
+      {modules.length > 0 && (
+        <div className="mt-6 p-4 glass-card rounded-xl flex items-center gap-3 text-sm text-[var(--text-muted)]">
+          <FiCheckCircle className="text-emerald-400 flex-shrink-0" size={16} />
+          <span>
+            {modules.length} module{modules.length !== 1 ? "s" : ""} ·{" "}
+            {modules.reduce((s, m) => s + m._count.lectures, 0)} lesson{modules.reduce((s, m) => s + m._count.lectures, 0) !== 1 ? "s" : ""}
+          </span>
+          <Link
+            href={course ? `/courses/${course.slug}` : "#"}
+            target="_blank"
+            className="ml-auto text-[var(--accent)] hover:text-[var(--accent-light)] transition-colors"
+          >
+            Preview course →
+          </Link>
+        </div>
+      )}
+    </div>
+  );
+}

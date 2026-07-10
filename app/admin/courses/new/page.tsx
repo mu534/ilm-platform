@@ -67,6 +67,7 @@ export default function NewCoursePage() {
         ...form,
         objectives:    form.objectives.filter(Boolean),
         prerequisites: form.prerequisites.filter(Boolean),
+        tags:          form.tags.split(",").map((t) => t.trim()).filter(Boolean),
         categoryId:    form.categoryId || undefined,
       };
       const res  = await fetch("/api/courses", {
@@ -208,6 +209,20 @@ export default function NewCoursePage() {
               <FiPlus size={13} /> Add prerequisite
             </button>
           </div>
+        </div>
+
+        {/* Tags */}
+        <div>
+          <label className="block text-xs text-[var(--text-muted)] font-medium mb-1.5">
+            Tags <span className="text-[var(--text-muted)] font-normal">(comma-separated)</span>
+          </label>
+          <input
+            value={form.tags}
+            onChange={(e) => setForm({ ...form, tags: e.target.value })}
+            className={inputClass()}
+            placeholder="Quran, Tafsir, Beginner, Arabic…"
+          />
+          <p className="text-xs text-[var(--text-muted)] mt-1">Tags help students discover your course through search and filters.</p>
         </div>
 
         {/* Options */}

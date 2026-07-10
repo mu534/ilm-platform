@@ -111,9 +111,16 @@ export default async function AdminCoursesPage() {
                       <Link
                         href={`/admin/courses/${course.id}/edit`}
                         className="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-dim)] rounded-lg transition-colors"
-                        title="Edit"
+                        title="Edit Details"
                       >
                         <FiEdit2 size={13} />
+                      </Link>
+                      <Link
+                        href={`/admin/courses/${course.id}/builder`}
+                        className="p-1.5 text-xs text-[var(--accent)] hover:text-[var(--accent-light)] hover:bg-[var(--accent-dim)] rounded-lg transition-colors font-semibold"
+                        title="Course Builder — Modules & Lessons"
+                      >
+                        Build
                       </Link>
                       <AdminCourseActions course={course} />
                     </div>

@@ -36,7 +36,7 @@ export default function RegisterPage() {
         }
       } else {
         setSuccess(true);
-        setTimeout(() => router.push("/login"), 2000);
+        // Don't auto-redirect — tell them to verify email first
       }
     } catch {
       setErrors({ general: "Something went wrong. Please try again." });
@@ -77,9 +77,17 @@ export default function RegisterPage() {
         <div className="glass-card rounded-2xl p-8">
 
           {success && (
-            <div className="flex items-center gap-2.5 p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm mb-5">
-              <FiCheck className="flex-shrink-0" size={16} />
-              Account created! Redirecting to login…
+            <div className="flex flex-col items-center gap-3 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-center mb-5">
+              <FiCheck className="text-emerald-400 flex-shrink-0" size={22} />
+              <div>
+                <p className="text-emerald-400 text-sm font-semibold">Account created!</p>
+                <p className="text-[var(--text-muted)] text-xs mt-1">
+                  Check your email for a verification link before signing in.
+                </p>
+              </div>
+              <Link href="/login" className="btn-secondary text-sm px-4 py-2">
+                Go to Sign In
+              </Link>
             </div>
           )}
 

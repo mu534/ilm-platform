@@ -1,11 +1,12 @@
 import { notFound } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../lib/auth";
 import { prisma } from "../../lib/prism";
 import { LectureCard } from "../../components/lectures/LectureCard";
 import { FollowButton } from "../../components/scholars/FollowButton";
-import { FiBookOpen, FiStar, FiUsers } from "react-icons/fi";
+import { FiBookOpen, FiStar, FiUsers, FiEdit2 } from "react-icons/fi";
 import type { Lecture, LectureType, SessionUser } from "../../types/auth.types";
 
 interface Props {
@@ -141,46 +142,49 @@ export default async function ScholarPage({ params }: Props) {
               </div>
             )}
 
-            <h1 className="font-display text-3xl md:text-4xl font-bold text-white mb-2">
+            <h1 className="font-display text-3xl md:text-4xl font-bold text-[var(--text-primary)] mb-2">
               {scholar.user.name}
             </h1>
 
-            <div className="flex items-center justify-center md:justify-start gap-1 text-sm text-ink-400 mb-4">
-              <FiBookOpen size={14} />
+            <div className="flex items-center justify-center md:justify-start gap-1 text-sm text-[var(--text-muted)] mb-4">
+              <FiBookOpen size={14} className="text-[var(--accent)]" />
               <span>{scholar._count.lectures} lectures</span>
               <span className="mx-1">·</span>
-              <FiUsers size={14} />
+              <FiUsers size={14} className="text-[var(--accent)]" />
               <span>{scholar._count.followers} followers</span>
             </div>
 
-            <p className="text-ink-300 leading-relaxed mb-6 max-w-2xl">
+            <p className="text-[var(--text-secondary)] leading-relaxed mb-6 max-w-2xl">
               {scholar.bio}
             </p>
 
-            {/* Follow button */}
-            {currentUser && currentUser.id !== scholar.userId && (
-              <div className="mb-4 flex justify-center md:justify-start">
+            {/* Actions row: Follow + Edit (owner only) */}
+            <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mb-6">
+              {currentUser && currentUser.id !== scholar.userId && (
                 <FollowButton
                   scholarId={scholar.id}
                   initialFollowing={isFollowing}
                   initialCount={scholar._count.followers}
                 />
-              </div>
-            )}
+              )}
+              {(currentUser?.id === scholar.userId || currentUser?.role === "ADMIN") && (
+                <Link
+                  href={`/scholars/${scholar.id}/edit`}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl border border-[var(--border-strong)] text-[var(--text-secondary)] hover:text-[var(--accent)] hover:border-[var(--accent)] hover:bg-[var(--accent-dim)] text-sm font-medium transition-all duration-200"
+                >
+                  <FiEdit2 size={13} /> Edit Profile
+                </Link>
+              )}
+            </div>
 
             {/* Topics */}
             <div className="mb-4">
-              <p className="text-xs text-gold-400 uppercase tracking-wider font-semibold mb-2">
+              <p className="text-xs text-[var(--accent)] uppercase tracking-wider font-semibold mb-2">
                 Areas of Knowledge
               </p>
               <div className="flex flex-wrap gap-2 justify-center md:justify-start">
                 {scholar.topics.map((topic: string) => (
-                  <span
-                    key={topic}
-                    className="px-3 py-1 rounded-full bg-gold-900/30 text-gold-400 border border-gold-700/30 text-sm"
-                  >
-                    {topic}
-                  </span>
+                  <span key={topic} className="tag-accent">{topic}</span>
                 ))}
               </div>
             </div>
@@ -188,20 +192,17 @@ export default async function ScholarPage({ params }: Props) {
             {/* Qualifications */}
             {scholar.qualifications.length > 0 && (
               <div>
-                <p className="text-xs text-gold-400 uppercase tracking-wider font-semibold mb-2">
-                  Qualifications
-                </p>
-                <ul className="space-y-1">
-                  {scholar.qualifications.map((q: string, i: number) => (
-                    <li
-                      key={i}
-                      className="text-sm text-ink-300 flex items-center gap-2"
-                    >
-                      <span className="w-1 h-1 rounded-full bg-gold-500 flex-shrink-0" />
-                      {q}
-                    </li>
-                  ))}
-                </ul>
+              <p className="text-xs text-[var(--accent)] uppercase tracking-wider font-semibold mb-2">
+                Qualifications
+              </p>
+              <ul className="space-y-1.5">
+                {scholar.qualifications.map((q: string, i: number) => (
+                  <li key={i} className="text-sm text-[var(--text-secondary)] flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] flex-shrink-0" />
+                    {q}
+                  </li>
+                ))}
+              </ul>
               </div>
             )}
           </div>
@@ -210,13 +211,13 @@ export default async function ScholarPage({ params }: Props) {
 
       {/* Lectures */}
       <div>
-        <h2 className="font-display text-2xl font-semibold text-white mb-6">
+        <h2 className="font-display text-2xl font-semibold text-[var(--text-primary)] mb-6">
           Lectures by {scholar.user.name}
         </h2>
         {lectures.length === 0 ? (
-          <p className="text-ink-500 text-center py-12">
-            No published lectures yet.
-          </p>
+          <div className="text-center py-12">
+            <p className="text-[var(--text-muted)] text-sm">No published lectures yet.</p>
+          </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {lectures.map((lecture) => (

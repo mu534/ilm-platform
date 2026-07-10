@@ -143,6 +143,12 @@ export default async function ScholarDashboardPage() {
             <FiPlus size={14} /> New Course
           </Link>
           <Link
+            href="/dashboard/scholar/analytics"
+            className="flex items-center gap-2 px-4 py-2 border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--accent)] hover:border-[var(--accent)] rounded-xl text-sm transition-colors"
+          >
+            <FiTrendingUp size={14} /> Analytics
+          </Link>
+          <Link
             href="/admin/lectures/new"
             className="flex items-center gap-2 px-4 py-2 bg-[var(--accent)] hover:bg-[var(--accent-light)] text-white rounded-xl text-sm font-medium transition-colors"
           >

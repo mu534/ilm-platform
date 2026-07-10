@@ -48,7 +48,7 @@ export default function QuizPage() {
   const [result,    setResult]    = useState<AttemptResult | null>(null);
   const [timeLeft,  setTimeLeft]  = useState<number | null>(null);
   const [started,   setStarted]   = useState(false);
-  const timerRef = useRef<NodeJS.Timeout>();
+  const timerRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   // Redirect if not logged in
   useEffect(() => {

@@ -210,6 +210,7 @@ model Course {
   prerequisites     String[]
   difficulty        DifficultyLevel @default(BEGINNER)
   estimatedDuration Int          @default(0) // in minutes
+  tags              String[]
   status            CourseStatus @default(DRAFT)
   featured          Boolean      @default(false)
   published         Boolean      @default(false)

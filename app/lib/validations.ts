@@ -74,6 +74,7 @@ export const courseSchema = z.object({
   prerequisites: z.array(z.string()).max(20).default([]),
   difficulty: z.enum(["BEGINNER", "INTERMEDIATE", "ADVANCED"]).default("BEGINNER"),
   estimatedDuration: z.number().int().min(0).default(0),
+  tags: z.array(z.string()).max(15, "Maximum 15 tags").default([]),
   featured: z.boolean().default(false),
   published: z.boolean().default(false),
   categoryId: z.string().optional(),

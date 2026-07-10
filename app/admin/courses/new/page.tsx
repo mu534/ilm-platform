@@ -21,6 +21,7 @@ interface FormData {
   categoryId:        string;
   objectives:        string[];
   prerequisites:     string[];
+  tags:              string;   // comma-separated input string
   published:         boolean;
   featured:          boolean;
 }
@@ -32,6 +33,7 @@ export default function NewCoursePage() {
     title: "", description: "", thumbnailUrl: "", bannerUrl: "",
     difficulty: "BEGINNER", estimatedDuration: 0, categoryId: "",
     objectives: [""], prerequisites: [""],
+    tags: "",
     published: false, featured: false,
   });
   const [errors, setErrors]   = useState<Record<string, string>>({});

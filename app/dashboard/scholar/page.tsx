@@ -137,6 +137,12 @@ export default async function ScholarDashboardPage() {
         </div>
         <div className="flex gap-3">
           <Link
+            href="/dashboard/scholar/students"
+            className="flex items-center gap-2 px-4 py-2 border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent)] rounded-xl text-sm transition-colors"
+          >
+            <FiUsers size={14} /> My Students
+          </Link>
+          <Link
             href="/admin/courses/new"
             className="flex items-center gap-2 px-4 py-2 border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent)] rounded-xl text-sm transition-colors"
           >

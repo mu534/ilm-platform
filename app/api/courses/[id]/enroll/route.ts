@@ -5,7 +5,7 @@ import { prisma } from "../../../../lib/prism";
 import { successResponse, errorResponse, handleApiError } from "../../../../utils/api";
 import type { SessionUser } from "../../../../types/auth.types";
 
-// POST /api/courses/[id]/enroll — enroll current user
+// POST /api/courses/[id]/enroll
 export async function POST(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -13,26 +13,51 @@ export async function POST(
   try {
     const session = await getServerSession(authOptions);
     const user = session?.user as SessionUser | undefined;
-    if (!user) return errorResponse("Unauthorized", 401);
+    if (!user) return errorResponse("Sign in required to enroll in this course", 401);
 
     const { id: courseId } = await params;
 
     const course = await prisma.course.findUnique({
       where: { id: courseId, published: true },
+      include: {
+        modules: {
+          select: {
+            lectures: { select: { id: true } },
+          },
+        },
+      },
     });
     if (!course) return errorResponse("Course not found or not published", 404);
 
+    // Prevent duplicate enrollment
     const existing = await prisma.enrollment.findUnique({
       where: { userId_courseId: { userId: user.id, courseId } },
     });
-    if (existing) return errorResponse("Already enrolled in this course", 409);
+    if (existing) return errorResponse("You are already enrolled in this course", 409);
 
-    const enrollment = await prisma.enrollment.create({
-      data: { userId: user.id, courseId },
-      include: {
-        course: { select: { id: true, title: true, slug: true, thumbnailUrl: true } },
-      },
-    });
+    // Create enrollment + initialise progress records in one transaction
+    const allLectureIds = course.modules.flatMap((m) => m.lectures.map((l) => l.id));
+
+    const [enrollment] = await prisma.$transaction([
+      // 1. Create enrollment
+      prisma.enrollment.create({
+        data: { userId: user.id, courseId },
+        include: {
+          course: {
+            select: { id: true, title: true, slug: true, thumbnailUrl: true },
+          },
+        },
+      }),
+      // 2. Pre-create LectureProgress rows so progress % is always accurate
+      prisma.lectureProgress.createMany({
+        data: allLectureIds.map((lectureId) => ({
+          userId:    user.id,
+          lectureId,
+          completed: false,
+        })),
+        skipDuplicates: true,
+      }),
+    ]);
 
     return successResponse(enrollment, 201);
   } catch (error) {
@@ -40,7 +65,7 @@ export async function POST(
   }
 }
 
-// DELETE /api/courses/[id]/enroll — unenroll
+// DELETE /api/courses/[id]/enroll — student unenrolls themselves
 export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -62,6 +87,29 @@ export async function DELETE(
     });
 
     return successResponse({ message: "Unenrolled successfully" });
+  } catch (error) {
+    return handleApiError(error);
+  }
+}
+
+// GET /api/courses/[id]/enroll — check if current user is enrolled
+export async function GET(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  try {
+    const session = await getServerSession(authOptions);
+    const user = session?.user as SessionUser | undefined;
+    if (!user) return successResponse({ enrolled: false });
+
+    const { id: courseId } = await params;
+
+    const enrollment = await prisma.enrollment.findUnique({
+      where: { userId_courseId: { userId: user.id, courseId } },
+      select: { id: true, status: true, progress: true, enrolledAt: true, completedAt: true },
+    });
+
+    return successResponse({ enrolled: !!enrollment, enrollment });
   } catch (error) {
     return handleApiError(error);
   }

@@ -9,7 +9,7 @@ async function getScholars() {
     orderBy: [{ featured: "desc" }, { createdAt: "desc" }],
     include: {
       user:   { select: { name: true, email: true, image: true } },
-      _count: { select: { lectures: true } },
+      _count: { select: { lectures: true, followers: true, courses: true } },
     },
   });
 }
@@ -24,7 +24,7 @@ type PrismaScholar = {
   featured:       boolean;
   verified:       boolean;
   user:           { name: string; email: string; image: string | null };
-  _count:         { lectures: number };
+  _count:         { lectures: number; followers: number; courses: number };
 };
 
 function mapScholar(s: PrismaScholar): Scholar {

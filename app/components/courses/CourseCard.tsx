@@ -84,7 +84,7 @@ export function CourseCard({ course }: CourseCardProps) {
         {/* Content */}
         <div className="p-5">
           {/* Difficulty + duration */}
-          <div className="flex items-center gap-2 mb-3">
+          <div className="flex items-center gap-2 mb-3 flex-wrap">
             <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${difficultyColors[course.difficulty] ?? difficultyColors.BEGINNER}`}>
               {difficultyLabels[course.difficulty] ?? course.difficulty}
             </span>
@@ -95,6 +95,15 @@ export function CourseCard({ course }: CourseCardProps) {
               </span>
             )}
           </div>
+
+          {/* Tags */}
+          {course.tags && course.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1 mb-2">
+              {course.tags.slice(0, 3).map((tag) => (
+                <span key={tag} className="tag text-xs">{tag}</span>
+              ))}
+            </div>
+          )}
 
           {/* Title */}
           <h3 className="font-display text-lg font-semibold text-[var(--text-primary)] group-hover:text-[var(--accent)] transition-colors line-clamp-2 leading-tight mb-2">

@@ -3,8 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "../../lib/auth";
 import { prisma } from "../../lib/prism";
 import Link from "next/link";
-import { FiAward, FiArrowLeft, FiDownload, FiExternalLink } from "react-icons/fi";
-import { formatDate } from "../../utils/api";
+import { FiAward, FiArrowLeft, FiDownload, FiExternalLink } from "react-icons/fi";import { formatDate } from "../../utils/api";
 import type { SessionUser } from "../../types/auth.types";
 
 export const metadata = { title: "My Certificates" };
@@ -109,10 +108,20 @@ export default async function CertificatesPage() {
                 </div>
               )}
 
-              {/* Date */}
-              <div className="pt-4 border-t border-[var(--border)] text-xs text-[var(--text-muted)]">
-                Issued on {formatDate(cert.issuedAt)}
-              </div>
+                {/* Date */}
+                <div className="pt-4 border-t border-[var(--border)] flex items-center justify-between">
+                  <p className="text-xs text-[var(--text-muted)]">
+                    Issued on {formatDate(cert.issuedAt)}
+                  </p>
+                  <a
+                    href={cert.certificateUrl ?? `/api/certificates/${cert.id}/pdf`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 text-xs text-[var(--accent)] hover:text-[var(--accent-light)] transition-colors font-medium"
+                  >
+                    <FiDownload size={12} /> View / Download
+                  </a>
+                </div>
             </div>
           ))}
         </div>

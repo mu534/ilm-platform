@@ -6,6 +6,8 @@ import { authOptions } from "../../lib/auth";
 import { prisma } from "../../lib/prism";
 import { CommentSection } from "../../components/CommentSection";
 import { LikeButton } from "../../components/lectures/LikeButton";
+import { MarkCompleteButton } from "../../components/lectures/MarkCompleteButton";
+import { LectureResources } from "../../components/lectures/LectureResources";
 import { formatDate } from "../../utils/api";
 import { sanitizeHtml } from "../../utils/sanitize";
 import { FiEye, FiCalendar, FiTag, FiLock, FiArrowLeft } from "react-icons/fi";
@@ -22,6 +24,7 @@ async function getLecture(slug: string) {
       author:   { select: { id: true, name: true, image: true, bio: true } },
       scholar:  { include: { user: { select: { name: true, image: true } } } },
       category: { select: { name: true, icon: true } },
+      media:    { select: { id: true, url: true, type: true, filename: true, size: true } },
       module: {
         select: {
           id: true,
@@ -167,6 +170,13 @@ export default async function LecturePage({ params }: Props) {
           </span>
           <LikeButton lectureId={lecture.id} />
         </div>
+
+        {/* Mark complete (only for enrolled course lectures) */}
+        {courseId && isEnrolled && (
+          <div className="mt-4">
+            <MarkCompleteButton lectureId={lecture.id} courseId={courseId} />
+          </div>
+        )}
       </header>
 
       {/* Thumbnail */}
@@ -245,6 +255,11 @@ export default async function LecturePage({ params }: Props) {
             {lecture.module.course.title}
           </Link>
         </div>
+      )}
+
+      {/* Resources / Downloads */}
+      {lecture.media && lecture.media.length > 0 && (
+        <LectureResources media={lecture.media} />
       )}
 
       <CommentSection lectureId={lecture.id} />

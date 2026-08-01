@@ -182,6 +182,21 @@ export default async function CourseDetailPage({ params }: Props) {
                   </span>
                 )}
               </div>
+
+              {/* Tags */}
+              {course.tags && course.tags.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-4">
+                  {course.tags.map((tag) => (
+                    <Link
+                      key={tag}
+                      href={`/courses?search=${encodeURIComponent(tag)}`}
+                      className="tag hover:tag-accent transition-colors"
+                    >
+                      {tag}
+                    </Link>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Objectives */}

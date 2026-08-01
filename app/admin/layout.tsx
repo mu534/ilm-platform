@@ -3,20 +3,21 @@ import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { authOptions } from "../lib/auth";
 import Link from "next/link";
-import { FiGrid, FiBookOpen, FiUsers, FiStar, FiLayout, FiBarChart2, FiFlag, FiFileText, FiList } from "react-icons/fi";
+import { FiGrid, FiBookOpen, FiUsers, FiStar, FiLayout, FiBarChart2, FiFlag, FiFileText, FiList, FiShield } from "react-icons/fi";
 import { GiMoon } from "react-icons/gi";
 import type { SessionUser } from "@/app/types/auth.types";
 
 const adminNav = [
-  { href: "/admin",              icon: <FiGrid />,      label: "Overview",     adminOnly: true  },
-  { href: "/admin/analytics",    icon: <FiBarChart2 />, label: "Analytics",    adminOnly: true  },
-  { href: "/admin/courses",      icon: <FiLayout />,    label: "Courses",      adminOnly: false },
-  { href: "/admin/lectures",     icon: <FiBookOpen />,  label: "Lectures",     adminOnly: false },
-  { href: "/admin/enrollments",  icon: <FiList />,      label: "Enrollments",  adminOnly: true  },
-  { href: "/admin/users",        icon: <FiUsers />,     label: "Users",        adminOnly: true  },
-  { href: "/admin/scholars",     icon: <FiStar />,      label: "Scholars",     adminOnly: true  },
-  { href: "/admin/reports",      icon: <FiFlag />,      label: "Reports",      adminOnly: true  },
-  { href: "/admin/cms",          icon: <FiFileText />,  label: "CMS",          adminOnly: true  },
+  { href: "/admin",             icon: <FiGrid />,      label: "Overview",    adminOnly: true  },
+  { href: "/admin/analytics",   icon: <FiBarChart2 />, label: "Analytics",   adminOnly: true  },
+  { href: "/admin/courses",     icon: <FiLayout />,    label: "Courses",     adminOnly: false },
+  { href: "/admin/lectures",    icon: <FiBookOpen />,  label: "Lectures",    adminOnly: false },
+  { href: "/admin/enrollments", icon: <FiList />,      label: "Enrollments", adminOnly: true  },
+  { href: "/admin/users",       icon: <FiUsers />,     label: "Users",       adminOnly: true  },
+  { href: "/admin/scholars",    icon: <FiStar />,      label: "Scholars",    adminOnly: true  },
+  { href: "/admin/reports",     icon: <FiFlag />,      label: "Reports",     adminOnly: true  },
+  { href: "/admin/cms",         icon: <FiFileText />,  label: "CMS",         adminOnly: true  },
+  { href: "/admin/audit-log",   icon: <FiShield />,    label: "Audit Log",   adminOnly: true  },
 ];
 
 export default async function AdminLayout({

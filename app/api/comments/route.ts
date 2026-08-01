@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
 
     const comments = await prisma.comment.findMany({
       where: { lectureId, approved: true },
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: "asc" },
       include: {
         author: { select: { id: true, name: true, image: true } },
       },
@@ -54,9 +54,10 @@ export async function POST(req: NextRequest) {
 
     const comment = await prisma.comment.create({
       data: {
-        body: data.body,
+        body:      data.body,
         lectureId: data.lectureId,
         authorId,
+        parentId:  data.parentId ?? null,
       },
       include: {
         author: { select: { id: true, name: true, image: true } },

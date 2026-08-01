@@ -7,6 +7,7 @@ import Link from "next/link";
 import {
   FiMail, FiEdit2, FiCheck, FiAlertCircle,
   FiBookOpen, FiBookmark, FiAward, FiActivity,
+  FiLock, FiEye, FiEyeOff, FiLoader,
 } from "react-icons/fi";
 import * as Avatar from "@radix-ui/react-avatar";
 import { RoleBadge } from "../components/ui/Badge";
@@ -260,6 +261,9 @@ export default function ProfilePage() {
           </div>
         </div>
 
+        {/* ── Change Password ── */}
+        <ChangePasswordSection />
+
         {/* ── Scholar / Admin tools ── */}
         {(user?.role === "ADMIN" || user?.role === "SCHOLAR") && (
           <div className="mt-6 pt-6 border-t border-[var(--border)]">
@@ -299,6 +303,144 @@ export default function ProfilePage() {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+// ── Change Password Component ─────────────────────────────────────────────────
+function ChangePasswordSection() {
+  const [open,    setOpen]    = useState(false);
+  const [current, setCurrent] = useState("");
+  const [next,    setNext]    = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [showPw,  setShowPw]  = useState(false);
+  const [saving,  setSaving]  = useState(false);
+  const [msg,     setMsg]     = useState("");
+  const [err,     setErr]     = useState("");
+
+  const strength      = next.length === 0 ? 0 : next.length >= 8 && /[A-Z]/.test(next) && /[0-9]/.test(next) ? 3 : next.length >= 6 ? 2 : 1;
+  const strengthColor = ["", "bg-red-400", "bg-yellow-400", "bg-emerald-400"][strength];
+  const strengthLabel = ["", "Weak", "Fair", "Strong"][strength];
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErr(""); setMsg("");
+    if (next !== confirm) { setErr("Passwords do not match"); return; }
+    if (strength < 3)     { setErr("Password is not strong enough"); return; }
+
+    setSaving(true);
+    try {
+      const res  = await fetch("/api/auth/change-password", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ currentPassword: current, newPassword: next }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setMsg("Password changed successfully!");
+        setCurrent(""); setNext(""); setConfirm(""); setOpen(false);
+      } else {
+        setErr(data.error ?? "Failed to change password");
+      }
+    } catch { setErr("Something went wrong"); }
+    finally   { setSaving(false); }
+  };
+
+  const ic = "w-full px-4 py-2.5 bg-[var(--bg-card)] border border-[var(--border)] rounded-xl text-[var(--text-primary)] text-sm focus:outline-none focus:border-[var(--accent)] transition-colors";
+
+  return (
+    <div className="mt-6 pt-6 border-t border-[var(--border)]">
+      <div className="flex items-center justify-between mb-4">
+        <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">
+          Security
+        </p>
+        {msg && <span className="text-xs text-emerald-400">{msg}</span>}
+      </div>
+
+      {!open ? (
+        <button
+          onClick={() => setOpen(true)}
+          className="flex items-center gap-2 px-4 py-2 border border-[var(--border)] hover:border-[var(--accent)] text-[var(--text-muted)] hover:text-[var(--text-primary)] text-sm rounded-xl transition-colors"
+        >
+          <FiLock size={13} /> Change Password
+        </button>
+      ) : (
+        <form onSubmit={handleSubmit} className="space-y-3 max-w-sm">
+          {err && (
+            <div className="flex items-center gap-2 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+              <FiAlertCircle size={13} /> {err}
+            </div>
+          )}
+
+          {/* Current password */}
+          <div>
+            <label className="block text-xs text-[var(--text-muted)] font-medium mb-1">Current Password</label>
+            <div className="relative">
+              <input
+                type={showPw ? "text" : "password"}
+                value={current}
+                onChange={(e) => setCurrent(e.target.value)}
+                className={`${ic} pr-9`}
+                placeholder="••••••••"
+                required
+              />
+              <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-primary)]" tabIndex={-1}>
+                {showPw ? <FiEyeOff size={14} /> : <FiEye size={14} />}
+              </button>
+            </div>
+          </div>
+
+          {/* New password */}
+          <div>
+            <label className="block text-xs text-[var(--text-muted)] font-medium mb-1">New Password</label>
+            <input
+              type={showPw ? "text" : "password"}
+              value={next}
+              onChange={(e) => setNext(e.target.value)}
+              className={ic}
+              placeholder="Min 8 chars, 1 uppercase, 1 number"
+              required
+            />
+            {next.length > 0 && (
+              <div className="mt-1.5 space-y-1">
+                <div className="flex gap-1">
+                  {[1,2,3].map((i) => (
+                    <div key={i} className={`h-1 flex-1 rounded-full transition-all ${strength >= i ? strengthColor : "bg-[var(--bg-secondary)]"}`} />
+                  ))}
+                </div>
+                <p className={`text-xs ${["","text-red-400","text-yellow-400","text-emerald-400"][strength]}`}>
+                  {strengthLabel} password
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Confirm */}
+          <div>
+            <label className="block text-xs text-[var(--text-muted)] font-medium mb-1">Confirm New Password</label>
+            <input
+              type={showPw ? "text" : "password"}
+              value={confirm}
+              onChange={(e) => setConfirm(e.target.value)}
+              className={`${ic} ${confirm && confirm !== next ? "border-red-500/40" : ""}`}
+              placeholder="Repeat new password"
+              required
+            />
+            {confirm && confirm !== next && (
+              <p className="text-xs text-red-400 mt-1">Passwords do not match</p>
+            )}
+          </div>
+
+          <div className="flex gap-2 pt-1">
+            <button type="submit" disabled={saving} className="btn-primary text-sm px-4 py-2">
+              {saving ? <><FiLoader className="animate-spin" size={13} /> Saving…</> : <><FiCheck size={13} /> Update Password</>}
+            </button>
+            <button type="button" onClick={() => { setOpen(false); setErr(""); }} className="btn-secondary text-sm px-4 py-2">
+              Cancel
+            </button>
+          </div>
+        </form>
+      )}
     </div>
   );
 }

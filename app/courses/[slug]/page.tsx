@@ -6,6 +6,7 @@ import { authOptions } from "../../lib/auth";
 import { prisma } from "../../lib/prism";
 import { EnrollButton } from "../../components/courses/EnrollButton";
 import { CourseProgress } from "../../components/courses/CourseProgress";
+import { CourseRatingWidget } from "../../components/courses/CourseRatingWidget";
 import {
   FiBookOpen, FiUsers, FiStar, FiClock,
   FiAward, FiCheckCircle, FiChevronDown,
@@ -269,11 +270,10 @@ export default async function CourseDetailPage({ params }: Props) {
             </section>
 
             {/* Instructor */}
-            <section className="glass-card rounded-2xl p-6">
+            <section className="glass-card rounded-2xl p-6 mb-8">
               <h2 className="font-display text-xl font-semibold text-[var(--text-primary)] mb-4">
                 Instructor
-              </h2>
-              <div className="flex items-start gap-4">
+              </h2>              <div className="flex items-start gap-4">
                 <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-[var(--border-strong)] flex-shrink-0">
                   {instructorImg ? (
                     <Image src={instructorImg} alt={instructor} width={64} height={64} className="w-full h-full object-cover" />
@@ -310,6 +310,9 @@ export default async function CourseDetailPage({ params }: Props) {
                 </div>
               </div>
             </section>
+
+            {/* Ratings & Reviews */}
+            <CourseRatingWidget courseId={course.id} isEnrolled={!!enrollment} />
           </div>
 
           {/* ── Sidebar ── */}

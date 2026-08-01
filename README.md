@@ -1,36 +1,49 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🌙 Ilm Platform — Islamic Learning Management System
 
-## Getting Started
+> **Authentic Islamic Knowledge** — A full-featured LMS connecting students with qualified scholars.
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Table of Contents
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+1. [Overview](#overview)
+2. [Tech Stack](#tech-stack)
+3. [Quick Start](#quick-start)
+4. [Environment Variables](#environment-variables)
+5. [Database Setup](#database-setup)
+6. [User Roles](#user-roles)
+7. [Student Guide](#student-guide)
+8. [Scholar Guide](#scholar-guide)
+9. [Admin Guide](#admin-guide)
+10. [Feature Reference](#feature-reference)
+11. [Project Structure](#project-structure)
+12. [Deployment](#deployment)
+13. [Troubleshooting](#troubleshooting)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Overview
 
-## Learn More
+Ilm Platform is a production-ready Islamic LMS built with Next.js 16, supporting:
 
-To learn more about Next.js, take a look at the following resources:
+- **Students** — Browse, enroll, and learn from structured courses and lectures
+- **Scholars** — Publish courses, lectures, and quizzes with analytics
+- **Admins** — Manage all content, users, enrollments, and platform settings
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Tech Stack
 
-## Deploy on Vercel
+| Layer | Technology |
+|-------|-----------|
+| Framework | Next.js 16 (App Router) |
+| Language | TypeScript 5 |
+| Database | PostgreSQL |
+| ORM | Prisma 7 |
+| Auth | NextAuth v4 (JWT + Google OAuth) |
+| Styling | Tailwind CSS v4 |
+| State | TanStack Query v5 |
+| Media | Cloudinary |
+| Email | Resend API |
+| Rate Limiting | In-memory (upgrade to Redis in production) |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.

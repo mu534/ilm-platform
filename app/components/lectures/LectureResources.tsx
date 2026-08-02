@@ -1,5 +1,7 @@
-import Link from "next/link";
-import { FiDownload, FiFile, FiVideo, FiHeadphones, FiImage } from "react-icons/fi";
+import {
+  FiDownload, FiFile, FiVideo, FiHeadphones,
+  FiImage, FiExternalLink, FiFileText,
+} from "react-icons/fi";
 
 interface MediaItem {
   id:       string;
@@ -7,6 +9,7 @@ interface MediaItem {
   type:     string;
   filename: string;
   size:     number;
+  mimeType?: string;
 }
 
 function formatBytes(bytes: number): string {
@@ -15,50 +18,72 @@ function formatBytes(bytes: number): string {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
-const typeIcon: Record<string, React.ReactNode> = {
-  VIDEO:    <FiVideo     size={15} className="text-blue-400"   />,
-  AUDIO:    <FiHeadphones size={15} className="text-purple-400" />,
-  IMAGE:    <FiImage     size={15} className="text-green-400"  />,
-  PDF:      <FiFile      size={15} className="text-red-400"    />,
-  DOCUMENT: <FiFile      size={15} className="text-[var(--accent)]" />,
+function isExternalLink(url: string): boolean {
+  return url.startsWith("http://") || url.startsWith("https://");
+}
+
+const typeConfig: Record<string, { icon: React.ReactNode; label: string; color: string }> = {
+  VIDEO:    { icon: <FiVideo       size={14} />, label: "Video",     color: "text-blue-400"            },
+  AUDIO:    { icon: <FiHeadphones  size={14} />, label: "Audio",     color: "text-purple-400"          },
+  IMAGE:    { icon: <FiImage       size={14} />, label: "Image",     color: "text-emerald-400"         },
+  PDF:      { icon: <FiFileText    size={14} />, label: "PDF",       color: "text-red-400"             },
+  DOCUMENT: { icon: <FiFile        size={14} />, label: "Document",  color: "text-[var(--accent)]"     },
 };
 
 export function LectureResources({ media }: { media: MediaItem[] }) {
   if (!media || media.length === 0) return null;
 
   return (
-    <section className="mb-8 glass-card rounded-2xl p-5">
-      <h2 className="font-display text-lg font-semibold text-[var(--text-primary)] mb-4 flex items-center gap-2">
-        <FiDownload className="text-[var(--accent)]" size={18} />
-        Resources &amp; Attachments
+    <section aria-labelledby="resources-heading">
+      <h2
+        id="resources-heading"
+        className="text-sm font-semibold text-[var(--text-primary)] mb-3 flex items-center gap-2"
+      >
+        <FiDownload className="text-[var(--accent)]" size={15} aria-hidden="true" />
+        Lesson Resources
+        <span className="text-xs text-[var(--text-muted)] font-normal">({media.length})</span>
       </h2>
-      <div className="space-y-2">
-        {media.map((item) => (
-          <a
-            key={item.id}
-            href={item.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            download={item.filename}
-            className="flex items-center gap-3 p-3 rounded-xl border border-[var(--border)] hover:border-[var(--accent)] hover:bg-[var(--accent-dim)] transition-all group"
-          >
-            <div className="flex-shrink-0">
-              {typeIcon[item.type] ?? <FiFile size={15} className="text-[var(--text-muted)]" />}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-[var(--text-primary)] group-hover:text-[var(--accent)] transition-colors truncate">
-                {item.filename}
-              </p>
-              <p className="text-xs text-[var(--text-muted)]">
-                {item.type.toLowerCase()} · {formatBytes(item.size)}
-              </p>
-            </div>
-            <FiDownload
-              size={14}
-              className="text-[var(--text-muted)] group-hover:text-[var(--accent)] transition-colors flex-shrink-0"
-            />
-          </a>
-        ))}
+
+      <div className="border border-[var(--border)] rounded-xl overflow-hidden divide-y divide-[var(--border)]">
+        {media.map((item) => {
+          const conf    = typeConfig[item.type] ?? { icon: <FiFile size={14} />, label: item.type, color: "text-[var(--text-muted)]" };
+          const isLink  = isExternalLink(item.url);
+
+          return (
+            <a
+              key={item.id}
+              href={item.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              download={!isLink ? item.filename : undefined}
+              className="flex items-center gap-3 px-4 py-3.5 bg-[var(--bg-card)] hover:bg-[var(--bg-card-hover)] transition-colors group"
+            >
+              {/* Type icon */}
+              <span className={`flex-shrink-0 ${conf.color}`} aria-hidden="true">
+                {conf.icon}
+              </span>
+
+              {/* File info */}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-[var(--text-primary)] group-hover:text-[var(--accent)] transition-colors truncate">
+                  {item.filename}
+                </p>
+                <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
+                  {conf.label}
+                  {item.size > 0 && ` · ${formatBytes(item.size)}`}
+                </p>
+              </div>
+
+              {/* Action icon */}
+              <span className="flex-shrink-0 text-[var(--text-muted)] group-hover:text-[var(--accent)] transition-colors">
+                {isLink
+                  ? <FiExternalLink size={13} aria-label="Open link" />
+                  : <FiDownload     size={13} aria-label="Download" />
+                }
+              </span>
+            </a>
+          );
+        })}
       </div>
     </section>
   );

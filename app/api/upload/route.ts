@@ -12,18 +12,13 @@ import type { SessionUser } from "../../types/next-auth";
 type ResourceType = "image" | "video" | "raw" | "auto";
 
 const MAX_FILE_SIZE = 100 * 1024 * 1024;
-const ALLOWED_IMAGE_TYPES = [
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "image/gif",
-];
-const ALLOWED_VIDEO_TYPES = ["video/mp4", "video/webm", "video/ogg"];
 
 function getResourceType(mimeType: string): ResourceType | null {
-  if (ALLOWED_IMAGE_TYPES.includes(mimeType)) return "image";
-  if (ALLOWED_VIDEO_TYPES.includes(mimeType)) return "video";
-  if (mimeType.startsWith("audio/")) return "auto";
+  if (mimeType.startsWith("image/"))        return "image";
+  if (mimeType.startsWith("video/"))        return "video";
+  if (mimeType.startsWith("audio/"))        return "auto";
+  if (mimeType === "application/pdf")       return "raw";
+  if (mimeType.startsWith("application/")) return "raw";
   return null;
 }
 

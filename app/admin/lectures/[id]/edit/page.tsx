@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { FileUploader } from "../../../../components/FileUploader";
+import { LectureResourceManager } from "../../../../components/lectures/LectureResourceManager";
 import { FiSave, FiX, FiArrowLeft } from "react-icons/fi";
 
 interface LectureFormData {
@@ -320,6 +321,11 @@ export default function EditLecturePage() {
             />
             <span className="text-sm text-[var(--text-secondary)]">Featured on homepage</span>
           </label>
+        </div>
+
+        {/* Resources */}
+        <div className="border-t border-[var(--border)] pt-6">
+          <LectureResourceManager lectureId={id} />
         </div>
 
         {/* Actions */}

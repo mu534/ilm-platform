@@ -336,7 +336,7 @@ export default async function CourseDetailPage({ params }: Props) {
               <div className="glass-card rounded-2xl p-6">
                 {/* Enroll / Progress */}
                 {enrollment ? (
-                  <CourseProgress enrollment={enrollment} courseId={course.id} />
+                  <CourseProgress enrollment={enrollment} courseId={course.id} courseSlug={course.slug} />
                 ) : (
                   <EnrollButton courseId={course.id} courseSlug={course.slug} isLoggedIn={!!user} />
                 )}

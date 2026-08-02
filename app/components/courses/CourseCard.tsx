@@ -4,19 +4,20 @@ import { FiBookOpen, FiUsers, FiStar, FiClock } from "react-icons/fi";
 
 interface CourseCardProps {
   course: {
-    id:              string;
-    title:           string;
-    slug:            string;
-    description:     string;
-    thumbnailUrl:    string | null;
-    difficulty:      string;
+    id:                string;
+    title:             string;
+    slug:              string;
+    description:       string;
+    thumbnailUrl:      string | null;
+    difficulty:        string;
     estimatedDuration: number;
-    featured:        boolean;
-    category?:       { id: string; name: string; icon?: string | null; color?: string | null } | null;
-    author:          { id: string; name: string; image?: string | null };
-    scholar?:        { id: string; photo?: string | null; verified: boolean; user: { name: string } } | null;
-    _count:          { modules: number; enrollments: number; ratings: number };
-    avgRating?:      number;
+    featured:          boolean;
+    tags?:             string[];
+    category?:  { id: string; name: string; icon?: string | null; color?: string | null } | null;
+    author:     { id: string; name: string; image?: string | null };
+    scholar?:   { id: string; photo?: string | null; verified: boolean; user: { name: string } } | null;
+    _count:     { modules: number; enrollments: number; ratings: number };
+    avgRating?: number;
   };
 }
 

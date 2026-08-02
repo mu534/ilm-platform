@@ -39,8 +39,14 @@ export async function PATCH(
 
     if (action === "submit") {
       if (!isOwner && !isAdmin) return errorResponse("Forbidden", 403);
-      if (course.approvalStatus !== "DRAFT") {
-        return errorResponse("Only draft courses can be submitted for review", 400);
+
+      // Allow re-submission from DRAFT or REJECTED states
+      const submittableStates = ["DRAFT", "REJECTED"];
+      if (!submittableStates.includes(course.approvalStatus)) {
+        return errorResponse(
+          "Only draft or rejected courses can be submitted for review",
+          400,
+        );
       }
       await prisma.course.update({
         where: { id },

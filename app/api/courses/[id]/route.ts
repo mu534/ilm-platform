@@ -4,9 +4,12 @@ import { authOptions } from "../../../lib/auth";
 import { prisma } from "../../../lib/prism";
 import { courseSchema } from "../../../lib/validations";
 import { successResponse, errorResponse, handleApiError } from "../../../utils/api";
+import { getClientIp } from "../../../lib/rateLimit";
 import type { SessionUser } from "../../../types/auth.types";
+import { z } from "zod";
 
-// Full course detail select
+// ── Shared select ─────────────────────────────────────────────────────────────
+
 const courseDetailSelect = {
   id: true,
   title: true,
@@ -18,6 +21,7 @@ const courseDetailSelect = {
   prerequisites: true,
   difficulty: true,
   estimatedDuration: true,
+  tags: true,
   status: true,
   published: true,
   featured: true,
@@ -26,53 +30,50 @@ const courseDetailSelect = {
   createdAt: true,
   updatedAt: true,
   category: { select: { id: true, name: true, slug: true, icon: true, color: true } },
-  author: { select: { id: true, name: true, image: true } },
+  author:   { select: { id: true, name: true, image: true } },
   scholar: {
     select: {
-      id: true,
-      bio: true,
-      photo: true,
-      topics: true,
-      qualifications: true,
-      verified: true,
+      id: true, bio: true, photo: true, topics: true,
+      qualifications: true, verified: true,
       user: { select: { name: true, image: true } },
     },
   },
   modules: {
     orderBy: { order: "asc" as const },
     select: {
-      id: true,
-      title: true,
-      description: true,
-      order: true,
+      id: true, title: true, description: true, order: true,
       lectures: {
         orderBy: { order: "asc" as const },
         select: {
-          id: true,
-          title: true,
-          slug: true,
-          type: true,
-          duration: true,
-          published: true,
-          thumbnailUrl: true,
-          views: true,
+          id: true, title: true, slug: true, type: true,
+          duration: true, published: true, thumbnailUrl: true, views: true,
           _count: { select: { comments: true } },
         },
       },
       _count: { select: { lectures: true, quizzes: true } },
     },
   },
-  _count: {
-    select: { modules: true, enrollments: true, ratings: true },
-  },
+  _count: { select: { modules: true, enrollments: true, ratings: true } },
 } as const;
 
+// Admin-only writable fields — validated separately so no arbitrary injection
+const adminUpdateSchema = z.object({
+  approvalStatus: z.enum(["DRAFT", "PENDING", "APPROVED", "REJECTED"]).optional(),
+  approvalNote:   z.string().max(1000).optional(),
+  status:         z.enum(["DRAFT", "PENDING_REVIEW", "PUBLISHED", "REJECTED", "ARCHIVED"]).optional(),
+  featured:       z.boolean().optional(),
+});
+
+// ── GET /api/courses/[id] ─────────────────────────────────────────────────────
+
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const { id } = await params;
+    const session = await getServerSession(authOptions);
+    const user    = session?.user as SessionUser | undefined;
+    const { id }  = await params;
 
     const course = await prisma.course.findFirst({
       where: { OR: [{ id }, { slug: id }] },
@@ -81,16 +82,24 @@ export async function GET(
 
     if (!course) return errorResponse("Course not found", 404);
 
-    // Attach average rating
+    const isAdmin  = user?.role === "ADMIN";
+    const isOwner  = user?.id === course.author.id;
+    const isPublic = course.published && course.approvalStatus === "APPROVED";
+
+    // Gate: non-public courses are only visible to their owner or admins
+    if (!isPublic && !isAdmin && !isOwner) {
+      return errorResponse("Course not found", 404); // Don't reveal existence
+    }
+
     const ratingAgg = await prisma.courseRating.aggregate({
       where: { courseId: course.id },
-      _avg: { rating: true },
+      _avg:  { rating: true },
       _count: { rating: true },
     });
 
     return successResponse({
       ...course,
-      avgRating: ratingAgg._avg.rating ?? 0,
+      avgRating:    ratingAgg._avg.rating    ?? 0,
       totalRatings: ratingAgg._count.rating,
     });
   } catch (error) {
@@ -98,13 +107,15 @@ export async function GET(
   }
 }
 
+// ── PATCH /api/courses/[id] ───────────────────────────────────────────────────
+
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const session = await getServerSession(authOptions);
-    const user = session?.user as SessionUser | undefined;
+    const user    = session?.user as SessionUser | undefined;
     if (!user) return errorResponse("Unauthorized", 401);
 
     const { id } = await params;
@@ -115,23 +126,49 @@ export async function PATCH(
     const isOwner = course.authorId === user.id;
     if (!isAdmin && !isOwner) return errorResponse("Forbidden", 403);
 
-    const body = (await req.json()) as unknown;
-    const data = courseSchema.partial().parse(body);
+    const raw  = (await req.json()) as unknown;
 
-    // Admin-only: handle approval fields
-    const adminFields: Record<string, unknown> = {};
-    if (isAdmin) {
-      const raw = body as Record<string, unknown>;
-      if (raw.approvalStatus !== undefined) adminFields.approvalStatus = raw.approvalStatus;
-      if (raw.approvalNote !== undefined)   adminFields.approvalNote   = raw.approvalNote;
-      if (raw.status !== undefined)         adminFields.status         = raw.status;
+    // Course fields validated through courseSchema
+    const courseData = courseSchema.partial().parse(raw);
+
+    // Admin-only fields validated separately through strict schema — no injection possible
+    const adminData  = isAdmin ? adminUpdateSchema.parse(raw) : {};
+
+    // Scholars editing a PUBLISHED course triggers re-review
+    const needsRereview =
+      !isAdmin &&
+      course.approvalStatus === "APPROVED" &&
+      course.status === "PUBLISHED" &&
+      Object.keys(courseData).length > 0;
+
+    const reReviewFields = needsRereview
+      ? { approvalStatus: "PENDING" as const, status: "PENDING_REVIEW" as const, published: false }
+      : {};
+
+    // Scholars can never directly publish — strip published field for non-admins
+    if (!isAdmin) {
+      delete (courseData as Record<string, unknown>).published;
     }
 
     const updated = await prisma.course.update({
       where: { id },
-      data: { ...data, ...adminFields },
+      data:  { ...courseData, ...adminData, ...reReviewFields },
       select: courseDetailSelect,
     });
+
+    // Log admin actions
+    if (isAdmin && adminData.status) {
+      await prisma.auditLog.create({
+        data: {
+          userId:     user.id,
+          action:     "UPDATE_COURSE_STATUS",
+          entityType: "Course",
+          entityId:   id,
+          metadata:   JSON.stringify({ status: adminData.status }),
+          ipAddress:  getClientIp(req),
+        },
+      }).catch(() => {});
+    }
 
     return successResponse(updated);
   } catch (error) {
@@ -139,24 +176,53 @@ export async function PATCH(
   }
 }
 
+// ── DELETE /api/courses/[id] ──────────────────────────────────────────────────
+
 export async function DELETE(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const session = await getServerSession(authOptions);
-    const user = session?.user as SessionUser | undefined;
+    const user    = session?.user as SessionUser | undefined;
     if (!user) return errorResponse("Unauthorized", 401);
 
     const { id } = await params;
-    const course = await prisma.course.findUnique({ where: { id } });
+    const course = await prisma.course.findUnique({
+      where: { id },
+      select: {
+        id: true, authorId: true, title: true,
+        _count: { select: { enrollments: true } },
+      },
+    });
     if (!course) return errorResponse("Course not found", 404);
 
     const isAdmin = user.role === "ADMIN";
     const isOwner = course.authorId === user.id;
     if (!isAdmin && !isOwner) return errorResponse("Forbidden", 403);
 
+    // Warn if there are active enrollments (admin only can force-delete)
+    if (!isAdmin && course._count.enrollments > 0) {
+      return errorResponse(
+        `Cannot delete a course with ${course._count.enrollments} enrolled student(s). Please contact an admin.`,
+        409,
+      );
+    }
+
     await prisma.course.delete({ where: { id } });
+
+    // Audit log
+    await prisma.auditLog.create({
+      data: {
+        userId:     user.id,
+        action:     "DELETE_COURSE",
+        entityType: "Course",
+        entityId:   id,
+        metadata:   JSON.stringify({ title: course.title, enrollments: course._count.enrollments }),
+        ipAddress:  getClientIp(req),
+      },
+    }).catch(() => {});
+
     return successResponse({ message: "Course deleted successfully" });
   } catch (error) {
     return handleApiError(error);

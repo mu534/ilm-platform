@@ -202,6 +202,7 @@ model Category {
 model Course {
   id                String       @id @default(cuid())
   title             String
+  subtitle          String?      // short tagline shown below the title
   slug              String       @unique
   description       String
   thumbnailUrl      String?
@@ -209,8 +210,14 @@ model Course {
   objectives        String[]
   prerequisites     String[]
   difficulty        DifficultyLevel @default(BEGINNER)
+  language          String       @default("en")
   estimatedDuration Int          @default(0) // in minutes
   tags              String[]
+  // SEO
+  seoTitle          String?
+  seoDescription    String?
+  // Enrollment (extensible — free for now, paid can be added later)
+  enrollmentType    String       @default("FREE") // FREE | PAID (future)
   status            CourseStatus @default(DRAFT)
   featured          Boolean      @default(false)
   published         Boolean      @default(false)
@@ -220,7 +227,6 @@ model Course {
   scholar           Scholar?     @relation(fields: [scholarId], references: [id])
   authorId          String
   author            User         @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  // Content approvalx
   approvalStatus    ContentApprovalStatus @default(DRAFT)
   approvalNote      String?
   reviewedAt        DateTime?

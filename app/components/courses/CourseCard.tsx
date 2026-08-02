@@ -6,13 +6,16 @@ interface CourseCardProps {
   course: {
     id:                string;
     title:             string;
+    subtitle?:         string | null;
     slug:              string;
     description:       string;
     thumbnailUrl:      string | null;
     difficulty:        string;
     estimatedDuration: number;
+    language?:         string;
     featured:          boolean;
     tags?:             string[];
+    enrollmentType?:   string;
     category?:  { id: string; name: string; icon?: string | null; color?: string | null } | null;
     author:     { id: string; name: string; image?: string | null };
     scholar?:   { id: string; photo?: string | null; verified: boolean; user: { name: string } } | null;
@@ -107,9 +110,16 @@ export function CourseCard({ course }: CourseCardProps) {
           )}
 
           {/* Title */}
-          <h3 className="font-display text-lg font-semibold text-[var(--text-primary)] group-hover:text-[var(--accent)] transition-colors line-clamp-2 leading-tight mb-2">
+          <h3 className="font-display text-lg font-semibold text-[var(--text-primary)] group-hover:text-[var(--accent)] transition-colors line-clamp-2 leading-tight mb-1">
             {course.title}
           </h3>
+
+          {/* Subtitle */}
+          {course.subtitle && (
+            <p className="text-xs text-[var(--accent)] font-medium line-clamp-1 mb-2">
+              {course.subtitle}
+            </p>
+          )}
 
           {/* Description */}
           <p className="text-sm text-[var(--text-muted)] line-clamp-2 mb-4 leading-relaxed">

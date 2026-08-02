@@ -56,6 +56,11 @@ export const courseSchema = z.object({
     .string()
     .min(3, "Title must be at least 3 characters")
     .max(200, "Title must be less than 200 characters"),
+  subtitle: z
+    .string()
+    .max(300, "Subtitle must be less than 300 characters")
+    .optional()
+    .or(z.literal("")),
   description: z
     .string()
     .min(20, "Description must be at least 20 characters")
@@ -70,15 +75,20 @@ export const courseSchema = z.object({
     .url("Invalid banner URL")
     .optional()
     .or(z.literal("")),
-  objectives: z.array(z.string()).max(20).default([]),
-  prerequisites: z.array(z.string()).max(20).default([]),
-  difficulty: z.enum(["BEGINNER", "INTERMEDIATE", "ADVANCED"]).default("BEGINNER"),
+  objectives:        z.array(z.string()).max(20).default([]),
+  prerequisites:     z.array(z.string()).max(20).default([]),
+  difficulty:        z.enum(["BEGINNER", "INTERMEDIATE", "ADVANCED"]).default("BEGINNER"),
+  language:          z.string().max(10).default("en"),
   estimatedDuration: z.number().int().min(0).default(0),
-  tags: z.array(z.string()).max(15, "Maximum 15 tags").default([]),
-  featured: z.boolean().default(false),
-  published: z.boolean().default(false),
-  categoryId: z.string().optional(),
-  scholarId: z.string().optional(),
+  tags:              z.array(z.string()).max(15, "Maximum 15 tags").default([]),
+  featured:          z.boolean().default(false),
+  published:         z.boolean().default(false),
+  categoryId:        z.string().optional(),
+  scholarId:         z.string().optional(),
+  enrollmentType:    z.enum(["FREE"]).default("FREE"), // extensible for future PAID
+  // SEO
+  seoTitle:          z.string().max(70,  "SEO title max 70 chars").optional().or(z.literal("")),
+  seoDescription:    z.string().max(160, "SEO description max 160 chars").optional().or(z.literal("")),
 });
 
 // ─── Module ───────────────────────────────────────────────────────────────────

@@ -13,15 +13,17 @@ interface Category {
 
 interface FormData {
   title:             string;
+  subtitle:          string;
   description:       string;
   thumbnailUrl:      string;
   bannerUrl:         string;
   difficulty:        "BEGINNER" | "INTERMEDIATE" | "ADVANCED";
+  language:          string;
   estimatedDuration: number;
   categoryId:        string;
   objectives:        string[];
   prerequisites:     string[];
-  tags:              string;   // comma-separated input string
+  tags:              string;
   published:         boolean;
   featured:          boolean;
 }
@@ -30,8 +32,8 @@ export default function NewCoursePage() {
   const router = useRouter();
   const [categories, setCategories] = useState<Category[]>([]);
   const [form, setForm]   = useState<FormData>({
-    title: "", description: "", thumbnailUrl: "", bannerUrl: "",
-    difficulty: "BEGINNER", estimatedDuration: 0, categoryId: "",
+    title: "", subtitle: "", description: "", thumbnailUrl: "", bannerUrl: "",
+    difficulty: "BEGINNER", language: "en", estimatedDuration: 0, categoryId: "",
     objectives: [""], prerequisites: [""],
     tags: "",
     published: false, featured: false,
@@ -69,6 +71,7 @@ export default function NewCoursePage() {
         prerequisites: form.prerequisites.filter(Boolean),
         tags:          form.tags.split(",").map((t) => t.trim()).filter(Boolean),
         categoryId:    form.categoryId || undefined,
+        subtitle:      form.subtitle || undefined,
       };
       const res  = await fetch("/api/courses", {
         method:  "POST",
@@ -117,8 +120,22 @@ export default function NewCoursePage() {
         {/* Title */}
         <div>
           <label className="block text-xs text-[var(--text-muted)] font-medium mb-1.5">Title *</label>
-          <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={inputClass("title")} placeholder="Course title" required />
+          <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={inputClass("title")} placeholder="e.g. Introduction to Tafsir Al-Quran" required />
           {errors.title && <p className="text-xs text-red-400 mt-1">{errors.title}</p>}
+        </div>
+
+        {/* Subtitle */}
+        <div>
+          <label className="block text-xs text-[var(--text-muted)] font-medium mb-1.5">
+            Subtitle <span className="text-[var(--text-muted)] font-normal">(optional tagline)</span>
+          </label>
+          <input
+            value={form.subtitle}
+            onChange={(e) => setForm({ ...form, subtitle: e.target.value })}
+            className={inputClass("subtitle")}
+            placeholder="e.g. Master the fundamentals of Quranic interpretation"
+            maxLength={300}
+          />
         </div>
 
         {/* Description */}
@@ -129,7 +146,7 @@ export default function NewCoursePage() {
         </div>
 
         {/* Category + Difficulty + Duration */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
           <div>
             <label className="block text-xs text-[var(--text-muted)] font-medium mb-1.5">Category</label>
             <select value={form.categoryId} onChange={(e) => setForm({ ...form, categoryId: e.target.value })} className={inputClass()}>
@@ -145,6 +162,19 @@ export default function NewCoursePage() {
               <option value="BEGINNER">Beginner</option>
               <option value="INTERMEDIATE">Intermediate</option>
               <option value="ADVANCED">Advanced</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs text-[var(--text-muted)] font-medium mb-1.5">Language</label>
+            <select value={form.language} onChange={(e) => setForm({ ...form, language: e.target.value })} className={inputClass()}>
+              <option value="en">English</option>
+              <option value="ar">Arabic</option>
+              <option value="om">Afaan Oromo</option>
+              <option value="fr">French</option>
+              <option value="ur">Urdu</option>
+              <option value="id">Indonesian</option>
+              <option value="tr">Turkish</option>
+              <option value="ms">Malay</option>
             </select>
           </div>
           <div>

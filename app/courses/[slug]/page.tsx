@@ -64,9 +64,13 @@ export async function generateMetadata({ params }: Props) {
   const course = await getCourse(slug);
   if (!course) return { title: "Course Not Found" };
   return {
-    title: course.title,
-    description: course.description.slice(0, 160),
-    openGraph: { images: course.thumbnailUrl ? [course.thumbnailUrl] : [] },
+    title:       course.seoTitle       ?? course.title,
+    description: course.seoDescription ?? course.description.slice(0, 160),
+    openGraph:   {
+      title:       course.seoTitle ?? course.title,
+      description: course.seoDescription ?? course.description.slice(0, 160),
+      images: course.thumbnailUrl ? [course.thumbnailUrl] : [],
+    },
   };
 }
 
@@ -151,6 +155,11 @@ export default async function CourseDetailPage({ params }: Props) {
               <h1 className="font-display text-3xl md:text-4xl font-bold text-[var(--text-primary)] leading-tight mb-3">
                 {course.title}
               </h1>
+              {course.subtitle && (
+                <p className="text-[var(--accent)] text-lg font-medium mb-3">
+                  {course.subtitle}
+                </p>
+              )}
               <p className="text-[var(--text-secondary)] text-base leading-relaxed">
                 {course.description}
               </p>
@@ -363,6 +372,18 @@ export default async function CourseDetailPage({ params }: Props) {
                   <div className="flex justify-between">
                     <span className="text-[var(--text-muted)]">Students</span>
                     <span className="font-medium text-[var(--text-primary)]">{course._count.enrollments}</span>
+                  </div>
+                  {course.language && course.language !== "en" && (
+                    <div className="flex justify-between">
+                      <span className="text-[var(--text-muted)]">Language</span>
+                      <span className="font-medium text-[var(--text-primary)] uppercase">{course.language}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between">
+                    <span className="text-[var(--text-muted)]">Enrollment</span>
+                    <span className="text-xs font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
+                      {course.enrollmentType ?? "FREE"}
+                    </span>
                   </div>
                 </div>
               </div>

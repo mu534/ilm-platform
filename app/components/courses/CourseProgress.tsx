@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FiCheckCircle, FiLoader } from "react-icons/fi";
+import { FiCheckCircle, FiLoader, FiArrowRight } from "react-icons/fi";
 import { useQuery } from "@tanstack/react-query";
 
 interface Enrollment {
@@ -31,7 +31,12 @@ async function fetchProgress(courseId: string): Promise<ProgressData | null> {
   } catch { return null; }
 }
 
-export function CourseProgress({ enrollment, courseId, nextLectureSlug }: CourseProgressProps) {
+export function CourseProgress({
+  enrollment,
+  courseId,
+  courseSlug,
+  nextLectureSlug,
+}: CourseProgressProps) {
   const { data, isLoading } = useQuery({
     queryKey:  ["progress", courseId],
     queryFn:   () => fetchProgress(courseId),
@@ -40,38 +45,52 @@ export function CourseProgress({ enrollment, courseId, nextLectureSlug }: Course
 
   const percent     = data?.percent ?? Math.round(enrollment.progress ?? 0);
   const isCompleted = enrollment.status === "COMPLETED" || percent >= 100;
-  const continueHref = nextLectureSlug ? `/lectures/${nextLectureSlug}` : "/dashboard";
+  const continueHref = nextLectureSlug
+    ? `/lectures/${nextLectureSlug}`
+    : courseSlug
+    ? `/courses/${courseSlug}`
+    : "/dashboard";
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
 
-      {/* Status */}
+      {/* Status line */}
       {isCompleted ? (
-        <div className="flex items-center gap-2 text-emerald-400 text-sm font-medium">
+        <div className="flex items-center gap-2 text-emerald-400 text-sm font-semibold">
           <FiCheckCircle size={15} />
           Course Completed
         </div>
       ) : (
-        <p className="text-sm text-[var(--text-secondary)]">
-          You&apos;re enrolled · {percent}% complete
-        </p>
+        <div className="flex items-center justify-between text-xs text-[var(--text-muted)]">
+          <span>Your progress</span>
+          <span className="font-semibold text-[var(--text-primary)] tabular-nums">
+            {percent}%
+          </span>
+        </div>
       )}
 
       {/* Progress bar */}
       <div>
-        <div className="w-full h-2 rounded-full bg-[var(--bg-secondary)] overflow-hidden">
+        <div
+          className="w-full h-2 rounded-full bg-[var(--bg-secondary)] overflow-hidden"
+          role="progressbar"
+          aria-valuenow={percent}
+          aria-valuemin={0}
+          aria-valuemax={100}
+        >
           <div
             className="h-full rounded-full bg-[var(--accent)] transition-all duration-500"
             style={{ width: `${Math.min(100, percent)}%` }}
           />
         </div>
         {!isLoading && data ? (
-          <p className="text-xs text-[var(--text-muted)] mt-1">
-            {data.completedCount} of {data.totalCount} lessons completed
+          <p className="text-[11px] text-[var(--text-muted)] mt-1.5 tabular-nums">
+            {data.completedCount} / {data.totalCount} lessons completed
           </p>
         ) : isLoading ? (
-          <p className="text-xs text-[var(--text-muted)] mt-1 flex items-center gap-1">
-            <FiLoader className="animate-spin" size={10} /> Updating…
+          <p className="text-[11px] text-[var(--text-muted)] mt-1.5 flex items-center gap-1">
+            <FiLoader className="animate-spin" size={9} />
+            Updating…
           </p>
         ) : null}
       </div>
@@ -79,9 +98,10 @@ export function CourseProgress({ enrollment, courseId, nextLectureSlug }: Course
       {/* CTA */}
       <Link
         href={continueHref}
-        className="block w-full text-center py-3 rounded-lg bg-[var(--accent)] hover:bg-[var(--accent-light)] text-white font-semibold text-sm transition-colors"
+        className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-[var(--accent)] hover:bg-[var(--accent-light)] text-white font-semibold text-sm transition-colors"
       >
         {isCompleted ? "Review Course" : "Continue Learning"}
+        <FiArrowRight size={14} />
       </Link>
     </div>
   );

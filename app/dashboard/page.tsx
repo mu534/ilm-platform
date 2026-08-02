@@ -331,7 +331,7 @@ export default async function DashboardPage() {
             <div className="space-y-2">
               {[
                 { href: "/courses",                 icon: <FiBookOpen size={14} />,  label: "Browse Courses"        },
-                { href: "/lectures",                icon: <FiActivity size={14} />,  label: "Browse Lectures"       },
+                { href: "/scholars",                icon: <FiActivity size={14} />,  label: "Browse Scholars"       },
                 { href: "/dashboard/bookmarks",     icon: <FiBookmark size={14} />,  label: `Bookmarks (${data.bookmarks})` },
                 { href: "/dashboard/certificates",  icon: <FiAward size={14} />,     label: "My Certificates"       },
                 { href: "/dashboard/quiz-history",  icon: <FiActivity size={14} />,  label: "Quiz History"          },

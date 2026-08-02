@@ -2,7 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/app/lib/prism";
 import { CourseCard } from "@/app/components/courses/CourseCard";
 import type { DifficultyLevel } from "@/app/types/auth.types";
-import { FiSearch, FiSliders } from "react-icons/fi";
+import { FiSearch } from "react-icons/fi";
 
 type SortOption = "newest" | "oldest" | "popular" | "top-rated";
 
@@ -93,17 +93,17 @@ async function getCoursesData(params: SearchParams) {
 }
 
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
-  { value: "newest",    label: "Newest"      },
-  { value: "popular",   label: "Most Popular" },
-  { value: "top-rated", label: "Top Rated"    },
-  { value: "oldest",    label: "Oldest"       },
+  { value: "newest",    label: "Newest"       },
+  { value: "popular",   label: "Most Popular"  },
+  { value: "top-rated", label: "Top Rated"     },
+  { value: "oldest",    label: "Oldest"        },
 ];
 
 const DIFFICULTY_OPTIONS = [
-  { value: "",             label: "All Levels"    },
-  { value: "BEGINNER",     label: "Beginner"      },
-  { value: "INTERMEDIATE", label: "Intermediate"  },
-  { value: "ADVANCED",     label: "Advanced"      },
+  { value: "",             label: "All Levels"   },
+  { value: "BEGINNER",     label: "Beginner"     },
+  { value: "INTERMEDIATE", label: "Intermediate" },
+  { value: "ADVANCED",     label: "Advanced"     },
 ] as const;
 
 export async function generateMetadata({ searchParams }: Props) {
@@ -132,47 +132,48 @@ export default async function CoursesPage({ searchParams }: Props) {
 
       {/* ── Page header ── */}
       <div className="border-b border-[var(--border)] bg-[var(--bg-secondary)]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-          <h1 className="text-2xl font-semibold text-[var(--text-primary)] mb-1">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-12">
+          <h1 className="font-display text-3xl sm:text-4xl font-bold text-[var(--text-primary)] mb-2">
             Islamic Courses
           </h1>
-          <p className="text-sm text-[var(--text-muted)]">
-            {total.toLocaleString()} course{total !== 1 ? "s" : ""} taught by verified scholars
+          <p className="text-sm text-[var(--text-muted)] max-w-xl">
+            Learn from verified scholars. Study Quran, Fiqh, Hadith, Aqeedah, and more
+            at your own pace.
           </p>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex flex-col lg:flex-row gap-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
+        <div className="flex flex-col lg:flex-row gap-10">
 
           {/* ── Sidebar filters ── */}
-          <aside className="lg:w-56 flex-shrink-0 space-y-6">
+          <aside className="lg:w-52 flex-shrink-0">
 
             {/* Search */}
-            <form>
-              <label className="block text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-2">
+            <form className="mb-8">
+              <label className="block text-[11px] font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-2">
                 Search
               </label>
               <div className="relative">
-                <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" size={14} />
+                <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" size={13} />
                 <input
                   name="search"
                   defaultValue={sp.search}
                   placeholder="Search courses…"
-                  className="w-full pl-9 pr-4 py-2 text-sm bg-[var(--bg-card)] border border-[var(--border)] rounded-lg text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] transition-colors"
+                  className="w-full pl-8 pr-3 py-2 text-sm bg-[var(--bg-card)] border border-[var(--border)] rounded-lg text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] transition-colors"
                 />
               </div>
             </form>
 
             {/* Category */}
-            <div>
-              <p className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-2">
+            <div className="mb-8">
+              <p className="text-[11px] font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-2">
                 Category
               </p>
               <div className="space-y-0.5">
                 <Link
                   href={buildUrl({ categoryId: "", page: "1" })}
-                  className={`block px-3 py-2 rounded-lg text-sm transition-colors ${
+                  className={`block px-2.5 py-2 rounded-lg text-sm transition-colors ${
                     !sp.categoryId
                       ? "bg-[var(--accent-dim)] text-[var(--accent)] font-medium"
                       : "text-[var(--text-secondary)] hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)]"
@@ -184,13 +185,13 @@ export default async function CoursesPage({ searchParams }: Props) {
                   <Link
                     key={cat.id}
                     href={buildUrl({ categoryId: sp.categoryId === cat.id ? "" : cat.id, page: "1" })}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
+                    className={`flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm transition-colors ${
                       sp.categoryId === cat.id
                         ? "bg-[var(--accent-dim)] text-[var(--accent)] font-medium"
                         : "text-[var(--text-secondary)] hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)]"
                     }`}
                   >
-                    {cat.icon && <span className="text-xs">{cat.icon}</span>}
+                    {cat.icon && <span className="text-xs flex-shrink-0">{cat.icon}</span>}
                     <span className="truncate">{cat.name}</span>
                   </Link>
                 ))}
@@ -198,8 +199,8 @@ export default async function CoursesPage({ searchParams }: Props) {
             </div>
 
             {/* Level */}
-            <div>
-              <p className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-2">
+            <div className="mb-8">
+              <p className="text-[11px] font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-2">
                 Level
               </p>
               <div className="space-y-0.5">
@@ -207,7 +208,7 @@ export default async function CoursesPage({ searchParams }: Props) {
                   <Link
                     key={opt.value}
                     href={buildUrl({ difficulty: opt.value, page: "1" })}
-                    className={`block px-3 py-2 rounded-lg text-sm transition-colors ${
+                    className={`block px-2.5 py-2 rounded-lg text-sm transition-colors ${
                       (sp.difficulty ?? "") === opt.value
                         ? "bg-[var(--accent-dim)] text-[var(--accent)] font-medium"
                         : "text-[var(--text-secondary)] hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)]"
@@ -219,13 +220,12 @@ export default async function CoursesPage({ searchParams }: Props) {
               </div>
             </div>
 
-            {/* Clear filters */}
             {hasFilters && (
               <Link
                 href="/courses"
-                className="block text-xs text-[var(--text-muted)] hover:text-red-400 transition-colors"
+                className="inline-flex items-center gap-1.5 text-xs text-[var(--text-muted)] hover:text-red-400 transition-colors"
               >
-                ✕ Clear all filters
+                ✕ Clear filters
               </Link>
             )}
           </aside>
@@ -233,46 +233,45 @@ export default async function CoursesPage({ searchParams }: Props) {
           {/* ── Main content ── */}
           <div className="flex-1 min-w-0">
 
-            {/* Sort bar */}
-            <div className="flex items-center justify-between mb-6">
+            {/* Sort + count bar */}
+            <div className="flex items-center justify-between mb-6 pb-4 border-b border-[var(--border)]">
               <p className="text-sm text-[var(--text-muted)]">
-                {hasFilters && (
-                  <span className="text-[var(--text-primary)] font-medium mr-1">
-                    {total.toLocaleString()} result{total !== 1 ? "s" : ""}
-                  </span>
-                )}
-                {!hasFilters && (
-                  <span>{total.toLocaleString()} courses</span>
-                )}
+                <span className="text-[var(--text-primary)] font-medium">{total.toLocaleString()}</span>
+                {" "}course{total !== 1 ? "s" : ""}
+                {hasFilters && " found"}
               </p>
-              <div className="flex items-center gap-2">
-                <FiSliders size={13} className="text-[var(--text-muted)]" />
+
+              {/* Sort links — clean tab style */}
+              <div className="hidden sm:flex items-center gap-0.5 bg-[var(--bg-secondary)] rounded-lg p-0.5 border border-[var(--border)]">
+                {SORT_OPTIONS.map((s) => (
+                  <Link
+                    key={s.value}
+                    href={buildUrl({ sort: s.value, page: "1" })}
+                    className={`text-xs px-3 py-1.5 rounded-md transition-colors font-medium ${
+                      activeSort === s.value
+                        ? "bg-[var(--bg-card)] text-[var(--text-primary)] shadow-[var(--shadow-sm)]"
+                        : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                    }`}
+                  >
+                    {s.label}
+                  </Link>
+                ))}
+              </div>
+
+              {/* Mobile sort — single select */}
+              <div className="sm:hidden">
                 <select
-                  value={activeSort}
-                  onChange={() => {}}
-                  className="text-sm bg-transparent text-[var(--text-muted)] border-none outline-none cursor-pointer"
-                  aria-label="Sort by"
+                  defaultValue={activeSort}
+                  onChange={(e) => {
+                    window.location.href = buildUrl({ sort: e.target.value, page: "1" });
+                  }}
+                  className="text-xs py-1.5 px-3 bg-[var(--bg-card)] border border-[var(--border)] rounded-lg text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)]"
+                  aria-label="Sort courses"
                 >
                   {SORT_OPTIONS.map((s) => (
                     <option key={s.value} value={s.value}>{s.label}</option>
                   ))}
                 </select>
-                {/* Hidden links for server-side sort */}
-                <div className="flex gap-1 ml-1">
-                  {SORT_OPTIONS.map((s) => (
-                    <Link
-                      key={s.value}
-                      href={buildUrl({ sort: s.value, page: "1" })}
-                      className={`text-xs px-2 py-1 rounded transition-colors ${
-                        activeSort === s.value
-                          ? "text-[var(--accent)] font-semibold"
-                          : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
-                      }`}
-                    >
-                      {s.label}
-                    </Link>
-                  ))}
-                </div>
               </div>
             </div>
 
@@ -289,29 +288,41 @@ export default async function CoursesPage({ searchParams }: Props) {
 
                 {/* Pagination */}
                 {totalPages > 1 && (
-                  <div className="flex justify-center items-center gap-1">
+                  <nav
+                    className="flex justify-center items-center gap-1"
+                    aria-label="Pagination"
+                  >
                     {page > 1 && (
-                      <Link href={buildUrl({ page: String(page - 1) })}
-                        className="px-4 py-2 text-sm border border-[var(--border)] rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:border-[var(--accent)] transition-colors">
-                        Previous
+                      <Link
+                        href={buildUrl({ page: String(page - 1) })}
+                        className="px-3 py-2 text-sm border border-[var(--border)] rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:border-[var(--accent)] transition-colors"
+                      >
+                        ← Prev
                       </Link>
                     )}
                     {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => i + 1).map((p) => (
-                      <Link key={p} href={buildUrl({ page: String(p) })}
-                        className={`px-4 py-2 text-sm rounded-lg transition-colors ${
+                      <Link
+                        key={p}
+                        href={buildUrl({ page: String(p) })}
+                        aria-current={p === page ? "page" : undefined}
+                        className={`px-3.5 py-2 text-sm rounded-lg transition-colors ${
                           p === page
-                            ? "bg-[var(--accent)] text-white font-medium"
+                            ? "bg-[var(--accent)] text-white font-semibold"
                             : "border border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:border-[var(--accent)]"
                         }`}
-                      >{p}</Link>
+                      >
+                        {p}
+                      </Link>
                     ))}
                     {page < totalPages && (
-                      <Link href={buildUrl({ page: String(page + 1) })}
-                        className="px-4 py-2 text-sm border border-[var(--border)] rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:border-[var(--accent)] transition-colors">
-                        Next
+                      <Link
+                        href={buildUrl({ page: String(page + 1) })}
+                        className="px-3 py-2 text-sm border border-[var(--border)] rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:border-[var(--accent)] transition-colors"
+                      >
+                        Next →
                       </Link>
                     )}
-                  </div>
+                  </nav>
                 )}
               </>
             )}
@@ -324,17 +335,22 @@ export default async function CoursesPage({ searchParams }: Props) {
 
 function EmptyState({ hasFilters }: { hasFilters: boolean }) {
   return (
-    <div className="py-20 text-center">
-      <div className="text-4xl mb-4">📖</div>
+    <div className="py-24 text-center">
+      <div className="text-5xl mb-5 opacity-40">📖</div>
       <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-2">
         {hasFilters ? "No courses match your filters" : "No courses published yet"}
       </h2>
-      <p className="text-sm text-[var(--text-muted)] mb-6">
-        {hasFilters ? "Try adjusting your search terms or removing filters." : "Check back soon."}
+      <p className="text-sm text-[var(--text-muted)] mb-6 max-w-xs mx-auto">
+        {hasFilters
+          ? "Try adjusting your search terms or removing a filter."
+          : "Check back soon — scholars are preparing new content."}
       </p>
       {hasFilters && (
-        <Link href="/courses" className="text-sm text-[var(--accent)] hover:text-[var(--accent-light)] transition-colors">
-          Clear all filters →
+        <Link
+          href="/courses"
+          className="inline-flex items-center gap-1.5 text-sm text-[var(--accent)] hover:text-[var(--accent-light)] transition-colors"
+        >
+          ← Clear all filters
         </Link>
       )}
     </div>

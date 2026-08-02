@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { FiLoader, FiCheckCircle } from "react-icons/fi";
+import { FiLoader, FiCheckCircle, FiArrowRight } from "react-icons/fi";
 
 interface EnrollButtonProps {
   courseId:   string;
@@ -12,7 +12,7 @@ interface EnrollButtonProps {
 }
 
 export function EnrollButton({ courseId, courseSlug, isLoggedIn }: EnrollButtonProps) {
-  const router    = useRouter();
+  const router  = useRouter();
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState("");
   const [success, setSuccess] = useState(false);
@@ -22,12 +22,13 @@ export function EnrollButton({ courseId, courseSlug, isLoggedIn }: EnrollButtonP
       <div className="space-y-3">
         <Link
           href={`/login?callbackUrl=/courses/${courseSlug}`}
-          className="block w-full text-center py-3 rounded-lg bg-[var(--accent)] hover:bg-[var(--accent-light)] text-white font-semibold text-sm transition-colors"
+          className="flex items-center justify-center gap-2 w-full py-3 px-4 rounded-xl bg-[var(--accent)] hover:bg-[var(--accent-light)] text-white font-semibold text-sm transition-colors"
         >
-          Sign In to Enroll
+          Sign in to Enroll
+          <FiArrowRight size={14} />
         </Link>
-        <p className="text-xs text-[var(--text-muted)] text-center">
-          Free · Start learning immediately
+        <p className="text-xs text-center text-[var(--text-muted)]">
+          Free · No credit card required
         </p>
       </div>
     );
@@ -48,11 +49,12 @@ export function EnrollButton({ courseId, courseSlug, isLoggedIn }: EnrollButtonP
 
       setSuccess(true);
 
+      // Navigate to first lecture
       try {
         const nextRes  = await fetch(`/api/courses/${courseId}/next-lecture`);
         const nextData = await nextRes.json();
         if (nextData.success && nextData.data?.slug) {
-          setTimeout(() => router.push(`/lectures/${nextData.data.slug}`), 800);
+          setTimeout(() => router.push(`/lectures/${nextData.data.slug}`), 700);
           return;
         }
       } catch { /* fall through */ }
@@ -67,30 +69,40 @@ export function EnrollButton({ courseId, courseSlug, isLoggedIn }: EnrollButtonP
 
   if (success) {
     return (
-      <div className="space-y-2">
-        <div className="w-full flex items-center justify-center gap-2 py-3 rounded-lg text-sm font-semibold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+      <div className="space-y-2.5">
+        <div className="flex items-center justify-center gap-2 w-full py-3 rounded-xl text-sm font-semibold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
           <FiCheckCircle size={15} />
           Enrolled! Loading your first lesson…
         </div>
-        <div className="w-full h-1 bg-[var(--bg-secondary)] rounded-full overflow-hidden">
-          <div className="h-full bg-emerald-400 rounded-full animate-pulse" style={{ width: "65%" }} />
+        <div className="h-0.5 w-full bg-[var(--bg-secondary)] rounded-full overflow-hidden">
+          <div className="h-full bg-emerald-400 rounded-full animate-pulse" style={{ width: "60%" }} />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2.5">
       <button
         onClick={handleEnroll}
         disabled={loading}
-        className="w-full flex items-center justify-center gap-2 py-3 rounded-lg bg-[var(--accent)] hover:bg-[var(--accent-light)] text-white font-semibold text-sm transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+        className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-[var(--accent)] hover:bg-[var(--accent-light)] text-white font-semibold text-sm transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
       >
-        {loading ? <><FiLoader className="animate-spin" size={15} /> Enrolling…</> : "Enroll Now — Free"}
+        {loading ? (
+          <>
+            <FiLoader className="animate-spin" size={14} />
+            Enrolling…
+          </>
+        ) : (
+          <>
+            Enroll Now — It&apos;s Free
+            <FiArrowRight size={14} />
+          </>
+        )}
       </button>
       {error && <p className="text-xs text-red-400 text-center">{error}</p>}
-      <p className="text-xs text-[var(--text-muted)] text-center">
-        Free · Learn at your own pace
+      <p className="text-xs text-center text-[var(--text-muted)]">
+        Learn at your own pace · No deadlines
       </p>
     </div>
   );

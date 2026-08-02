@@ -7,69 +7,59 @@ import { useQuery } from "@tanstack/react-query";
 interface Enrollment {
   status:      string;
   progress:    number;
-  completedAt: string | null;
+  completedAt: string | Date | null;
 }
 
 interface ProgressData {
   percent:        number;
   completedCount: number;
   totalCount:     number;
-  progress:       Array<{
-    lectureId:   string;
-    completed:   boolean;
-    lastViewedAt: string;
-  }>;
-  lectureIds: string[];
 }
 
 interface CourseProgressProps {
-  enrollment: Enrollment;
-  courseId:   string;
-  courseSlug?: string;
+  enrollment:      Enrollment;
+  courseId:        string;
+  courseSlug?:     string;
+  /** Pre-fetched on the server — slug of the next lecture to resume */
+  nextLectureSlug?: string | null;
 }
 
 async function fetchProgress(courseId: string): Promise<ProgressData | null> {
-  const res  = await fetch(`/api/progress?courseId=${courseId}`);
-  const data = await res.json();
-  return data.success ? (data.data as ProgressData) : null;
-}
-
-async function fetchFirstIncompleteLecture(courseId: string): Promise<string | null> {
   try {
-    const res  = await fetch(`/api/courses/${courseId}/next-lecture`);
+    const res  = await fetch(`/api/progress?courseId=${courseId}`);
     const data = await res.json();
-    return data.success ? data.data.slug : null;
+    return data.success ? (data.data as ProgressData) : null;
   } catch {
     return null;
   }
 }
 
-export function CourseProgress({ enrollment, courseId, courseSlug }: CourseProgressProps) {
+export function CourseProgress({
+  enrollment,
+  courseId,
+  courseSlug,
+  nextLectureSlug,
+}: CourseProgressProps) {
   const { data: progressData, isLoading } = useQuery({
     queryKey:  ["progress", courseId],
     queryFn:   () => fetchProgress(courseId),
     staleTime: 30_000,
   });
 
-  const { data: nextSlug } = useQuery({
-    queryKey:  ["next-lecture", courseId],
-    queryFn:   () => fetchFirstIncompleteLecture(courseId),
-    staleTime: 60_000,
-    enabled:   enrollment.status !== "COMPLETED",
-  });
-
-  const percent     = progressData?.percent ?? Math.round(enrollment.progress);
+  const percent     = progressData?.percent ?? Math.round(enrollment.progress ?? 0);
   const isCompleted = enrollment.status === "COMPLETED" || percent >= 100;
-  const continueHref = nextSlug
-    ? `/lectures/${nextSlug}`
-    : courseSlug
-      ? `/courses/${courseSlug}`
-      : "/dashboard";
+
+  // Build the best possible "continue" href in priority order:
+  // 1. Pre-fetched next lecture (most accurate)
+  // 2. Student dashboard (always valid)
+  const continueHref = nextLectureSlug
+    ? `/lectures/${nextLectureSlug}`
+    : "/dashboard";
 
   return (
     <div className="space-y-4">
 
-      {/* Status label */}
+      {/* Status */}
       {isCompleted ? (
         <div className="flex items-center gap-2 text-emerald-400 text-sm font-semibold">
           <FiCheckCircle size={16} className="flex-shrink-0" />
@@ -110,6 +100,16 @@ export function CourseProgress({ enrollment, courseId, courseSlug }: CourseProgr
         <FiPlay size={13} />
         {isCompleted ? "Review Course" : "Continue Learning"}
       </Link>
+
+      {/* Show course link separately if not going to a lecture */}
+      {!nextLectureSlug && courseSlug && (
+        <Link
+          href={`/courses/${courseSlug}`}
+          className="block text-center text-xs text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors"
+        >
+          View course details →
+        </Link>
+      )}
     </div>
   );
 }

@@ -98,6 +98,27 @@ export default async function CourseDetailPage({ params }: Props) {
       })
     : null;
 
+  // Pre-fetch next lecture server-side so "Continue Learning" always has a destination
+  let nextLectureSlug: string | null = null;
+  if (enrollment && enrollment.status !== "COMPLETED" && user) {
+    const allLectures = course.modules.flatMap((m) =>
+      m.lectures.map((l) => ({ id: l.id, slug: l.slug })),
+    );
+    if (allLectures.length > 0) {
+      const completedProgress = await prisma.lectureProgress.findMany({
+        where: {
+          userId:    user.id,
+          lectureId: { in: allLectures.map((l) => l.id) },
+          completed: true,
+        },
+        select: { lectureId: true },
+      });
+      const completedSet = new Set(completedProgress.map((p) => p.lectureId));
+      const nextLecture  = allLectures.find((l) => !completedSet.has(l.id)) ?? allLectures[0];
+      nextLectureSlug    = nextLecture?.slug ?? null;
+    }
+  }
+
   // Rating aggregate
   const ratingAgg = await prisma.courseRating.aggregate({
     where: { courseId: course.id },
@@ -345,7 +366,16 @@ export default async function CourseDetailPage({ params }: Props) {
               <div className="glass-card rounded-2xl p-6">
                 {/* Enroll / Progress */}
                 {enrollment ? (
-                  <CourseProgress enrollment={enrollment} courseId={course.id} courseSlug={course.slug} />
+                  <CourseProgress
+                    enrollment={{
+                      status:      enrollment.status,
+                      progress:    enrollment.progress,
+                      completedAt: enrollment.completedAt?.toISOString() ?? null,
+                    }}
+                    courseId={course.id}
+                    courseSlug={course.slug}
+                    nextLectureSlug={nextLectureSlug}
+                  />
                 ) : (
                   <EnrollButton courseId={course.id} courseSlug={course.slug} isLoggedIn={!!user} />
                 )}

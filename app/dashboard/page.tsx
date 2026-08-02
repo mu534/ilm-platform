@@ -22,23 +22,33 @@ async function getDashboardData(userId: string) {
     quizAttempts,
   ] = await Promise.all([
     prisma.enrollment.findMany({
-      where: { userId },
+      where:   { userId },
       orderBy: { updatedAt: "desc" },
-      take: 10,
+      take:    10,
       include: {
         course: {
           select: {
             id: true, title: true, slug: true, thumbnailUrl: true,
             difficulty: true,
+            modules: {
+              orderBy: { order: "asc" },
+              select: {
+                lectures: {
+                  orderBy: { order: "asc" },
+                  where:   { published: true },
+                  select:  { id: true, slug: true },
+                },
+              },
+            },
             _count: { select: { modules: true } },
           },
         },
       },
     }),
     prisma.lectureProgress.findMany({
-      where: { userId },
+      where:   { userId },
       orderBy: { lastViewedAt: "desc" },
-      take: 5,
+      take:    5,
       include: {
         lecture: {
           select: {
@@ -55,17 +65,17 @@ async function getDashboardData(userId: string) {
     }),
     prisma.bookmark.count({ where: { userId } }),
     prisma.certificate.findMany({
-      where: { userId },
+      where:   { userId },
       orderBy: { issuedAt: "desc" },
-      take: 5,
+      take:    5,
       include: {
         course: { select: { id: true, title: true, slug: true } },
       },
     }),
     prisma.quizAttempt.findMany({
-      where: { userId },
+      where:   { userId },
       orderBy: { completedAt: "desc" },
-      take: 5,
+      take:    5,
       include: {
         quiz: { select: { id: true, title: true, passingScore: true } },
       },
@@ -74,9 +84,31 @@ async function getDashboardData(userId: string) {
 
   const active    = enrollments.filter((e) => e.status === "ACTIVE");
   const completed = enrollments.filter((e) => e.status === "COMPLETED");
+
+  // Compute next lecture per active course — single batch query
+  const allLectureIds = active.flatMap((e) =>
+    e.course.modules.flatMap((m) => m.lectures.map((l) => l.id)),
+  );
+
+  const completedLectures = allLectureIds.length > 0
+    ? await prisma.lectureProgress.findMany({
+        where:  { userId, lectureId: { in: allLectureIds }, completed: true },
+        select: { lectureId: true },
+      })
+    : [];
+  const completedSet = new Set(completedLectures.map((p) => p.lectureId));
+
+  // Build a map: courseId → next lecture slug
+  const nextLectureMap = new Map<string, string>();
+  for (const enrollment of active) {
+    const lectures = enrollment.course.modules.flatMap((m) => m.lectures);
+    const next     = lectures.find((l) => !completedSet.has(l.id)) ?? lectures[0];
+    if (next) nextLectureMap.set(enrollment.course.id, next.slug);
+  }
+
   const totalTime = await prisma.lectureProgress.aggregate({
     where: { userId },
-    _sum: { watchedSeconds: true },
+    _sum:  { watchedSeconds: true },
   });
 
   return {
@@ -84,6 +116,7 @@ async function getDashboardData(userId: string) {
     recentProgress, bookmarks,
     certificates, quizAttempts,
     totalWatchedSeconds: totalTime._sum.watchedSeconds ?? 0,
+    nextLectureMap,
   };
 }
 
@@ -193,40 +226,46 @@ export default async function DashboardPage() {
                 My Courses
               </h2>
               <div className="space-y-3">
-                {data.active.map((enrollment) => (
-                  <Link
-                    key={enrollment.id}
-                    href={`/courses/${enrollment.course.slug}`}
-                    className="flex items-center gap-4 p-4 glass-card rounded-xl hover:border-[var(--border-strong)] hover:bg-[var(--bg-card-hover)] transition-all duration-200 group"
-                  >
-                    <div className="relative w-20 h-14 rounded-lg overflow-hidden flex-shrink-0 bg-[var(--bg-secondary)]">
-                      {enrollment.course.thumbnailUrl ? (
-                        <Image src={enrollment.course.thumbnailUrl} alt={enrollment.course.title} fill className="object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <FiBookOpen className="text-[var(--text-muted)]" />
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-[var(--text-primary)] group-hover:text-[var(--accent)] transition-colors line-clamp-1">
-                        {enrollment.course.title}
-                      </p>
-                      <div className="mt-2">
-                        <div className="flex justify-between text-xs text-[var(--text-muted)] mb-1">
-                          <span>Progress</span>
-                          <span>{Math.round(enrollment.progress)}%</span>
-                        </div>
-                        <div className="w-full h-1.5 rounded-full bg-[var(--bg-secondary)] overflow-hidden">
-                          <div
-                            className="h-full rounded-full bg-gradient-to-r from-gold-500 to-gold-400"
-                            style={{ width: `${Math.min(100, enrollment.progress)}%` }}
-                          />
+                {data.active.map((enrollment) => {
+                  const nextSlug = data.nextLectureMap.get(enrollment.course.id);
+                  const href     = nextSlug
+                    ? `/lectures/${nextSlug}`
+                    : `/courses/${enrollment.course.slug}`;
+                  return (
+                    <Link
+                      key={enrollment.id}
+                      href={href}
+                      className="flex items-center gap-4 p-4 glass-card rounded-xl hover:border-[var(--border-strong)] hover:bg-[var(--bg-card-hover)] transition-all duration-200 group"
+                    >
+                      <div className="relative w-20 h-14 rounded-lg overflow-hidden flex-shrink-0 bg-[var(--bg-secondary)]">
+                        {enrollment.course.thumbnailUrl ? (
+                          <Image src={enrollment.course.thumbnailUrl} alt={enrollment.course.title} fill className="object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <FiBookOpen className="text-[var(--text-muted)]" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-[var(--text-primary)] group-hover:text-[var(--accent)] transition-colors line-clamp-1">
+                          {enrollment.course.title}
+                        </p>
+                        <div className="mt-2">
+                          <div className="flex justify-between text-xs text-[var(--text-muted)] mb-1">
+                            <span>{nextSlug ? "Continue where you left off" : "View course"}</span>
+                            <span>{Math.round(enrollment.progress)}%</span>
+                          </div>
+                          <div className="w-full h-1.5 rounded-full bg-[var(--bg-secondary)] overflow-hidden">
+                            <div
+                              className="h-full rounded-full bg-gradient-to-r from-gold-500 to-gold-400"
+                              style={{ width: `${Math.min(100, enrollment.progress)}%` }}
+                            />
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </Link>
-                ))}
+                    </Link>
+                  );
+                })}
               </div>
             </section>
           )}

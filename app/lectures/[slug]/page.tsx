@@ -30,6 +30,11 @@ async function getLecture(slug: string) {
           id: true,
           courseId: true,
           course: { select: { id: true, title: true, slug: true } },
+          lectures: {
+            orderBy: { order: "asc" },
+            where:   { published: true },
+            select:  { id: true, slug: true, order: true },
+          },
         },
       },
     },
@@ -99,6 +104,15 @@ export default async function LecturePage({ params }: Props) {
       }).catch(() => {});
     }
   }
+
+  // Compute next lecture in the same module for the "Next Lesson" button
+  const nextLectureInModule: string | null = (() => {
+    if (!lecture.module?.lectures) return null;
+    const siblings = lecture.module.lectures;
+    const currentIdx = siblings.findIndex((l) => l.slug === slug || l.id === lecture.id);
+    if (currentIdx === -1 || currentIdx >= siblings.length - 1) return null;
+    return siblings[currentIdx + 1]?.slug ?? null;
+  })();
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -174,7 +188,11 @@ export default async function LecturePage({ params }: Props) {
         {/* Mark complete (only for enrolled course lectures) */}
         {courseId && isEnrolled && (
           <div className="mt-4">
-            <MarkCompleteButton lectureId={lecture.id} courseId={courseId} />
+            <MarkCompleteButton
+              lectureId={lecture.id}
+              courseId={courseId}
+              nextSlug={nextLectureInModule}
+            />
           </div>
         )}
       </header>

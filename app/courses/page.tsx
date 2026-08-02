@@ -1,9 +1,8 @@
 import Link from "next/link";
-import { Suspense } from "react";
 import { prisma } from "@/app/lib/prism";
 import { CourseCard } from "@/app/components/courses/CourseCard";
 import type { DifficultyLevel } from "@/app/types/auth.types";
-import { FiSearch, FiFilter, FiBookOpen } from "react-icons/fi";
+import { FiSearch, FiSliders } from "react-icons/fi";
 
 type SortOption = "newest" | "oldest" | "popular" | "top-rated";
 
@@ -12,7 +11,6 @@ type SearchParams = {
   categoryId?: string;
   difficulty?: string;
   sort?:       string;
-  featured?:   string;
   page?:       string;
 };
 
@@ -26,7 +24,7 @@ function getOrderBy(sort: string) {
   switch (sort) {
     case "popular":   return { enrollments: { _count: "desc" as const } };
     case "top-rated": return { ratings:     { _count: "desc" as const } };
-    case "oldest":    return { createdAt:   "asc" as const };
+    case "oldest":    return { createdAt:   "asc"  as const };
     default:          return { createdAt:   "desc" as const };
   }
 }
@@ -35,7 +33,6 @@ async function getCoursesData(params: SearchParams) {
   const page       = Math.max(1, Number(params.page ?? 1));
   const search     = params.search ?? "";
   const categoryId = params.categoryId ?? "";
-  const featured   = params.featured === "true";
   const difficulty = params.difficulty ?? "";
   const sort       = params.sort ?? "newest";
 
@@ -46,11 +43,10 @@ async function getCoursesData(params: SearchParams) {
 
   const where = {
     published:      true,
-    status:         "PUBLISHED" as const,
-    approvalStatus: "APPROVED" as const,
-    ...(featured         ? { featured: true }              : {}),
-    ...(validDifficulty  ? { difficulty: validDifficulty } : {}),
-    ...(categoryId       ? { categoryId }                  : {}),
+    status:         "PUBLISHED"  as const,
+    approvalStatus: "APPROVED"   as const,
+    ...(validDifficulty ? { difficulty: validDifficulty } : {}),
+    ...(categoryId      ? { categoryId }                  : {}),
     ...(search ? {
       OR: [
         { title:       { contains: search, mode: "insensitive" as const } },
@@ -70,16 +66,16 @@ async function getCoursesData(params: SearchParams) {
       include: {
         category: { select: { id: true, name: true, slug: true, icon: true, color: true } },
         author:   { select: { id: true, name: true, image: true } },
-        scholar:  {
-          select: { id: true, photo: true, verified: true, user: { select: { name: true } } },
-        },
-        _count: { select: { modules: true, enrollments: true, ratings: true } },
+        scholar:  { select: { id: true, photo: true, verified: true, user: { select: { name: true } } } },
+        _count:   { select: { modules: true, enrollments: true, ratings: true } },
       },
     }),
-    prisma.category.findMany({ orderBy: { order: "asc" }, select: { id: true, name: true, slug: true, icon: true, color: true } }),
+    prisma.category.findMany({
+      orderBy: { order: "asc" },
+      select:  { id: true, name: true, slug: true, icon: true },
+    }),
   ]);
 
-  // Batch-fetch ratings — single query
   const courseIds = courses.map((c) => c.id);
   const ratings   = await prisma.courseRating.groupBy({
     by:    ["courseId"],
@@ -89,26 +85,31 @@ async function getCoursesData(params: SearchParams) {
   const ratingMap = new Map(ratings.map((r) => [r.courseId, r._avg.rating ?? 0]));
 
   return {
-    courses: courses.map((c) => ({ ...c, avgRating: ratingMap.get(c.id) ?? 0 })),
-    total,
-    page,
+    courses:    courses.map((c) => ({ ...c, avgRating: ratingMap.get(c.id) ?? 0 })),
+    total, page,
     totalPages: Math.ceil(total / PAGE_SIZE),
     categories,
   };
 }
 
-const sortLabels: Record<SortOption, string> = {
-  newest:    "Most Recent",
-  oldest:    "Oldest First",
-  popular:   "Most Popular",
-  "top-rated": "Top Rated",
-};
+const SORT_OPTIONS: { value: SortOption; label: string }[] = [
+  { value: "newest",    label: "Newest"      },
+  { value: "popular",   label: "Most Popular" },
+  { value: "top-rated", label: "Top Rated"    },
+  { value: "oldest",    label: "Oldest"       },
+];
+
+const DIFFICULTY_OPTIONS = [
+  { value: "",             label: "All Levels"    },
+  { value: "BEGINNER",     label: "Beginner"      },
+  { value: "INTERMEDIATE", label: "Intermediate"  },
+  { value: "ADVANCED",     label: "Advanced"      },
+] as const;
 
 export async function generateMetadata({ searchParams }: Props) {
-  const sp     = await searchParams;
-  const search = sp.search ?? "";
+  const sp = await searchParams;
   return {
-    title:       search ? `Courses: "${search}"` : "Courses",
+    title:       sp.search ? `"${sp.search}" — Courses` : "Courses",
     description: "Browse Islamic courses from qualified scholars",
   };
 }
@@ -117,177 +118,223 @@ export default async function CoursesPage({ searchParams }: Props) {
   const sp = await searchParams;
   const { courses, total, page, totalPages, categories } = await getCoursesData(sp);
 
+  const activeSort = (sp.sort ?? "newest") as SortOption;
+  const hasFilters = !!(sp.search || sp.categoryId || sp.difficulty);
+
   const buildUrl = (overrides: Record<string, string>) => {
     const merged: Record<string, string> = {};
     for (const [k, v] of Object.entries(sp)) { if (v !== undefined) merged[k] = v; }
     return `/courses?${new URLSearchParams({ ...merged, ...overrides }).toString()}`;
   };
 
-  const activeSort = (sp.sort ?? "newest") as SortOption;
-  const hasFilters = !!(sp.search || sp.categoryId || sp.difficulty || sp.featured);
-
-  const pagerClass =
-    "px-4 py-2 text-sm border border-[var(--border)] rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:border-[var(--accent)] transition-colors";
-
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div className="min-h-screen bg-[var(--bg-primary)]">
 
-      {/* Header */}
-      <div className="mb-8">
-        <p className="text-xs text-[var(--accent)] uppercase tracking-wider font-semibold mb-2">Learning Paths</p>
-        <h1 className="font-display text-4xl font-bold text-[var(--text-primary)]">Courses</h1>
-        <p className="text-[var(--text-muted)] mt-2">
-          {total.toLocaleString()} course{total !== 1 ? "s" : ""} available
-        </p>
+      {/* ── Page header ── */}
+      <div className="border-b border-[var(--border)] bg-[var(--bg-secondary)]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+          <h1 className="text-2xl font-semibold text-[var(--text-primary)] mb-1">
+            Islamic Courses
+          </h1>
+          <p className="text-sm text-[var(--text-muted)]">
+            {total.toLocaleString()} course{total !== 1 ? "s" : ""} taught by verified scholars
+          </p>
+        </div>
       </div>
 
-      {/* Filters */}
-      <div className="mb-8 space-y-4">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex flex-col lg:flex-row gap-8">
 
-        {/* Search + Sort */}
-        <div className="flex flex-wrap gap-3 items-start">
-          <form className="flex gap-2 flex-1 min-w-64">
-            <div className="relative flex-1 max-w-sm">
-              <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" size={15} />
-              <input
-                name="search"
-                defaultValue={sp.search}
-                placeholder="Search courses…"
-                className="input-themed pl-10"
-              />
-            </div>
-            <button type="submit" className="btn-primary px-5">Search</button>
-          </form>
+          {/* ── Sidebar filters ── */}
+          <aside className="lg:w-56 flex-shrink-0 space-y-6">
 
-          {/* Sort */}
-          <div className="flex items-center gap-1.5">
-            <FiFilter size={13} className="text-[var(--text-muted)]" />
-            {(Object.keys(sortLabels) as SortOption[]).map((s) => (
-              <Link
-                key={s}
-                href={buildUrl({ sort: s, page: "1" })}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
-                  activeSort === s
-                    ? "bg-[var(--accent)] text-white"
-                    : "bg-[var(--bg-card)] border border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:border-[var(--accent)]"
-                }`}
-              >
-                {sortLabels[s]}
-              </Link>
-            ))}
-          </div>
-        </div>
+            {/* Search */}
+            <form>
+              <label className="block text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-2">
+                Search
+              </label>
+              <div className="relative">
+                <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" size={14} />
+                <input
+                  name="search"
+                  defaultValue={sp.search}
+                  placeholder="Search courses…"
+                  className="w-full pl-9 pr-4 py-2 text-sm bg-[var(--bg-card)] border border-[var(--border)] rounded-lg text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] transition-colors"
+                />
+              </div>
+            </form>
 
-        {/* Category */}
-        <div className="flex flex-wrap gap-2">
-          <Link
-            href={buildUrl({ categoryId: "", page: "1" })}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-              !sp.categoryId ? "bg-[var(--accent)] text-white" : "tag hover:tag-accent"
-            }`}
-          >
-            All Categories
-          </Link>
-          {categories.map((cat) => (
-            <Link
-              key={cat.id}
-              href={buildUrl({ categoryId: sp.categoryId === cat.id ? "" : cat.id, page: "1" })}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 ${
-                sp.categoryId === cat.id ? "tag-accent" : "tag hover:tag-accent"
-              }`}
-            >
-              {cat.icon && <span>{cat.icon}</span>}
-              {cat.name}
-            </Link>
-          ))}
-        </div>
-
-        {/* Difficulty */}
-        <div className="flex flex-wrap gap-2">
-          {(["", "BEGINNER", "INTERMEDIATE", "ADVANCED"] as const).map((d) => {
-            const label = { "": "All Levels", BEGINNER: "Beginner", INTERMEDIATE: "Intermediate", ADVANCED: "Advanced" }[d];
-            return (
-              <Link
-                key={d}
-                href={buildUrl({ difficulty: d, page: "1" })}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                  (sp.difficulty ?? "") === d
-                    ? "tag-accent"
-                    : "tag hover:tag-accent"
-                }`}
-              >
-                {label}
-              </Link>
-            );
-          })}
-        </div>
-
-        {/* Active filters summary */}
-        {hasFilters && (
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs text-[var(--text-muted)]">Active:</span>
-            {sp.search     && <span className="tag-accent text-xs">"{sp.search}"</span>}
-            {sp.difficulty && <span className="tag-accent text-xs">{sp.difficulty.toLowerCase()}</span>}
-            {sp.categoryId && <span className="tag-accent text-xs">Category</span>}
-            {sp.featured   && <span className="tag-accent text-xs">Featured</span>}
-            <Link href="/courses" className="text-xs text-red-400 hover:text-red-300 transition-colors">
-              Clear all ✕
-            </Link>
-          </div>
-        )}
-      </div>
-
-      {/* Results */}
-      {courses.length === 0 ? (
-        <EmptyState hasFilters={hasFilters} />
-      ) : (
-        <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
-            {courses.map((course) => (
-              <CourseCard key={course.id} course={course} />
-            ))}
-          </div>
-
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex justify-center items-center gap-2">
-              {page > 1 && <Link href={buildUrl({ page: String(page - 1) })} className={pagerClass}>Previous</Link>}
-              {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => i + 1).map((p) => (
-                <Link key={p} href={buildUrl({ page: String(p) })}
-                  className={`px-4 py-2 text-sm rounded-lg transition-colors ${
-                    p === page ? "bg-[var(--accent)] text-white" : pagerClass
+            {/* Category */}
+            <div>
+              <p className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-2">
+                Category
+              </p>
+              <div className="space-y-0.5">
+                <Link
+                  href={buildUrl({ categoryId: "", page: "1" })}
+                  className={`block px-3 py-2 rounded-lg text-sm transition-colors ${
+                    !sp.categoryId
+                      ? "bg-[var(--accent-dim)] text-[var(--accent)] font-medium"
+                      : "text-[var(--text-secondary)] hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)]"
                   }`}
                 >
-                  {p}
+                  All Categories
                 </Link>
-              ))}
-              {page < totalPages && <Link href={buildUrl({ page: String(page + 1) })} className={pagerClass}>Next</Link>}
+                {categories.map((cat) => (
+                  <Link
+                    key={cat.id}
+                    href={buildUrl({ categoryId: sp.categoryId === cat.id ? "" : cat.id, page: "1" })}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
+                      sp.categoryId === cat.id
+                        ? "bg-[var(--accent-dim)] text-[var(--accent)] font-medium"
+                        : "text-[var(--text-secondary)] hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)]"
+                    }`}
+                  >
+                    {cat.icon && <span className="text-xs">{cat.icon}</span>}
+                    <span className="truncate">{cat.name}</span>
+                  </Link>
+                ))}
+              </div>
             </div>
-          )}
-        </>
-      )}
+
+            {/* Level */}
+            <div>
+              <p className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-2">
+                Level
+              </p>
+              <div className="space-y-0.5">
+                {DIFFICULTY_OPTIONS.map((opt) => (
+                  <Link
+                    key={opt.value}
+                    href={buildUrl({ difficulty: opt.value, page: "1" })}
+                    className={`block px-3 py-2 rounded-lg text-sm transition-colors ${
+                      (sp.difficulty ?? "") === opt.value
+                        ? "bg-[var(--accent-dim)] text-[var(--accent)] font-medium"
+                        : "text-[var(--text-secondary)] hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)]"
+                    }`}
+                  >
+                    {opt.label}
+                  </Link>
+                ))}
+              </div>
+            </div>
+
+            {/* Clear filters */}
+            {hasFilters && (
+              <Link
+                href="/courses"
+                className="block text-xs text-[var(--text-muted)] hover:text-red-400 transition-colors"
+              >
+                ✕ Clear all filters
+              </Link>
+            )}
+          </aside>
+
+          {/* ── Main content ── */}
+          <div className="flex-1 min-w-0">
+
+            {/* Sort bar */}
+            <div className="flex items-center justify-between mb-6">
+              <p className="text-sm text-[var(--text-muted)]">
+                {hasFilters && (
+                  <span className="text-[var(--text-primary)] font-medium mr-1">
+                    {total.toLocaleString()} result{total !== 1 ? "s" : ""}
+                  </span>
+                )}
+                {!hasFilters && (
+                  <span>{total.toLocaleString()} courses</span>
+                )}
+              </p>
+              <div className="flex items-center gap-2">
+                <FiSliders size={13} className="text-[var(--text-muted)]" />
+                <select
+                  value={activeSort}
+                  onChange={() => {}}
+                  className="text-sm bg-transparent text-[var(--text-muted)] border-none outline-none cursor-pointer"
+                  aria-label="Sort by"
+                >
+                  {SORT_OPTIONS.map((s) => (
+                    <option key={s.value} value={s.value}>{s.label}</option>
+                  ))}
+                </select>
+                {/* Hidden links for server-side sort */}
+                <div className="flex gap-1 ml-1">
+                  {SORT_OPTIONS.map((s) => (
+                    <Link
+                      key={s.value}
+                      href={buildUrl({ sort: s.value, page: "1" })}
+                      className={`text-xs px-2 py-1 rounded transition-colors ${
+                        activeSort === s.value
+                          ? "text-[var(--accent)] font-semibold"
+                          : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                      }`}
+                    >
+                      {s.label}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Grid */}
+            {courses.length === 0 ? (
+              <EmptyState hasFilters={hasFilters} />
+            ) : (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5 mb-10">
+                  {courses.map((course) => (
+                    <CourseCard key={course.id} course={course} />
+                  ))}
+                </div>
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="flex justify-center items-center gap-1">
+                    {page > 1 && (
+                      <Link href={buildUrl({ page: String(page - 1) })}
+                        className="px-4 py-2 text-sm border border-[var(--border)] rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:border-[var(--accent)] transition-colors">
+                        Previous
+                      </Link>
+                    )}
+                    {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => i + 1).map((p) => (
+                      <Link key={p} href={buildUrl({ page: String(p) })}
+                        className={`px-4 py-2 text-sm rounded-lg transition-colors ${
+                          p === page
+                            ? "bg-[var(--accent)] text-white font-medium"
+                            : "border border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:border-[var(--accent)]"
+                        }`}
+                      >{p}</Link>
+                    ))}
+                    {page < totalPages && (
+                      <Link href={buildUrl({ page: String(page + 1) })}
+                        className="px-4 py-2 text-sm border border-[var(--border)] rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:border-[var(--accent)] transition-colors">
+                        Next
+                      </Link>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
 
-// ── Empty state ───────────────────────────────────────────────────────────────
 function EmptyState({ hasFilters }: { hasFilters: boolean }) {
   return (
-    <div className="glass-card rounded-2xl p-16 text-center animate-fadeInUp">
-      <div className="w-16 h-16 rounded-2xl bg-[var(--accent-dim)] border border-[var(--border-strong)] flex items-center justify-center mx-auto mb-6">
-        <FiBookOpen className="text-[var(--accent)] text-2xl" />
-      </div>
-      <h2 className="font-display text-2xl font-bold text-[var(--text-primary)] mb-2">
-        {hasFilters ? "No courses match your filters" : "No courses yet"}
+    <div className="py-20 text-center">
+      <div className="text-4xl mb-4">📖</div>
+      <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-2">
+        {hasFilters ? "No courses match your filters" : "No courses published yet"}
       </h2>
-      <p className="text-[var(--text-muted)] text-sm mb-6 max-w-sm mx-auto">
-        {hasFilters
-          ? "Try adjusting your search or removing some filters."
-          : "Courses will appear here once scholars publish them."}
+      <p className="text-sm text-[var(--text-muted)] mb-6">
+        {hasFilters ? "Try adjusting your search terms or removing filters." : "Check back soon."}
       </p>
       {hasFilters && (
-        <Link href="/courses" className="btn-primary inline-flex text-sm">
-          Clear all filters
+        <Link href="/courses" className="text-sm text-[var(--accent)] hover:text-[var(--accent-light)] transition-colors">
+          Clear all filters →
         </Link>
       )}
     </div>

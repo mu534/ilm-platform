@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { FiBookOpen, FiUsers, FiStar, FiClock } from "react-icons/fi";
+import { FiClock, FiUsers, FiStar } from "react-icons/fi";
 
 interface CourseCardProps {
   course: {
@@ -24,132 +24,93 @@ interface CourseCardProps {
   };
 }
 
-const difficultyColors: Record<string, string> = {
-  BEGINNER:     "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
-  INTERMEDIATE: "bg-[var(--accent-dim)] text-[var(--accent)] border-[var(--border-strong)]",
-  ADVANCED:     "bg-red-500/10 text-red-400 border-red-500/20",
-};
-
-const difficultyLabels: Record<string, string> = {
+const difficultyLabel: Record<string, string> = {
   BEGINNER: "Beginner", INTERMEDIATE: "Intermediate", ADVANCED: "Advanced",
 };
 
-function formatDuration(minutes: number): string {
-  if (minutes < 60) return `${minutes}m`;
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  return m > 0 ? `${h}h ${m}m` : `${h}h`;
+const difficultyColor: Record<string, string> = {
+  BEGINNER:     "text-emerald-400",
+  INTERMEDIATE: "text-[var(--accent)]",
+  ADVANCED:     "text-red-400",
+};
+
+function formatDuration(min: number): string {
+  if (min < 60) return `${min}m`;
+  const h = Math.floor(min / 60), m = min % 60;
+  return m ? `${h}h ${m}m` : `${h}h`;
 }
 
 export function CourseCard({ course }: CourseCardProps) {
   const instructor = course.scholar?.user.name ?? course.author.name;
 
   return (
-    <Link href={`/courses/${course.slug}`} className="group block">
-      <article className="glass-card rounded-2xl overflow-hidden hover:border-[var(--border-strong)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[var(--shadow-lg)]">
-        {/* Thumbnail */}
-        <div className="relative h-48 bg-[var(--bg-secondary)]">
+    <Link href={`/courses/${course.slug}`} className="group block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] rounded-xl">
+      <article className="bg-[var(--bg-card)] border border-[var(--border)] rounded-xl overflow-hidden transition-all duration-200 group-hover:border-[var(--border-strong)] group-hover:shadow-[var(--shadow-md)]">
+
+        {/* Thumbnail — clean, no overlay text */}
+        <div className="relative aspect-[16/9] bg-[var(--bg-secondary)] overflow-hidden">
           {course.thumbnailUrl ? (
             <Image
               src={course.thumbnailUrl}
               alt={course.title}
               fill
-              className="object-cover group-hover:scale-105 transition-transform duration-500"
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+              className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <FiBookOpen className="text-[var(--text-muted)] text-4xl opacity-30" />
-            </div>
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-
-          {/* Category badge */}
-          {course.category && (
-            <div className="absolute top-3 left-3">
-              <span
-                className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium backdrop-blur-sm"
-                style={{ backgroundColor: `${course.category.color ?? "#c8871a"}22`, color: course.category.color ?? "#c8871a", border: `1px solid ${course.category.color ?? "#c8871a"}44` }}
-              >
-                {course.category.icon} {course.category.name}
-              </span>
-            </div>
-          )}
-
-          {/* Featured badge */}
-          {course.featured && (
-            <div className="absolute top-3 right-3">
-              <span className="flex items-center gap-1 px-2 py-1 rounded-full bg-[var(--accent-dim)] border border-[var(--border-strong)] text-[var(--accent)] text-xs font-medium backdrop-blur-sm">
-                <FiStar size={10} /> Featured
-              </span>
+            <div className="w-full h-full flex items-center justify-center bg-[var(--bg-secondary)]">
+              <span className="text-3xl opacity-20">📖</span>
             </div>
           )}
         </div>
 
-        {/* Content */}
-        <div className="p-5">
-          {/* Difficulty + duration */}
-          <div className="flex items-center gap-2 mb-3 flex-wrap">
-            <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${difficultyColors[course.difficulty] ?? difficultyColors.BEGINNER}`}>
-              {difficultyLabels[course.difficulty] ?? course.difficulty}
+        {/* Card body */}
+        <div className="p-4 space-y-2">
+
+          {/* Category + Difficulty row */}
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-[var(--text-muted)] truncate">
+              {course.category?.name ?? "Course"}
             </span>
+            <span className={`text-xs font-medium flex-shrink-0 ml-2 ${difficultyColor[course.difficulty] ?? ""}`}>
+              {difficultyLabel[course.difficulty] ?? course.difficulty}
+            </span>
+          </div>
+
+          {/* Title */}
+          <h3 className="text-sm font-semibold text-[var(--text-primary)] leading-snug line-clamp-2 group-hover:text-[var(--accent)] transition-colors">
+            {course.title}
+          </h3>
+
+          {/* Subtitle */}
+          {course.subtitle && (
+            <p className="text-xs text-[var(--text-muted)] line-clamp-1">{course.subtitle}</p>
+          )}
+
+          {/* Instructor */}
+          <p className="text-xs text-[var(--text-muted)]">
+            {course.scholar?.verified && <span className="text-emerald-400 mr-1">✓</span>}
+            {instructor}
+          </p>
+
+          {/* Stats row */}
+          <div className="flex items-center gap-3 pt-1 border-t border-[var(--border)]">
+            {course.avgRating && course.avgRating > 0 ? (
+              <span className="flex items-center gap-1 text-xs text-[var(--accent)]">
+                <FiStar size={11} className="fill-current" />
+                {course.avgRating.toFixed(1)}
+              </span>
+            ) : null}
             {course.estimatedDuration > 0 && (
               <span className="flex items-center gap-1 text-xs text-[var(--text-muted)]">
                 <FiClock size={11} />
                 {formatDuration(course.estimatedDuration)}
               </span>
             )}
-          </div>
-
-          {/* Tags */}
-          {course.tags && course.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1 mb-2">
-              {course.tags.slice(0, 3).map((tag) => (
-                <span key={tag} className="tag text-xs">{tag}</span>
-              ))}
-            </div>
-          )}
-
-          {/* Title */}
-          <h3 className="font-display text-lg font-semibold text-[var(--text-primary)] group-hover:text-[var(--accent)] transition-colors line-clamp-2 leading-tight mb-1">
-            {course.title}
-          </h3>
-
-          {/* Subtitle */}
-          {course.subtitle && (
-            <p className="text-xs text-[var(--accent)] font-medium line-clamp-1 mb-2">
-              {course.subtitle}
-            </p>
-          )}
-
-          {/* Description */}
-          <p className="text-sm text-[var(--text-muted)] line-clamp-2 mb-4 leading-relaxed">
-            {course.description}
-          </p>
-
-          {/* Footer */}
-          <div className="flex items-center justify-between text-xs text-[var(--text-muted)] border-t border-[var(--border)] pt-3">
-            <span className="flex items-center gap-1">
-              {course.scholar?.verified && (
-                <span className="text-[var(--accent)]" title="Verified Scholar">✓</span>
-              )}
-              {instructor}
+            <span className="flex items-center gap-1 text-xs text-[var(--text-muted)] ml-auto">
+              <FiUsers size={11} />
+              {course._count.enrollments.toLocaleString()}
             </span>
-            <div className="flex items-center gap-3">
-              {course.avgRating && course.avgRating > 0 ? (
-                <span className="flex items-center gap-1 text-[var(--accent)]">
-                  <FiStar size={11} />
-                  {course.avgRating.toFixed(1)}
-                </span>
-              ) : null}
-              <span className="flex items-center gap-1">
-                <FiBookOpen size={11} />
-                {course._count.modules}
-              </span>
-              <span className="flex items-center gap-1">
-                <FiUsers size={11} />
-                {course._count.enrollments}
-              </span>
-            </div>
           </div>
         </div>
       </article>

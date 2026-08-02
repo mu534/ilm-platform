@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/app/lib/prism";
 import { CourseCard } from "@/app/components/courses/CourseCard";
+import { SortSelect } from "@/app/components/courses/SortSelect";
 import type { DifficultyLevel } from "@/app/types/auth.types";
 import { FiSearch } from "react-icons/fi";
 
@@ -260,18 +261,11 @@ export default async function CoursesPage({ searchParams }: Props) {
 
               {/* Mobile sort — single select */}
               <div className="sm:hidden">
-                <select
-                  defaultValue={activeSort}
-                  onChange={(e) => {
-                    window.location.href = buildUrl({ sort: e.target.value, page: "1" });
-                  }}
-                  className="text-xs py-1.5 px-3 bg-[var(--bg-card)] border border-[var(--border)] rounded-lg text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)]"
-                  aria-label="Sort courses"
-                >
-                  {SORT_OPTIONS.map((s) => (
-                    <option key={s.value} value={s.value}>{s.label}</option>
-                  ))}
-                </select>
+                <SortSelect
+                  value={activeSort}
+                  options={SORT_OPTIONS}
+                  buildUrl={(sort) => buildUrl({ sort, page: "1" })}
+                />
               </div>
             </div>
 

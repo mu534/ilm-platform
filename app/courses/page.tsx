@@ -259,13 +259,9 @@ export default async function CoursesPage({ searchParams }: Props) {
                 ))}
               </div>
 
-              {/* Mobile sort — single select */}
+              {/* Mobile sort — single select (Client Component, reads URL itself) */}
               <div className="sm:hidden">
-                <SortSelect
-                  value={activeSort}
-                  options={SORT_OPTIONS}
-                  buildUrl={(sort) => buildUrl({ sort, page: "1" })}
-                />
+                <SortSelect />
               </div>
             </div>
 

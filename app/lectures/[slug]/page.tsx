@@ -132,7 +132,7 @@ export default async function LecturePage({ params }: Props) {
           </>
         ) : (
           <>
-            <Link href="/lectures" className="hover:text-[var(--accent)] transition-colors">Lectures</Link>
+            <Link href="/courses" className="hover:text-[var(--accent)] transition-colors">Courses</Link>
             <span>/</span>
           </>
         )}

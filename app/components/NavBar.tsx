@@ -18,7 +18,6 @@ import { LanguageSwitcher } from "./LanguageSwitcher";
 const navLinks = [
   { href: "/",         label: "Home"     },
   { href: "/courses",  label: "Courses"  },
-  { href: "/lectures", label: "Lectures" },
   { href: "/scholars", label: "Scholars" },
   { href: "/forum",    label: "Forum"    },
 ];
@@ -142,8 +141,8 @@ export function Navbar() {
                     </DropdownMenu.Item>
                     {["ADMIN", "SCHOLAR"].includes(user?.role ?? "") && (
                       <DropdownMenu.Item asChild>
-                        <Link href="/admin/lectures/new" className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-dim)] rounded-xl cursor-pointer transition-colors">
-                          <FiBookOpen size={14} className="text-[var(--accent)]" /> New Lecture
+                        <Link href="/admin/courses" className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-dim)] rounded-xl cursor-pointer transition-colors">
+                          <FiBookOpen size={14} className="text-[var(--accent)]" /> Manage Courses
                         </Link>
                       </DropdownMenu.Item>
                     )}

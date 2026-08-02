@@ -2,18 +2,19 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
+import Link from "next/link";
 import { FileUploader } from "../../../../components/FileUploader";
-import { FiSave, FiX } from "react-icons/fi";
+import { FiSave, FiX, FiArrowLeft } from "react-icons/fi";
 
 interface LectureFormData {
-  title: string;
-  description: string;
-  content: string;
-  type: "TEXT" | "VIDEO";
-  tags: string;
-  published: boolean;
-  featured: boolean;
-  mediaUrl: string;
+  title:        string;
+  description:  string;
+  content:      string;
+  type:         "TEXT" | "VIDEO" | "AUDIO" | "PDF";
+  tags:         string;
+  published:    boolean;
+  featured:     boolean;
+  mediaUrl:     string;
   thumbnailUrl: string;
 }
 
@@ -23,18 +24,23 @@ export default function EditLecturePage() {
   const id = params?.id as string;
 
   const [form, setForm] = useState<LectureFormData>({
-    title: "",
-    description: "",
-    content: "",
-    type: "TEXT",
-    tags: "",
-    published: false,
-    featured: false,
-    mediaUrl: "",
+    title:        "",
+    description:  "",
+    content:      "",
+    type:         "TEXT",
+    tags:         "",
+    published:    false,
+    featured:     false,
+    mediaUrl:     "",
     thumbnailUrl: "",
   });
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [saving, setSaving] = useState(false);
+
+  // Track the parent course builder URL so we can navigate back correctly
+  const [builderUrl, setBuilderUrl] = useState<string>("/admin/courses");
+  const [courseTitle, setCourseTitle] = useState<string>("");
+
+  const [errors,  setErrors]  = useState<Record<string, string>>({});
+  const [saving,  setSaving]  = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -42,21 +48,28 @@ export default function EditLecturePage() {
 
     async function fetchLecture() {
       try {
-        const res = await fetch(`/api/lectures/${id}`);
+        const res  = await fetch(`/api/lectures/${id}`);
         const data = await res.json();
         if (data.success && data.data) {
           const lecture = data.data;
           setForm({
-            title: lecture.title ?? "",
-            description: lecture.description ?? "",
-            content: lecture.content ?? "",
-            type: lecture.type ?? "TEXT",
-            tags: (lecture.tags ?? []).join(", "),
-            published: lecture.published ?? false,
-            featured: lecture.featured ?? false,
-            mediaUrl: lecture.mediaUrl ?? "",
+            title:        lecture.title        ?? "",
+            description:  lecture.description  ?? "",
+            content:      lecture.content      ?? "",
+            type:         lecture.type         ?? "TEXT",
+            tags:         (lecture.tags ?? []).join(", "),
+            published:    lecture.published    ?? false,
+            featured:     lecture.featured     ?? false,
+            mediaUrl:     lecture.mediaUrl     ?? "",
             thumbnailUrl: lecture.thumbnailUrl ?? "",
           });
+
+          // Resolve the parent course builder URL
+          const courseId = lecture.module?.courseId ?? lecture.courseId ?? null;
+          if (courseId) {
+            setBuilderUrl(`/admin/courses/${courseId}/builder`);
+            setCourseTitle(lecture.module?.course?.title ?? "");
+          }
         }
       } catch (err) {
         console.error("Failed to fetch lecture:", err);
@@ -83,13 +96,13 @@ export default function EditLecturePage() {
           .filter(Boolean),
       };
 
-      const res = await fetch(`/api/lectures/${id}`, {
-        method: "PATCH",
+      const res  = await fetch(`/api/lectures/${id}`, {
+        method:  "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body:    JSON.stringify(payload),
       });
-
       const data = await res.json();
+
       if (!data.success) {
         if (data.details) {
           const fieldErrors: Record<string, string> = {};
@@ -101,7 +114,8 @@ export default function EditLecturePage() {
           setErrors({ general: data.error ?? "Update failed" });
         }
       } else {
-        router.push("/admin/lectures");
+        // Go back to the Course Builder, not to /admin/lectures
+        router.push(builderUrl);
       }
     } catch {
       setErrors({ general: "Something went wrong. Please try again." });
@@ -114,6 +128,13 @@ export default function EditLecturePage() {
     `w-full px-4 py-2.5 bg-[var(--bg-card)] border rounded-xl text-[var(--text-primary)] text-sm placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] transition-colors ${
       errors[field] ? "border-red-500/40" : "border-[var(--border)]"
     }`;
+
+  const typeOptions: { value: LectureFormData["type"]; label: string }[] = [
+    { value: "TEXT",  label: "Article" },
+    { value: "VIDEO", label: "Video"   },
+    { value: "AUDIO", label: "Audio"   },
+    { value: "PDF",   label: "PDF"     },
+  ];
 
   if (loading) {
     return (
@@ -129,22 +150,31 @@ export default function EditLecturePage() {
 
   return (
     <div className="p-8 max-w-3xl">
+
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-start justify-between mb-8">
         <div>
+          <Link
+            href={builderUrl}
+            className="inline-flex items-center gap-1.5 text-xs text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors mb-3"
+          >
+            <FiArrowLeft size={12} />
+            {courseTitle ? `Back to "${courseTitle}" Builder` : "Back to Course Builder"}
+          </Link>
           <h1 className="font-display text-3xl font-bold text-[var(--text-primary)]">
-            Edit Lecture
+            Edit Lesson
           </h1>
           <p className="text-[var(--text-muted)] text-sm mt-1">
-            Update lecture details and content
+            Update lesson details and content
           </p>
         </div>
-        <button
-          onClick={() => router.back()}
+        <Link
+          href={builderUrl}
           className="text-[var(--text-muted)] hover:text-[var(--text-primary)] p-2 rounded-lg hover:bg-[var(--accent-dim)] transition-colors"
+          title="Close"
         >
           <FiX />
-        </button>
+        </Link>
       </div>
 
       {errors.general && (
@@ -154,41 +184,36 @@ export default function EditLecturePage() {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
+
         {/* Title */}
         <div>
-          <label className="block text-xs text-[var(--text-muted)] font-medium mb-1.5">
-            Title *
-          </label>
+          <label className="block text-xs text-[var(--text-muted)] font-medium mb-1.5">Title *</label>
           <input
             value={form.title}
             onChange={(e) => setForm({ ...form, title: e.target.value })}
             className={inputClass("title")}
-            placeholder="Lecture title"
+            placeholder="Lesson title"
             required
           />
-          {errors.title && (
-            <p className="text-xs text-red-400 mt-1">{errors.title}</p>
-          )}
+          {errors.title && <p className="text-xs text-red-400 mt-1">{errors.title}</p>}
         </div>
 
-        {/* Type */}
+        {/* Content Type */}
         <div>
-          <label className="block text-xs text-[var(--text-muted)] font-medium mb-1.5">
-            Content Type *
-          </label>
-          <div className="flex gap-3">
-            {(["TEXT", "VIDEO"] as const).map((type) => (
+          <label className="block text-xs text-[var(--text-muted)] font-medium mb-1.5">Content Type *</label>
+          <div className="flex gap-2 flex-wrap">
+            {typeOptions.map((opt) => (
               <button
-                key={type}
+                key={opt.value}
                 type="button"
-                onClick={() => setForm({ ...form, type })}
+                onClick={() => setForm({ ...form, type: opt.value })}
                 className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
-                  form.type === type
+                  form.type === opt.value
                     ? "bg-[var(--accent)] text-white"
                     : "border border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-primary)]"
                 }`}
               >
-                {type}
+                {opt.label}
               </button>
             ))}
           </div>
@@ -196,44 +221,58 @@ export default function EditLecturePage() {
 
         {/* Description */}
         <div>
-          <label className="block text-xs text-[var(--text-muted)] font-medium mb-1.5">
-            Description *
-          </label>
+          <label className="block text-xs text-[var(--text-muted)] font-medium mb-1.5">Description *</label>
           <textarea
             value={form.description}
             onChange={(e) => setForm({ ...form, description: e.target.value })}
             className={inputClass("description")}
             rows={3}
-            placeholder="Brief description of the lecture"
+            placeholder="Brief description of this lesson"
             required
           />
-          {errors.description && (
-            <p className="text-xs text-red-400 mt-1">{errors.description}</p>
-          )}
+          {errors.description && <p className="text-xs text-red-400 mt-1">{errors.description}</p>}
         </div>
 
-        {/* Content (TEXT type) */}
+        {/* Content body — only for TEXT */}
         {form.type === "TEXT" && (
           <div>
             <label className="block text-xs text-[var(--text-muted)] font-medium mb-1.5">
-              Content (HTML supported)
+              Content <span className="font-normal">(HTML supported)</span>
             </label>
             <textarea
               value={form.content}
               onChange={(e) => setForm({ ...form, content: e.target.value })}
               className={inputClass("content")}
-              rows={12}
-              placeholder="<p>Write the full lecture content here...</p>"
+              rows={14}
+              placeholder="<p>Write the full lesson content here…</p>"
             />
           </div>
         )}
 
-        {/* Video upload */}
-        {form.type !== "TEXT" && (
+        {/* Media upload — VIDEO / AUDIO / PDF */}
+        {form.type === "VIDEO" && (
           <FileUploader
             accept="video/*"
             folder="ilm-platform/lectures"
             label="Video File"
+            onUpload={(url) => setForm({ ...form, mediaUrl: url })}
+            currentUrl={form.mediaUrl}
+          />
+        )}
+        {form.type === "AUDIO" && (
+          <FileUploader
+            accept="audio/*"
+            folder="ilm-platform/lectures"
+            label="Audio File"
+            onUpload={(url) => setForm({ ...form, mediaUrl: url })}
+            currentUrl={form.mediaUrl}
+          />
+        )}
+        {form.type === "PDF" && (
+          <FileUploader
+            accept="application/pdf"
+            folder="ilm-platform/lectures"
+            label="PDF Document"
             onUpload={(url) => setForm({ ...form, mediaUrl: url })}
             currentUrl={form.mediaUrl}
           />
@@ -251,7 +290,7 @@ export default function EditLecturePage() {
         {/* Tags */}
         <div>
           <label className="block text-xs text-[var(--text-muted)] font-medium mb-1.5">
-            Tags (comma-separated)
+            Tags <span className="font-normal">(comma-separated)</span>
           </label>
           <input
             value={form.tags}
@@ -261,8 +300,8 @@ export default function EditLecturePage() {
           />
         </div>
 
-        {/* Options */}
-        <div className="flex gap-6">
+        {/* Toggles */}
+        <div className="flex flex-wrap gap-6">
           <label className="flex items-center gap-2 cursor-pointer">
             <input
               type="checkbox"
@@ -270,7 +309,7 @@ export default function EditLecturePage() {
               onChange={(e) => setForm({ ...form, published: e.target.checked })}
               className="w-4 h-4 accent-[var(--accent)]"
             />
-            <span className="text-sm text-[var(--text-secondary)]">Published</span>
+            <span className="text-sm text-[var(--text-secondary)]">Published (visible to students)</span>
           </label>
           <label className="flex items-center gap-2 cursor-pointer">
             <input
@@ -283,7 +322,7 @@ export default function EditLecturePage() {
           </label>
         </div>
 
-        {/* Submit */}
+        {/* Actions */}
         <div className="flex gap-3 pt-2">
           <button
             type="submit"
@@ -291,16 +330,16 @@ export default function EditLecturePage() {
             className="flex items-center gap-2 px-6 py-2.5 bg-[var(--accent)] hover:bg-[var(--accent-light)] disabled:opacity-60 text-white rounded-xl font-medium transition-colors"
           >
             <FiSave size={15} />
-            {saving ? "Saving..." : "Save Changes"}
+            {saving ? "Saving…" : "Save Changes"}
           </button>
-          <button
-            type="button"
-            onClick={() => router.back()}
-            className="px-6 py-2.5 border border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-primary)] rounded-xl transition-colors"
+          <Link
+            href={builderUrl}
+            className="px-6 py-2.5 border border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-primary)] rounded-xl transition-colors text-sm"
           >
             Cancel
-          </button>
+          </Link>
         </div>
+
       </form>
     </div>
   );

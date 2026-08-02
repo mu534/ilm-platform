@@ -1,37 +1,32 @@
 "use client";
-// src/components/admin/LectureActions.tsx
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import {
-  FiMoreVertical,
-  FiEdit2,
-  FiTrash2,
-  FiEye,
-  FiToggleLeft,
-  FiToggleRight,
-  FiStar,
+  FiMoreVertical, FiEdit2, FiTrash2, FiEye,
+  FiToggleLeft, FiToggleRight, FiStar,
 } from "react-icons/fi";
 
 interface Lecture {
-  id: string;
-  slug: string;
+  id:       string;
+  slug:     string;
   published: boolean;
-  featured: boolean;
+  featured:  boolean;
 }
 
 export function AdminLectureActions({ lecture }: { lecture: Lecture }) {
-  const router = useRouter();
+  const router  = useRouter();
   const [loading, setLoading] = useState(false);
 
   const update = async (data: Partial<Lecture>) => {
     setLoading(true);
     try {
       await fetch(`/api/lectures/${lecture.id}`, {
-        method: "PATCH",
+        method:  "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body:    JSON.stringify(data),
       });
       router.refresh();
     } finally {
@@ -55,21 +50,22 @@ export function AdminLectureActions({ lecture }: { lecture: Lecture }) {
       <DropdownMenu.Trigger asChild>
         <button
           disabled={loading}
-          className="p-1.5 text-ink-500 hover:text-white hover:bg-white/5 rounded-lg transition-colors disabled:opacity-50"
+          className="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-dim)] rounded-lg transition-colors disabled:opacity-50"
         >
           <FiMoreVertical size={16} />
         </button>
       </DropdownMenu.Trigger>
       <DropdownMenu.Portal>
         <DropdownMenu.Content
-          className="glass-card gold-border rounded-xl p-1.5 min-w-[160px] shadow-2xl"
+          className="glass-card gold-border rounded-xl p-1.5 min-w-[160px] shadow-[var(--shadow-lg)] z-50"
           sideOffset={4}
           align="end"
         >
           <DropdownMenu.Item asChild>
             <Link
               href={`/lectures/${lecture.slug}`}
-              className="flex items-center gap-2 px-3 py-2 text-sm text-ink-300 hover:text-white hover:bg-white/5 rounded-lg cursor-pointer"
+              target="_blank"
+              className="flex items-center gap-2 px-3 py-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-dim)] rounded-lg cursor-pointer transition-colors"
             >
               <FiEye size={13} /> View
             </Link>
@@ -77,35 +73,31 @@ export function AdminLectureActions({ lecture }: { lecture: Lecture }) {
           <DropdownMenu.Item asChild>
             <Link
               href={`/admin/lectures/${lecture.id}/edit`}
-              className="flex items-center gap-2 px-3 py-2 text-sm text-ink-300 hover:text-white hover:bg-white/5 rounded-lg cursor-pointer"
+              className="flex items-center gap-2 px-3 py-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-dim)] rounded-lg cursor-pointer transition-colors"
             >
-              <FiEdit2 size={13} /> Edit
+              <FiEdit2 size={13} /> Edit Content
             </Link>
           </DropdownMenu.Item>
           <DropdownMenu.Item
-            className="flex items-center gap-2 px-3 py-2 text-sm text-ink-300 hover:text-white hover:bg-white/5 rounded-lg cursor-pointer"
+            className="flex items-center gap-2 px-3 py-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-dim)] rounded-lg cursor-pointer transition-colors"
             onClick={() => update({ published: !lecture.published })}
           >
-            {lecture.published ? (
-              <FiToggleRight size={13} className="text-green-400" />
-            ) : (
-              <FiToggleLeft size={13} />
-            )}
+            {lecture.published
+              ? <FiToggleRight size={13} className="text-emerald-400" />
+              : <FiToggleLeft  size={13} />
+            }
             {lecture.published ? "Unpublish" : "Publish"}
           </DropdownMenu.Item>
           <DropdownMenu.Item
-            className="flex items-center gap-2 px-3 py-2 text-sm text-ink-300 hover:text-white hover:bg-white/5 rounded-lg cursor-pointer"
+            className="flex items-center gap-2 px-3 py-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-dim)] rounded-lg cursor-pointer transition-colors"
             onClick={() => update({ featured: !lecture.featured })}
           >
-            <FiStar
-              size={13}
-              className={lecture.featured ? "text-gold-400" : ""}
-            />
+            <FiStar size={13} className={lecture.featured ? "text-[var(--accent)]" : ""} />
             {lecture.featured ? "Unfeature" : "Feature"}
           </DropdownMenu.Item>
-          <DropdownMenu.Separator className="my-1 border-t border-white/5" />
+          <DropdownMenu.Separator className="my-1 h-px bg-[var(--border)]" />
           <DropdownMenu.Item
-            className="flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-red-900/10 rounded-lg cursor-pointer"
+            className="flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 rounded-lg cursor-pointer transition-colors"
             onClick={handleDelete}
           >
             <FiTrash2 size={13} /> Delete

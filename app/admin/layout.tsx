@@ -11,7 +11,6 @@ const adminNav = [
   { href: "/admin",             icon: <FiGrid />,      label: "Overview",    adminOnly: true  },
   { href: "/admin/analytics",   icon: <FiBarChart2 />, label: "Analytics",   adminOnly: true  },
   { href: "/admin/courses",     icon: <FiLayout />,    label: "Courses",     adminOnly: false },
-  { href: "/admin/lectures",    icon: <FiBookOpen />,  label: "Lectures",    adminOnly: false },
   { href: "/admin/enrollments", icon: <FiList />,      label: "Enrollments", adminOnly: true  },
   { href: "/admin/users",       icon: <FiUsers />,     label: "Users",       adminOnly: true  },
   { href: "/admin/scholars",    icon: <FiStar />,      label: "Scholars",    adminOnly: true  },

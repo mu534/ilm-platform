@@ -36,6 +36,13 @@ const lectureSelect = {
       user: { select: { name: true, image: true } },
     },
   },
+  module: {
+    select: {
+      id: true,
+      courseId: true,
+      course: { select: { id: true, title: true, slug: true } },
+    },
+  },
   _count: { select: { comments: true } },
 };
 

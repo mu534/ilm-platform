@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "../../../../lib/auth";
 import { prisma } from "../../../../lib/prism";
 import { successResponse, errorResponse, handleApiError } from "../../../../utils/api";
+import { checkCoursePublishable } from "../../../../lib/courseValidation";
 import type { SessionUser } from "../../../../types/auth.types";
 import { z } from "zod";
 
@@ -74,6 +75,16 @@ export async function PATCH(
 
     if (action === "approve") {
       if (!isAdmin) return errorResponse("Only admins can approve courses", 403);
+
+      // Run publishing checklist before approving
+      const check = await checkCoursePublishable(id);
+      if (!check.valid) {
+        return errorResponse(
+          `Course cannot be published: ${check.errors.join("; ")}`,
+          422,
+        );
+      }
+
       await prisma.course.update({
         where: { id },
         data: {

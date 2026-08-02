@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { FileUploader } from "../../../../components/FileUploader";
+import { PublishingChecklist } from "../../../../components/courses/PublishingChecklist";
 import { FiSave, FiX, FiPlus, FiTrash2, FiArrowLeft } from "react-icons/fi";
 
 interface Category { id: string; name: string; icon?: string | null }
@@ -31,6 +33,9 @@ export default function EditCoursePage() {
   const [loading,    setLoading]    = useState(true);
   const [saving,     setSaving]     = useState(false);
   const [errors,     setErrors]     = useState<Record<string, string>>({});
+  const [courseStatus, setCourseStatus] = useState("DRAFT");
+  const { data: session } = useSession();
+  const isAdmin = (session?.user as { role?: string })?.role === "ADMIN";
   const [form,       setForm]       = useState<FormState>({
     title: "", description: "", thumbnailUrl: "", bannerUrl: "",
     difficulty: "BEGINNER", estimatedDuration: 0, categoryId: "",

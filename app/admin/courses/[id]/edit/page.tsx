@@ -71,6 +71,7 @@ export default function EditCoursePage() {
             published:         c.published ?? false,
             featured:          c.featured ?? false,
           });
+          setCourseStatus(c.status ?? "DRAFT");
         }
       } finally { setLoading(false); }
     }
@@ -261,6 +262,18 @@ export default function EditCoursePage() {
             <span className="text-sm text-[var(--text-secondary)]">Featured on homepage</span>
           </label>
         </div>
+
+        {/* Publishing Checklist */}
+        {id && (
+          <div className="pt-2">
+            <p className="text-xs text-[var(--text-muted)] font-medium mb-2 uppercase tracking-wide">Publishing</p>
+            <PublishingChecklist
+              courseId={id}
+              currentStatus={courseStatus}
+              isAdmin={isAdmin}
+            />
+          </div>
+        )}
 
         {/* Submit */}
         <div className="flex gap-3 pt-2">

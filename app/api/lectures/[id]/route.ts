@@ -47,21 +47,26 @@ const lectureSelect = {
 };
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id } = await params;
+    const isEditFetch = new URL(req.url).searchParams.get("edit") === "1";
+
     const lecture = await prisma.lecture.findFirst({
       where: { OR: [{ id }, { slug: id }] },
       select: lectureSelect,
     });
     if (!lecture) return errorResponse("Lecture not found", 404);
 
-    await prisma.lecture.update({
-      where: { id: lecture.id },
-      data: { views: { increment: 1 } },
-    });
+    // Only count genuine reads — not the Course Builder loading a lesson to edit it.
+    if (!isEditFetch) {
+      await prisma.lecture.update({
+        where: { id: lecture.id },
+        data: { views: { increment: 1 } },
+      });
+    }
 
     return successResponse(lecture);
   } catch (error) {

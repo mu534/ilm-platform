@@ -65,6 +65,12 @@ enum MediaType {
   PDF
   IMAGE
   DOCUMENT
+  LINK
+}
+
+enum MediaCategory {
+  RESOURCE   // Lesson notes, workbooks, slides — supplementary lesson materials
+  REFERENCE  // Qur'an verses, hadith, books, articles, external links
 }
 
 enum ReportReason {
@@ -545,10 +551,11 @@ model Notification {
 model Media {
   id         String    @id @default(cuid())
   url        String
-  publicId   String    // Cloudinary public ID for deletion
+  publicId   String    // Cloudinary public ID for deletion (empty for external links)
   type       MediaType
+  category   MediaCategory @default(RESOURCE)
   filename   String
-  size       Int       // bytes
+  size       Int       // bytes (0 for external links)
   mimeType   String
   lectureId  String?
   lecture    Lecture?  @relation(fields: [lectureId], references: [id], onDelete: SetNull)

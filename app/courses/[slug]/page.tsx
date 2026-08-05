@@ -7,6 +7,7 @@ import { prisma } from "../../lib/prism";
 import { EnrollButton } from "../../components/courses/EnrollButton";
 import { CourseProgress } from "../../components/courses/CourseProgress";
 import { CourseRatingWidget } from "../../components/courses/CourseRatingWidget";
+import { CourseDetailTabs } from "../../components/courses/CourseDetailTabs";
 import {
   FiCheckCircle, FiClock, FiUsers, FiStar,
   FiAward, FiChevronRight, FiLock, FiPlayCircle,
@@ -231,136 +232,201 @@ export default async function CourseDetailPage({ params }: Props) {
         </div>
       </header>
 
+      {/* ── Program info stat strip (Udacity "at a glance" bar) ──────────── */}
+      <div className="border-b border-[var(--border)] bg-[var(--bg-secondary)]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex flex-wrap divide-x divide-[var(--border)]">
+            {[
+              { label: "Skill Level", value: difficultyLabel[course.difficulty] ?? course.difficulty },
+              { label: "Duration",    value: course.estimatedDuration > 0 ? fmtDuration(course.estimatedDuration) : "Self-paced" },
+              { label: "Lessons",     value: `${totalLectures}` },
+              { label: "Sections",    value: `${totalModules}` },
+              { label: "Language",    value: course.language.toUpperCase() },
+            ].map((stat) => (
+              <div key={stat.label} className="px-5 first:pl-0 last:border-r-0">
+                <p className="text-[10px] font-semibold text-[var(--text-muted)] uppercase tracking-widest mb-1">
+                  {stat.label}
+                </p>
+                <p className="text-sm font-semibold text-[var(--text-primary)]">{stat.value}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
       {/* ── Main content ─────────────────────────────────────────────────── */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <div className="flex flex-col lg:flex-row gap-12">
 
-          {/* ── Left: course body ────────────────────────────────────────── */}
+          {/* ── Left: course body — Udacity-style tabbed program page ──────── */}
           <div className="flex-1 min-w-0 order-2 lg:order-1">
+            <CourseDetailTabs
+              tabs={[
+                {
+                  id:    "overview",
+                  label: "Overview",
+                  content: (
+                    <div>
+                      {/* Skills you'll gain */}
+                      {course.tags.length > 0 && (
+                        <section className="mb-10" aria-labelledby="skills-heading">
+                          <h2 id="skills-heading" className="text-lg font-semibold text-[var(--text-primary)] mb-4">
+                            Skills You&apos;ll Gain
+                          </h2>
+                          <div className="flex flex-wrap gap-2">
+                            {course.tags.map((tag) => (
+                              <span
+                                key={tag}
+                                className="text-xs font-medium px-3 py-1.5 rounded-full bg-[var(--accent-dim)] text-[var(--accent)] border border-[var(--border-subtle)]"
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        </section>
+                      )}
 
-            {/* ── What you'll learn ── */}
-            {course.objectives.length > 0 && (
-              <section className="mb-10" aria-labelledby="objectives-heading">
-                <h2
-                  id="objectives-heading"
-                  className="text-lg font-semibold text-[var(--text-primary)] mb-5"
-                >
-                  What You&apos;ll Learn
-                </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 p-5 border border-[var(--border)] rounded-xl bg-[var(--bg-card)]">
-                  {course.objectives.map((obj, i) => (
-                    <div key={i} className="flex items-start gap-3">
-                      <FiCheckCircle
-                        className="text-[var(--accent)] flex-shrink-0 mt-0.5"
-                        size={14}
-                        aria-hidden="true"
-                      />
-                      <span className="text-sm text-[var(--text-secondary)] leading-relaxed">{obj}</span>
+                      {/* What you'll learn */}
+                      {course.objectives.length > 0 && (
+                        <section className="mb-10" aria-labelledby="objectives-heading">
+                          <h2
+                            id="objectives-heading"
+                            className="text-lg font-semibold text-[var(--text-primary)] mb-5"
+                          >
+                            What You&apos;ll Learn
+                          </h2>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 p-5 border border-[var(--border)] rounded-xl bg-[var(--bg-card)]">
+                            {course.objectives.map((obj, i) => (
+                              <div key={i} className="flex items-start gap-3">
+                                <FiCheckCircle
+                                  className="text-[var(--accent)] flex-shrink-0 mt-0.5"
+                                  size={14}
+                                  aria-hidden="true"
+                                />
+                                <span className="text-sm text-[var(--text-secondary)] leading-relaxed">{obj}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </section>
+                      )}
+
+                      {/* Prerequisites */}
+                      {course.prerequisites.length > 0 && (
+                        <section className="mb-2" aria-labelledby="prereqs-heading">
+                          <h2 id="prereqs-heading" className="text-lg font-semibold text-[var(--text-primary)] mb-4">
+                            Requirements
+                          </h2>
+                          <ul className="space-y-2.5">
+                            {course.prerequisites.map((p, i) => (
+                              <li key={i} className="flex items-start gap-3 text-sm text-[var(--text-secondary)]">
+                                <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] flex-shrink-0 mt-1.5" aria-hidden="true" />
+                                {p}
+                              </li>
+                            ))}
+                          </ul>
+                        </section>
+                      )}
                     </div>
-                  ))}
-                </div>
-              </section>
-            )}
+                  ),
+                },
+                {
+                  id:    "curriculum",
+                  label: "Syllabus",
+                  count: totalModules,
+                  content: (
+                    <section aria-labelledby="curriculum-heading">
+                      <div className="flex items-center justify-between mb-5">
+                        <h2 id="curriculum-heading" className="text-lg font-semibold text-[var(--text-primary)]">
+                          Course Curriculum
+                        </h2>
+                        <span className="text-xs text-[var(--text-muted)] tabular-nums">
+                          {totalModules} section{totalModules !== 1 ? "s" : ""} · {totalLectures} lesson{totalLectures !== 1 ? "s" : ""}
+                        </span>
+                      </div>
 
-            {/* ── Prerequisites ── */}
-            {course.prerequisites.length > 0 && (
-              <section className="mb-10" aria-labelledby="prereqs-heading">
-                <h2 id="prereqs-heading" className="text-lg font-semibold text-[var(--text-primary)] mb-4">
-                  Requirements
-                </h2>
-                <ul className="space-y-2.5">
-                  {course.prerequisites.map((p, i) => (
-                    <li key={i} className="flex items-start gap-3 text-sm text-[var(--text-secondary)]">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] flex-shrink-0 mt-1.5" aria-hidden="true" />
-                      {p}
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            )}
-
-            {/* ── Curriculum ── */}
-            <section className="mb-10" aria-labelledby="curriculum-heading">
-              <div className="flex items-center justify-between mb-5">
-                <h2 id="curriculum-heading" className="text-lg font-semibold text-[var(--text-primary)]">
-                  Course Curriculum
-                </h2>
-                <span className="text-xs text-[var(--text-muted)] tabular-nums">
-                  {totalModules} section{totalModules !== 1 ? "s" : ""} · {totalLectures} lesson{totalLectures !== 1 ? "s" : ""}
-                </span>
-              </div>
-
-              {course.modules.length === 0 ? (
-                <div className="border border-[var(--border)] rounded-xl p-8 text-center">
-                  <FiBookOpen className="text-[var(--text-muted)] text-2xl mx-auto mb-2" />
-                  <p className="text-sm text-[var(--text-muted)]">Curriculum is being prepared.</p>
-                </div>
-              ) : (
-                <div className="border border-[var(--border)] rounded-xl overflow-hidden divide-y divide-[var(--border)]">
-                  {course.modules.map((module, modIdx) => (
-                    <CurriculumSection
-                      key={module.id}
-                      module={module}
-                      modIdx={modIdx}
-                      canAccess={canAccess}
-                    />
-                  ))}
-                </div>
-              )}
-            </section>
-
-            {/* ── Instructor section ── */}
-            <section className="mb-10" aria-labelledby="instructor-heading">
-              <h2 id="instructor-heading" className="text-lg font-semibold text-[var(--text-primary)] mb-5">
-                About the Instructor
-              </h2>
-              <div className="flex items-start gap-5 p-5 border border-[var(--border)] rounded-xl bg-[var(--bg-card)]">
-                <div className="w-16 h-16 rounded-full overflow-hidden border border-[var(--border)] flex-shrink-0 bg-[var(--bg-secondary)]">
-                  {instructorImg ? (
-                    <Image src={instructorImg} alt={instructor} width={64} height={64} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-[var(--text-muted)] font-semibold text-xl">
-                      {instructor[0]}
-                    </div>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                    {course.scholar ? (
-                      <Link
-                        href={`/scholars/${course.scholar.id}`}
-                        className="text-base font-semibold text-[var(--accent)] hover:text-[var(--accent-light)] transition-colors"
-                      >
-                        {instructor}
-                      </Link>
-                    ) : (
-                      <span className="text-base font-semibold text-[var(--text-primary)]">{instructor}</span>
-                    )}
-                    {course.scholar?.verified && (
-                      <span className="text-xs text-emerald-400 border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 rounded-full">
-                        ✓ Verified
-                      </span>
-                    )}
-                  </div>
-                  {(course.scholar?.user.bio ?? course.author.image) && (
-                    <p className="text-sm text-[var(--text-muted)] leading-relaxed line-clamp-4">
-                      {course.scholar?.user.bio ?? ""}
-                    </p>
-                  )}
-                  {course.scholar && (
-                    <Link
-                      href={`/scholars/${course.scholar.id}`}
-                      className="inline-flex items-center gap-1.5 mt-3 text-xs text-[var(--accent)] hover:text-[var(--accent-light)] transition-colors"
-                    >
-                      View full profile →
-                    </Link>
-                  )}
-                </div>
-              </div>
-            </section>
-
-            {/* ── Ratings ── */}
-            <CourseRatingWidget courseId={course.id} isEnrolled={!!enrollment} />
+                      {course.modules.length === 0 ? (
+                        <div className="border border-[var(--border)] rounded-xl p-8 text-center">
+                          <FiBookOpen className="text-[var(--text-muted)] text-2xl mx-auto mb-2" />
+                          <p className="text-sm text-[var(--text-muted)]">Curriculum is being prepared.</p>
+                        </div>
+                      ) : (
+                        <div className="border border-[var(--border)] rounded-xl overflow-hidden divide-y divide-[var(--border)]">
+                          {course.modules.map((module, modIdx) => (
+                            <CurriculumSection
+                              key={module.id}
+                              module={module}
+                              modIdx={modIdx}
+                              canAccess={canAccess}
+                              courseSlug={course.slug}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </section>
+                  ),
+                },
+                {
+                  id:    "instructor",
+                  label: "Instructor",
+                  content: (
+                    <section aria-labelledby="instructor-heading">
+                      <h2 id="instructor-heading" className="text-lg font-semibold text-[var(--text-primary)] mb-5">
+                        About the Instructor
+                      </h2>
+                      <div className="flex items-start gap-5 p-5 border border-[var(--border)] rounded-xl bg-[var(--bg-card)]">
+                        <div className="w-16 h-16 rounded-full overflow-hidden border border-[var(--border)] flex-shrink-0 bg-[var(--bg-secondary)]">
+                          {instructorImg ? (
+                            <Image src={instructorImg} alt={instructor} width={64} height={64} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-[var(--text-muted)] font-semibold text-xl">
+                              {instructor[0]}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                            {course.scholar ? (
+                              <Link
+                                href={`/scholars/${course.scholar.id}`}
+                                className="text-base font-semibold text-[var(--accent)] hover:text-[var(--accent-light)] transition-colors"
+                              >
+                                {instructor}
+                              </Link>
+                            ) : (
+                              <span className="text-base font-semibold text-[var(--text-primary)]">{instructor}</span>
+                            )}
+                            {course.scholar?.verified && (
+                              <span className="text-xs text-emerald-400 border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 rounded-full">
+                                ✓ Verified
+                              </span>
+                            )}
+                          </div>
+                          {(course.scholar?.user.bio ?? course.author.image) && (
+                            <p className="text-sm text-[var(--text-muted)] leading-relaxed line-clamp-4">
+                              {course.scholar?.user.bio ?? ""}
+                            </p>
+                          )}
+                          {course.scholar && (
+                            <Link
+                              href={`/scholars/${course.scholar.id}`}
+                              className="inline-flex items-center gap-1.5 mt-3 text-xs text-[var(--accent)] hover:text-[var(--accent-light)] transition-colors"
+                            >
+                              View full profile →
+                            </Link>
+                          )}
+                        </div>
+                      </div>
+                    </section>
+                  ),
+                },
+                {
+                  id:    "reviews",
+                  label: "Reviews",
+                  count: totalRatings,
+                  content: <CourseRatingWidget courseId={course.id} isEnrolled={!!enrollment} />,
+                },
+              ]}
+            />
           </div>
 
           {/* ── Right: sticky enrollment card ────────────────────────────── */}
@@ -476,11 +542,12 @@ interface CurriculumSectionProps {
     }[];
     _count: { lectures: number; quizzes: number };
   };
-  modIdx:    number;
-  canAccess: boolean;
+  modIdx:     number;
+  canAccess:  boolean;
+  courseSlug: string;
 }
 
-function CurriculumSection({ module, modIdx, canAccess }: CurriculumSectionProps) {
+function CurriculumSection({ module, modIdx, canAccess, courseSlug }: CurriculumSectionProps) {
   return (
     <details className="group" open={modIdx === 0}>
 

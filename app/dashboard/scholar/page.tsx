@@ -155,10 +155,10 @@ export default async function ScholarDashboardPage() {
             <FiTrendingUp size={14} /> Analytics
           </Link>
           <Link
-            href="/admin/lectures/new"
+            href="/admin/courses"
             className="flex items-center gap-2 px-4 py-2 bg-[var(--accent)] hover:bg-[var(--accent-light)] text-white rounded-xl text-sm font-medium transition-colors"
           >
-            <FiPlus size={14} /> New Lecture
+            <FiPlus size={14} /> Manage Lessons
           </Link>
         </div>
       </div>
@@ -182,7 +182,7 @@ export default async function ScholarDashboardPage() {
         <section>
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-display text-xl font-semibold text-[var(--text-primary)]">Recent Lectures</h2>
-            <Link href="/admin/lectures" className="text-xs text-[var(--accent)] hover:text-[var(--accent-light)] transition-colors">
+            <Link href="/admin/courses" className="text-xs text-[var(--accent)] hover:text-[var(--accent-light)] transition-colors">
               View all →
             </Link>
           </div>

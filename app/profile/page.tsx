@@ -278,10 +278,10 @@ export default function ProfilePage() {
                 + New Course
               </Link>
               <Link
-                href="/admin/lectures/new"
+                href="/admin/courses"
                 className="px-4 py-2 border border-[var(--border)] hover:border-[var(--accent)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-sm rounded-xl transition-colors"
               >
-                + New Lecture
+                Manage Courses &amp; Lessons
               </Link>
               {user?.role === "SCHOLAR" && (
                 <Link

@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   FiChevronLeft, FiChevronDown, FiCheckCircle,
   FiPlayCircle, FiFileText, FiHeadphones, FiFile,
@@ -56,17 +57,23 @@ const typeIcon: Record<string, React.ReactNode> = {
 // ── Main component ────────────────────────────────────────────────────────────
 
 interface CourseSidebarProps {
-  courseId:       string;
-  activeLectureId: string;
+  courseId:   string;
+  courseSlug: string;
   /** Called whenever a lecture is marked complete inside the sidebar */
   onProgressChange?: () => void;
 }
 
 export function CourseSidebar({
   courseId,
-  activeLectureId,
+  courseSlug,
   onProgressChange,
 }: CourseSidebarProps) {
+  const pathname = usePathname();
+  // Active lecture is derived from the URL itself (…/learn/{lectureSlug}),
+  // so the sidebar never needs the page to hand it a prop, and never
+  // needs to remount when navigating between lectures.
+  const activeLectureSlug = useMemo(() => pathname.split("/").filter(Boolean).pop() ?? "", [pathname]);
+
   const [data,      setData]      = useState<CurriculumData | null>(null);
   const [loading,   setLoading]   = useState(true);
   const [collapsed, setCollapsed] = useState(false);   // desktop collapse
@@ -75,30 +82,37 @@ export function CourseSidebar({
   // Track which modules are open
   const [openModules, setOpenModules] = useState<Set<string>>(new Set());
 
+  // Fetch curriculum once per course — NOT on every lecture navigation.
+  // Re-fetching on every lecture change was causing the whole sidebar to
+  // flash back to its loading skeleton each time a student clicked
+  // Next/Previous, which is exactly the "leaving the classroom" feeling
+  // this redesign is meant to remove.
   const load = useCallback(async () => {
     try {
       const res  = await fetch(`/api/courses/${courseId}/curriculum`);
       const json = await res.json();
-      if (json.success) {
-        const d = json.data as CurriculumData;
-        setData(d);
-
-        // Auto-open the module containing the active lecture
-        const activeModule = d.modules.find((m) =>
-          m.lectures.some((l) => l.id === activeLectureId),
-        );
-        if (activeModule) {
-          setOpenModules(new Set([activeModule.id]));
-        }
-      }
+      if (json.success) setData(json.data as CurriculumData);
     } finally {
       setLoading(false);
     }
-  }, [courseId, activeLectureId]);
+  }, [courseId]);
 
   useEffect(() => { void load(); }, [load]);
 
-  // Re-fetch when a lecture is marked complete
+  // Auto-open (and keep open) whichever module contains the active lecture.
+  // This runs on every pathname change, but only touches which section is
+  // expanded — it never resets `data`/`loading`, so there's no flicker.
+  useEffect(() => {
+    if (!data) return;
+    const activeModule = data.modules.find((m) =>
+      m.lectures.some((l) => l.slug === activeLectureSlug),
+    );
+    if (activeModule) {
+      setOpenModules((prev) => new Set(prev).add(activeModule.id));
+    }
+  }, [data, activeLectureSlug]);
+
+  // Re-fetch when a lecture is marked complete (so % and checkmarks update)
   const refresh = useCallback(() => { void load(); onProgressChange?.(); }, [load, onProgressChange]);
 
   const toggleModule = (id: string) => {
@@ -171,7 +185,7 @@ export function CourseSidebar({
           </div>
         ) : data?.modules.map((mod) => {
           const isOpen      = openModules.has(mod.id);
-          const hasActive   = mod.lectures.some((l) => l.id === activeLectureId);
+          const hasActive   = mod.lectures.some((l) => l.slug === activeLectureSlug);
           const isComplete  = mod.completedCount === mod._count.lectures && mod._count.lectures > 0;
 
           return (
@@ -207,12 +221,12 @@ export function CourseSidebar({
               {/* Lecture list */}
               {isOpen && (
                 <div className="bg-[var(--bg-primary)]">
-                  {mod.lectures.map((lec) => {
-                    const isActive = lec.id === activeLectureId;
+                  {mod.lectures.map((lec, lIdx) => {
+                    const isActive = lec.slug === activeLectureSlug;
                     return (
                       <Link
                         key={lec.id}
-                        href={`/lectures/${lec.slug}`}
+                        href={`/courses/${courseSlug}/learn/${lec.slug}`}
                         className={`flex items-start gap-2.5 px-4 py-3 border-b border-[var(--border-subtle)] transition-colors ${
                           isActive
                             ? "bg-[var(--accent-dim)] border-l-2 border-l-[var(--accent)]"
@@ -220,18 +234,29 @@ export function CourseSidebar({
                         }`}
                         aria-current={isActive ? "page" : undefined}
                       >
-                        {/* Complete / active / locked indicator */}
-                        <div className="flex-shrink-0 mt-0.5 w-4 flex items-center justify-center">
+                        {/* Complete / active / locked indicator — numbered circle (Udacity checklist style) */}
+                        <div className="flex-shrink-0 mt-0.5 w-5 h-5 flex items-center justify-center">
                           {lec.completed ? (
-                            <FiCheckCircle
-                              size={13}
-                              className="text-emerald-400"
+                            <span
+                              className="w-5 h-5 rounded-full bg-emerald-400/15 border border-emerald-400 flex items-center justify-center"
                               aria-label="Completed"
-                            />
+                            >
+                              <FiCheckCircle size={11} className="text-emerald-400" />
+                            </span>
                           ) : isActive ? (
-                            <span className="w-2 h-2 rounded-full bg-[var(--accent)]" aria-label="Current" />
+                            <span
+                              className="w-5 h-5 rounded-full bg-[var(--accent)] text-white text-[9px] font-bold flex items-center justify-center"
+                              aria-label="Current lesson"
+                            >
+                              {lIdx + 1}
+                            </span>
                           ) : (
-                            <span className="w-2 h-2 rounded-full bg-[var(--border-strong)]" />
+                            <span
+                              className="w-5 h-5 rounded-full border border-[var(--border-strong)] text-[var(--text-muted)] text-[9px] font-semibold flex items-center justify-center"
+                              aria-label={`Lesson ${lIdx + 1}`}
+                            >
+                              {lIdx + 1}
+                            </span>
                           )}
                         </div>
 

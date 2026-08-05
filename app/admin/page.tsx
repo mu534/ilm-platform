@@ -141,7 +141,7 @@ export default async function AdminPage() {
   const session = await getServerSession(authOptions);
   const user = session?.user as SessionUser | null;
 
-  if (user?.role !== "ADMIN") redirect("/admin/lectures");
+  if (user?.role !== "ADMIN") redirect("/admin/courses");
 
   const stats = await getDashboardStats();
 
@@ -150,7 +150,7 @@ export default async function AdminPage() {
       icon: <FiBookOpen size={16} />,
       label: "Total Lectures",
       value: stats.lectureCount,
-      href: "/admin/lectures",
+      href: "/admin/courses",
     },
     {
       icon: <FiUsers size={16} />,
@@ -189,11 +189,11 @@ export default async function AdminPage() {
           </p>
         </div>
         <Link
-          href="/admin/lectures/new"
+          href="/admin/courses/new"
           className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-gold-500 to-gold-600 hover:from-gold-400 hover:to-gold-500 text-white rounded-xl text-sm font-semibold shadow-md shadow-gold-600/20 hover:shadow-gold-500/30 transition-all duration-300 hover:scale-105 active:scale-95"
         >
           <FiPlus size={15} />
-          New Lecture
+          New Course
         </Link>
       </div>
 
@@ -214,7 +214,7 @@ export default async function AdminPage() {
               Recent Lectures
             </h2>
             <Link
-              href="/admin/lectures"
+              href="/admin/courses"
               className="text-xs text-[var(--accent)] hover:text-[var(--accent-light)] transition-colors"
             >
               View all →

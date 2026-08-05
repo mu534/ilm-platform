@@ -222,7 +222,7 @@ export default async function ScholarAnalyticsPage() {
             )}
           </p>
         </div>
-        <Link href="/admin/lectures/new" className="btn-primary text-sm">+ New Lecture</Link>
+        <Link href="/admin/courses" className="btn-primary text-sm">Manage Lessons</Link>
       </div>
 
       {/* Overview stats */}

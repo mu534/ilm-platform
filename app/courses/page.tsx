@@ -144,6 +144,41 @@ export default async function CoursesPage({ searchParams }: Props) {
         </div>
       </div>
 
+      {/* ── Category pill tabs (Udacity "School of…" style top nav) ── */}
+      <div className="border-b border-[var(--border)] bg-[var(--bg-primary)] sticky top-16 z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <nav
+            className="flex items-center gap-1.5 overflow-x-auto py-3"
+            aria-label="Course categories"
+          >
+            <Link
+              href={buildUrl({ categoryId: "", page: "1" })}
+              className={`flex-shrink-0 whitespace-nowrap px-3.5 py-1.5 rounded-full text-xs font-medium transition-colors border ${
+                !sp.categoryId
+                  ? "bg-[var(--accent)] text-white border-[var(--accent)]"
+                  : "border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
+              }`}
+            >
+              All Courses
+            </Link>
+            {categories.map((cat) => (
+              <Link
+                key={cat.id}
+                href={buildUrl({ categoryId: sp.categoryId === cat.id ? "" : cat.id, page: "1" })}
+                className={`flex-shrink-0 whitespace-nowrap flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium transition-colors border ${
+                  sp.categoryId === cat.id
+                    ? "bg-[var(--accent)] text-white border-[var(--accent)]"
+                    : "border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
+                }`}
+              >
+                {cat.icon && <span>{cat.icon}</span>}
+                {cat.name}
+              </Link>
+            ))}
+          </nav>
+        </div>
+      </div>
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
         <div className="flex flex-col lg:flex-row gap-10">
 
@@ -165,39 +200,6 @@ export default async function CoursesPage({ searchParams }: Props) {
                 />
               </div>
             </form>
-
-            {/* Category */}
-            <div className="mb-8">
-              <p className="text-[11px] font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-2">
-                Category
-              </p>
-              <div className="space-y-0.5">
-                <Link
-                  href={buildUrl({ categoryId: "", page: "1" })}
-                  className={`block px-2.5 py-2 rounded-lg text-sm transition-colors ${
-                    !sp.categoryId
-                      ? "bg-[var(--accent-dim)] text-[var(--accent)] font-medium"
-                      : "text-[var(--text-secondary)] hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)]"
-                  }`}
-                >
-                  All Categories
-                </Link>
-                {categories.map((cat) => (
-                  <Link
-                    key={cat.id}
-                    href={buildUrl({ categoryId: sp.categoryId === cat.id ? "" : cat.id, page: "1" })}
-                    className={`flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm transition-colors ${
-                      sp.categoryId === cat.id
-                        ? "bg-[var(--accent-dim)] text-[var(--accent)] font-medium"
-                        : "text-[var(--text-secondary)] hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)]"
-                    }`}
-                  >
-                    {cat.icon && <span className="text-xs flex-shrink-0">{cat.icon}</span>}
-                    <span className="truncate">{cat.name}</span>
-                  </Link>
-                ))}
-              </div>
-            </div>
 
             {/* Level */}
             <div className="mb-8">

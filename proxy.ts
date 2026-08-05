@@ -7,8 +7,12 @@ import type { NextRequest } from "next/server";
  *
  * Responsibilities:
  *  1. Protect /admin, /dashboard, /profile routes (require auth)
- *  2. Restrict /admin (except /admin/lectures) to ADMIN or SCHOLAR roles
+ *  2. Restrict /admin (except /admin/courses) to ADMIN or SCHOLAR roles
  *  3. Add security headers on every response
+ *
+ * Lectures are managed exclusively inside the Course Builder
+ * (/admin/courses/[id]/builder) — there is no separate top-level Lecture
+ * admin module, so non-admins land on their course list instead.
  */
 export default withAuth(
   function middleware(req: NextRequest) {
@@ -24,7 +28,7 @@ export default withAuth(
     const isAdminOnlyPath = adminOnlyPaths.some((p) => pathname.startsWith(p));
 
     if (isAdminOnlyPath && token?.role !== "ADMIN") {
-      return NextResponse.redirect(new URL("/admin/lectures", req.url));
+      return NextResponse.redirect(new URL("/admin/courses", req.url));
     }
 
     // Add security headers

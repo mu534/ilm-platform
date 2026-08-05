@@ -9,6 +9,8 @@ import {
   FiFileText, FiHeadphones, FiFile, FiEye, FiEyeOff,
   FiCheckCircle,
 } from "react-icons/fi";
+import { FileUploader } from "../../../../components/FileUploader";
+import { LectureResourceManager } from "../../../../components/lectures/LectureResourceManager";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -112,9 +114,30 @@ function ModuleForm({
 }
 
 // ── Lecture form (inline, inside a module) ────────────────────────────────────
+//
+// This is the ONLY place lectures are created and edited. It intentionally
+// carries everything the old standalone `/admin/lectures/[id]/edit` page did
+// (description, content, media upload, thumbnail, tags, resources) so an
+// instructor never has to leave the Course Builder to fully set up a lesson.
+interface FullLectureData {
+  title:        string;
+  description:  string;
+  content:      string;
+  type:         "TEXT" | "VIDEO" | "AUDIO" | "PDF";
+  tags:         string;
+  published:    boolean;
+  featured:     boolean;
+  mediaUrl:     string;
+  thumbnailUrl: string;
+}
+
+const emptyLectureData: FullLectureData = {
+  title: "", description: "", content: "", type: "TEXT",
+  tags: "", published: false, featured: false, mediaUrl: "", thumbnailUrl: "",
+};
+
 function LectureForm({
   moduleId,
-  courseId,
   initial,
   onSave,
   onCancel,
@@ -125,52 +148,93 @@ function LectureForm({
   onSave:   () => void;
   onCancel: () => void;
 }) {
-  const [title,     setTitle]     = useState(initial?.title ?? "");
-  const [type,      setType]      = useState<LectureItem["type"]>(initial?.type ?? "TEXT");
-  const [published, setPublished] = useState(initial?.published ?? false);
-  const [saving,    setSaving]    = useState(false);
-  const [error,     setError]     = useState("");
+  const [form,    setForm]    = useState<FullLectureData>(emptyLectureData);
+  const [loading, setLoading] = useState(!!initial);
+  const [saving,  setSaving]  = useState(false);
+  const [error,   setError]   = useState("");
+
+  // When editing an existing lesson, load its full record — the module list
+  // only carries summary fields (title/type/published/order), not the
+  // description/content/media/resources this form also manages.
+  useEffect(() => {
+    if (!initial) { setForm(emptyLectureData); setLoading(false); return; }
+    let cancelled = false;
+    setLoading(true);
+    fetch(`/api/lectures/${initial.id}?edit=1`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (cancelled || !d.success || !d.data) return;
+        const lec = d.data;
+        setForm({
+          title:        lec.title        ?? "",
+          description:  lec.description  ?? "",
+          content:      lec.content      ?? "",
+          type:         lec.type         ?? "TEXT",
+          tags:         (lec.tags ?? []).join(", "),
+          published:    lec.published    ?? false,
+          featured:     lec.featured     ?? false,
+          mediaUrl:     lec.mediaUrl     ?? "",
+          thumbnailUrl: lec.thumbnailUrl ?? "",
+        });
+      })
+      .catch(() => setError("Failed to load lesson details"))
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [initial]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) { setError("Title is required"); return; }
+    if (!form.title.trim())       { setError("Title is required");       return; }
+    if (!form.description.trim()) { setError("Description is required"); return; }
     setSaving(true); setError("");
 
-    // Generate a basic slug
-    const slug = title.toLowerCase().replace(/[^\w\s-]/g, "").replace(/[\s_]+/g, "-").replace(/^-+|-+$/g, "") + "-" + Date.now().toString(36);
+    const tags = form.tags.split(",").map((t) => t.trim()).filter(Boolean);
 
     try {
-      const endpoint = initial ? `/api/lectures/${initial.id}` : "/api/lectures";
-      const method   = initial ? "PATCH" : "POST";
-      const body     = initial
-        ? { title: title.trim(), type, published }
-        : { title: title.trim(), description: title.trim(), type, published, moduleId, authorId: "", slug, tags: [] };
-
-      const res  = await fetch(endpoint, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify(body),
-      });
+      let res: Response;
+      if (initial) {
+        res = await fetch(`/api/lectures/${initial.id}`, {
+          method:  "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body:    JSON.stringify({ ...form, tags }),
+        });
+      } else {
+        const slug = form.title.toLowerCase().replace(/[^\w\s-]/g, "").replace(/[\s_]+/g, "-").replace(/^-+|-+$/g, "") + "-" + Date.now().toString(36);
+        res = await fetch("/api/lectures", {
+          method:  "POST",
+          headers: { "Content-Type": "application/json" },
+          body:    JSON.stringify({ ...form, tags, moduleId, slug }),
+        });
+      }
       const data = await res.json();
-      if (!data.success) { setError(data.error ?? "Failed to save lecture"); return; }
+      if (!data.success) { setError(data.error ?? "Failed to save lesson"); return; }
       onSave();
     } catch { setError("Something went wrong"); }
     finally   { setSaving(false); }
   };
 
-  const typeOptions: { value: LectureItem["type"]; label: string; icon: React.ReactNode }[] = [
+  const typeOptions: { value: FullLectureData["type"]; label: string; icon: React.ReactNode }[] = [
     { value: "TEXT",  label: "Article", icon: <FiFileText   size={13} /> },
     { value: "VIDEO", label: "Video",   icon: <FiVideo       size={13} /> },
     { value: "AUDIO", label: "Audio",   icon: <FiHeadphones  size={13} /> },
     { value: "PDF",   label: "PDF",     icon: <FiFile        size={13} /> },
   ];
 
+  if (loading) {
+    return (
+      <div className="mt-2 p-4 bg-[var(--bg-secondary)] rounded-xl border border-[var(--border)] space-y-3">
+        {[1, 2, 3].map((i) => <div key={i} className="h-9 rounded-lg shimmer" />)}
+      </div>
+    );
+  }
+
   return (
-    <form onSubmit={submit} className="mt-2 p-4 bg-[var(--bg-secondary)] rounded-xl border border-[var(--border)] space-y-3">
+    <form onSubmit={submit} className="mt-2 p-4 bg-[var(--bg-secondary)] rounded-xl border border-[var(--border)] space-y-4">
       <div>
         <label className="block text-xs text-[var(--text-muted)] font-medium mb-1">Lesson Title *</label>
-        <input value={title} onChange={(e) => setTitle(e.target.value)} className={inputClass} placeholder="e.g. Understanding the First Verse" autoFocus />
+        <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={inputClass} placeholder="e.g. Understanding the First Verse" autoFocus />
       </div>
+
       <div>
         <label className="block text-xs text-[var(--text-muted)] font-medium mb-1">Content Type</label>
         <div className="flex gap-2 flex-wrap">
@@ -178,9 +242,9 @@ function LectureForm({
             <button
               key={opt.value}
               type="button"
-              onClick={() => setType(opt.value)}
+              onClick={() => setForm({ ...form, type: opt.value })}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                type === opt.value
+                form.type === opt.value
                   ? "bg-[var(--accent)] text-white"
                   : "border border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-primary)]"
               }`}
@@ -190,15 +254,77 @@ function LectureForm({
           ))}
         </div>
       </div>
-      <label className="flex items-center gap-2 cursor-pointer">
-        <input type="checkbox" checked={published} onChange={(e) => setPublished(e.target.checked)} className="w-3.5 h-3.5 accent-[var(--accent)]" />
-        <span className="text-xs text-[var(--text-secondary)]">Publish immediately</span>
-      </label>
+
+      <div>
+        <label className="block text-xs text-[var(--text-muted)] font-medium mb-1">Description *</label>
+        <textarea
+          value={form.description}
+          onChange={(e) => setForm({ ...form, description: e.target.value })}
+          className={inputClass}
+          rows={2}
+          placeholder="Brief description of this lesson"
+        />
+      </div>
+
+      {form.type === "TEXT" && (
+        <div>
+          <label className="block text-xs text-[var(--text-muted)] font-medium mb-1">
+            Content <span className="font-normal">(HTML supported)</span>
+          </label>
+          <textarea
+            value={form.content}
+            onChange={(e) => setForm({ ...form, content: e.target.value })}
+            className={inputClass}
+            rows={8}
+            placeholder="<p>Write the full lesson content here…</p>"
+          />
+        </div>
+      )}
+
+      {/* Media upload — matches selected content type */}
+      {form.type === "VIDEO" && (
+        <FileUploader accept="video/*" folder="ilm-platform/lectures" label="Video File" onUpload={(url) => setForm({ ...form, mediaUrl: url })} currentUrl={form.mediaUrl} />
+      )}
+      {form.type === "AUDIO" && (
+        <FileUploader accept="audio/*" folder="ilm-platform/lectures" label="Audio File" onUpload={(url) => setForm({ ...form, mediaUrl: url })} currentUrl={form.mediaUrl} />
+      )}
+      {form.type === "PDF" && (
+        <FileUploader accept="application/pdf" folder="ilm-platform/lectures" label="PDF Document" onUpload={(url) => setForm({ ...form, mediaUrl: url })} currentUrl={form.mediaUrl} />
+      )}
+
+      <FileUploader accept="image/*" folder="ilm-platform/thumbnails" label="Thumbnail Image" onUpload={(url) => setForm({ ...form, thumbnailUrl: url })} currentUrl={form.thumbnailUrl} />
+
+      <div>
+        <label className="block text-xs text-[var(--text-muted)] font-medium mb-1">
+          Tags <span className="font-normal">(comma-separated)</span>
+        </label>
+        <input value={form.tags} onChange={(e) => setForm({ ...form, tags: e.target.value })} className={inputClass} placeholder="Fiqh, Quran, Hadith, Aqeedah" />
+      </div>
+
+      <div className="flex flex-wrap gap-6">
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" checked={form.published} onChange={(e) => setForm({ ...form, published: e.target.checked })} className="w-3.5 h-3.5 accent-[var(--accent)]" />
+          <span className="text-xs text-[var(--text-secondary)]">Publish immediately</span>
+        </label>
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" checked={form.featured} onChange={(e) => setForm({ ...form, featured: e.target.checked })} className="w-3.5 h-3.5 accent-[var(--accent)]" />
+          <span className="text-xs text-[var(--text-secondary)]">Featured</span>
+        </label>
+      </div>
+
+      {/* Resources — only meaningful once the lesson exists */}
+      {initial && (
+        <div className="border-t border-[var(--border)] pt-4">
+          <LectureResourceManager lectureId={initial.id} />
+        </div>
+      )}
+
       {error && <p className="text-xs text-red-400">{error}</p>}
+
       <div className="flex gap-2">
         <button type="submit" disabled={saving} className="btn-primary text-xs px-4 py-2">
           {saving ? <FiLoader className="animate-spin" size={13} /> : <FiSave size={13} />}
-          {saving ? "Saving…" : initial ? "Update" : "Add Lesson"}
+          {saving ? "Saving…" : initial ? "Update Lesson" : "Add Lesson"}
         </button>
         <button type="button" onClick={onCancel} className="btn-secondary text-xs px-4 py-2">
           <FiX size={13} /> Cancel
@@ -519,13 +645,13 @@ export default function CourseBuilderPage() {
                         >
                           {lecture.published ? <FiEyeOff size={12} /> : <FiEye size={12} />}
                         </button>
-                        <Link
-                          href={`/admin/lectures/${lecture.id}/edit`}
+                        <button
+                          onClick={() => setEditingLecture(lecture.id)}
                           className="p-1.5 text-[var(--text-muted)] hover:text-[var(--accent)] hover:bg-[var(--accent-dim)] rounded-lg transition-colors"
-                          title="Edit lecture content"
+                          title="Edit lesson"
                         >
                           <FiEdit2 size={12} />
-                        </Link>
+                        </button>
                         <button
                           onClick={() => deleteLecture(lecture.id, lecture.title)}
                           className="p-1.5 text-[var(--text-muted)] hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"

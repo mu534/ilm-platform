@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
         select: {
           modules: {
             select: {
-              lectures: { select: { id: true } },
+              lectures: { where: { published: true }, select: { id: true } },
             },
           },
         },
@@ -147,7 +147,7 @@ async function recalculateCourseProgress(userId: string, lectureId: string) {
 
     const course = await prisma.course.findUnique({
       where: { id: courseId },
-      select: { modules: { select: { lectures: { select: { id: true } } } } },
+      select: { modules: { select: { lectures: { where: { published: true }, select: { id: true } } } } },
     });
     if (!course) return;
 

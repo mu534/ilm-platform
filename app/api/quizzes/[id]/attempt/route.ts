@@ -156,7 +156,7 @@ async function issueCompletionCertificate(
       where: { id: courseId },
       select: {
         title: true,
-        modules: { select: { lectures: { select: { id: true } } } },
+        modules: { select: { lectures: { where: { published: true }, select: { id: true } } } },
       },
     });
     if (!course) return;

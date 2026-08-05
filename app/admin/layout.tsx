@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { authOptions } from "../lib/auth";
 import Link from "next/link";
-import { FiGrid, FiBookOpen, FiUsers, FiStar, FiLayout, FiBarChart2, FiFlag, FiFileText, FiList, FiShield } from "react-icons/fi";
+import { FiGrid, FiBookOpen, FiUsers, FiStar, FiLayout, FiBarChart2, FiFlag, FiFileText, FiList, FiShield, FiTag } from "react-icons/fi";
 import { GiMoon } from "react-icons/gi";
 import type { SessionUser } from "@/app/types/auth.types";
 
@@ -11,6 +11,7 @@ const adminNav = [
   { href: "/admin",             icon: <FiGrid />,      label: "Overview",    adminOnly: true  },
   { href: "/admin/analytics",   icon: <FiBarChart2 />, label: "Analytics",   adminOnly: true  },
   { href: "/admin/courses",     icon: <FiLayout />,    label: "Courses",     adminOnly: false },
+  { href: "/admin/categories",  icon: <FiTag />,       label: "Categories",  adminOnly: true  },
   { href: "/admin/enrollments", icon: <FiList />,      label: "Enrollments", adminOnly: true  },
   { href: "/admin/users",       icon: <FiUsers />,     label: "Users",       adminOnly: true  },
   { href: "/admin/scholars",    icon: <FiStar />,      label: "Scholars",    adminOnly: true  },

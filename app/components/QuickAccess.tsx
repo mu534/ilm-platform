@@ -1,48 +1,44 @@
 import Link from "next/link";
-import { FiSearch, FiUsers, FiBookOpen, FiStar } from "react-icons/fi";
+import { FiBookOpen, FiCompass, FiUsers, FiMessageSquare } from "react-icons/fi";
 
 const quickAccessItems = [
   {
-    title: "Browse Lectures",
-    description: "Explore our complete collection of Islamic lectures",
-    icon: <FiSearch className="text-accent" size={20} />,
-    href: "/lectures",
-    color: "hover:bg-accent/10 hover:border-accent/30",
-  },
-  {
-    title: "Browse Courses",
+    title:       "Browse Courses",
     description: "Structured learning paths from qualified scholars",
-    icon: <FiBookOpen className="text-accent" size={20} />,
-    href: "/courses",
-    color: "hover:bg-accent/10 hover:border-accent/30",
+    icon:        <FiBookOpen size={20} />,
+    href:        "/courses",
   },
   {
-    title: "Featured Content",
-    description: "Handpicked lectures and courses from our scholars",
-    icon: <FiStar className="text-accent" size={20} />,
-    href: "/courses?featured=true",
-    color: "hover:bg-accent/10 hover:border-accent/30",
+    title:       "Explore by Subject",
+    description: "Fiqh, Aqeedah, Qur'an, Hadith, and more",
+    icon:        <FiCompass size={20} />,
+    href:        "/courses",
   },
   {
-    title: "Meet Scholars",
+    title:       "Meet Scholars",
     description: "Connect with qualified Islamic scholars",
-    icon: <FiUsers className="text-accent" size={20} />,
-    href: "/scholars",
-    color: "hover:bg-accent/10 hover:border-accent/30",
+    icon:        <FiUsers size={20} />,
+    href:        "/scholars",
+  },
+  {
+    title:       "Community Forum",
+    description: "Ask questions and learn alongside other students",
+    icon:        <FiMessageSquare size={20} />,
+    href:        "/forum",
   },
 ];
 
 export function QuickAccess() {
   return (
-    <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 border-t border-theme">
+    <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 border-t border-[var(--border)]">
       <div className="text-center mb-8">
-        <p className="text-xs text-accent uppercase tracking-widest font-semibold mb-1.5">
+        <p className="text-xs text-[var(--accent)] uppercase tracking-widest font-semibold mb-1.5">
           Quick Access
         </p>
-        <h2 className="font-display text-3xl sm:text-4xl font-bold text-primary leading-tight">
+        <h2 className="font-display text-3xl sm:text-4xl font-bold text-[var(--text-primary)] leading-tight">
           Jump Right In
         </h2>
-        <p className="text-secondary mt-2 text-sm">
+        <p className="text-[var(--text-secondary)] mt-2 text-sm">
           Popular starting points for your Islamic learning journey
         </p>
       </div>
@@ -52,20 +48,20 @@ export function QuickAccess() {
           <Link
             key={item.title}
             href={item.href}
-            className={`group glass-card border-accent rounded-xl p-6 text-center hover:bg-card/[0.03] transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-accent/10 animate-fadeInUp ${item.color}`}
-            style={{ animationDelay: `${index * 100}ms` }}
+            className="group relative rounded-2xl p-6 text-center border border-[var(--border)] bg-[var(--bg-card)] hover:border-[var(--border-strong)] hover:bg-[var(--bg-card-hover)] hover:shadow-[var(--shadow-md)] hover:-translate-y-1 transition-all duration-300 animate-fadeInUp"
+            style={{ animationDelay: `${index * 90}ms` }}
           >
             <div className="flex justify-center mb-4">
-              <div className="p-3 rounded-full bg-card/5 group-hover:bg-card/10 transition-colors">
+              <div className="p-3 rounded-full bg-[var(--accent-dim)] border border-[var(--border-subtle)] text-[var(--accent)] group-hover:scale-110 transition-transform duration-300">
                 {item.icon}
               </div>
             </div>
 
-            <h3 className="font-medium text-primary text-sm mb-2 group-hover:text-accent-light transition-colors">
+            <h3 className="font-semibold text-[var(--text-primary)] text-sm mb-1.5 group-hover:text-[var(--accent)] transition-colors">
               {item.title}
             </h3>
 
-            <p className="text-muted text-xs leading-relaxed">
+            <p className="text-[var(--text-muted)] text-xs leading-relaxed">
               {item.description}
             </p>
           </Link>

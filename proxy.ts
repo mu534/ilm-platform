@@ -24,6 +24,7 @@ export default withAuth(
       "/admin/users",
       "/admin/analytics",
       "/admin/reports",
+      "/admin/categories",
     ];
     const isAdminOnlyPath = adminOnlyPaths.some((p) => pathname.startsWith(p));
 

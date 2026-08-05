@@ -22,7 +22,7 @@ export async function POST(
       include: {
         modules: {
           select: {
-            lectures: { select: { id: true } },
+            lectures: { where: { published: true }, select: { id: true } },
           },
         },
       },

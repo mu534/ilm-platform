@@ -139,14 +139,16 @@ const emptyLectureData: FullLectureData = {
 function LectureForm({
   moduleId,
   initial,
+  nextOrder,
   onSave,
   onCancel,
 }: {
-  moduleId: string;
-  courseId: string;
-  initial?: LectureItem;
-  onSave:   () => void;
-  onCancel: () => void;
+  moduleId:   string;
+  courseId:   string;
+  initial?:   LectureItem;
+  nextOrder?: number;
+  onSave:     () => void;
+  onCancel:   () => void;
 }) {
   const [form,    setForm]    = useState<FullLectureData>(emptyLectureData);
   const [loading, setLoading] = useState(!!initial);
@@ -203,7 +205,7 @@ function LectureForm({
         res = await fetch("/api/lectures", {
           method:  "POST",
           headers: { "Content-Type": "application/json" },
-          body:    JSON.stringify({ ...form, tags, moduleId, slug }),
+          body:    JSON.stringify({ ...form, tags, moduleId, slug, order: nextOrder ?? 0 }),
         });
       }
       const data = await res.json();
@@ -672,6 +674,7 @@ export default function CourseBuilderPage() {
                 <LectureForm
                   moduleId={mod.id}
                   courseId={courseId}
+                  nextOrder={mod.lectures.length}
                   onSave={() => { setAddingLectureIn(null); void load(); }}
                   onCancel={() => setAddingLectureIn(null)}
                 />

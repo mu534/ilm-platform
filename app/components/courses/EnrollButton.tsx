@@ -54,7 +54,7 @@ export function EnrollButton({ courseId, courseSlug, isLoggedIn }: EnrollButtonP
         const nextRes  = await fetch(`/api/courses/${courseId}/next-lecture`);
         const nextData = await nextRes.json();
         if (nextData.success && nextData.data?.slug) {
-          setTimeout(() => router.push(`/lectures/${nextData.data.slug}`), 700);
+          setTimeout(() => router.push(`/courses/${courseSlug}/learn/${nextData.data.slug}`), 700);
           return;
         }
       } catch { /* fall through */ }

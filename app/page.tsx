@@ -29,7 +29,7 @@ async function getHomeData() {
   ] = await Promise.all([
     // Courses for the animated marquee — most-enrolled first, published only
     prisma.course.findMany({
-      where: { published: true, status: "PUBLISHED" },
+      where: { published: true },
       take: 16,
       orderBy: { enrollments: { _count: "desc" } },
       include: {

@@ -103,9 +103,9 @@ export function CourseMarquee({ topRow, bottomRow }: CourseMarqueeProps) {
 
   return (
     <div className="space-y-5 [mask-image:linear-gradient(to_right,transparent,black_5%,black_95%,transparent)]">
-      <MarqueeRow courses={topRow} duration={38} />
+      <MarqueeRow courses={topRow} duration={20} />
       {bottomRow.length > 0 && (
-        <MarqueeRow courses={bottomRow} reverse duration={44} />
+        <MarqueeRow courses={bottomRow} reverse duration={25} />
       )}
     </div>
   );

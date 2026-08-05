@@ -1,38 +1,43 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { FiGlobe } from "react-icons/fi";
 
 const LANGUAGES = [
-  { code: "en", label: "English",      dir: "ltr", flag: "🇬🇧" },
-  { code: "ar", label: "العربية",      dir: "rtl", flag: "🇸🇦" },
-  { code: "om", label: "Afaan Oromo",  dir: "ltr", flag: "🇪🇹" },
+  { code: "en", label: "English",     dir: "ltr", flag: "🇬🇧" },
+  { code: "ar", label: "العربية",     dir: "rtl", flag: "🇸🇦" },
+  { code: "om", label: "Afaan Oromo", dir: "ltr", flag: "🇪🇹" },
 ] as const;
 
 type LangCode = "en" | "ar" | "om";
 
-function getStoredLang(): LangCode {
-  if (typeof window === "undefined") return "en";
-  return (localStorage.getItem("lang") as LangCode) ?? "en";
-}
-
 export function LanguageSwitcher() {
   const { data: session } = useSession();
-  const [current, setCurrent] = useState<LangCode>(getStoredLang);
+
+  // Always start with "en" on both server and client to avoid hydration mismatch.
+  // After mount we overwrite with whatever is stored in localStorage.
+  const [current, setCurrent] = useState<LangCode>("en");
+  const [mounted, setMounted]  = useState(false);
+
+  useEffect(() => {
+    const stored = localStorage.getItem("lang") as LangCode | null;
+    if (stored && ["en", "ar", "om"].includes(stored)) {
+      setCurrent(stored);
+    }
+    setMounted(true);
+  }, []);
 
   const setLanguage = async (code: LangCode) => {
     setCurrent(code);
     localStorage.setItem("lang", code);
 
-    // Apply RTL for Arabic
     const html = document.documentElement;
     const lang = LANGUAGES.find((l) => l.code === code);
     html.setAttribute("lang", code);
     html.setAttribute("dir", lang?.dir ?? "ltr");
 
-    // Persist to user profile if logged in
     if (session?.user) {
       await fetch(`/api/users/${(session.user as { id: string }).id}`, {
         method:  "PATCH",
@@ -47,12 +52,21 @@ export function LanguageSwitcher() {
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>
+        {/* suppressHydrationWarning prevents React from throwing on the
+            Radix-generated id attribute which may differ between SSR and CSR
+            due to component-counter ordering. */}
         <button
+          suppressHydrationWarning
           className="flex items-center gap-1.5 p-2 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-dim)] border border-transparent hover:border-[var(--border)] transition-all"
           aria-label="Change language"
         >
           <FiGlobe size={15} />
-          <span className="text-xs font-medium hidden sm:inline">{currentLang.flag}</span>
+          {/* Only show the flag after mount to avoid SSR/CSR flag mismatch */}
+          {mounted && (
+            <span className="text-xs font-medium hidden sm:inline">
+              {currentLang.flag}
+            </span>
+          )}
         </button>
       </DropdownMenu.Trigger>
 

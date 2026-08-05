@@ -19,19 +19,19 @@ import {
 } from "react-icons/fi";
 import { GiMoon, GiStarFormation } from "react-icons/gi";
 
+// Cache the home page for 5 minutes — prevents 14 DB queries on every visit
+export const revalidate = 300;
+
 // ─── Data fetching ────────────────────────────────────────────────────────────
 
 async function getHomeData() {
-  const [
-    marqueeCourses, featuredScholars,
-    categoriesRaw,
-    counts, recentStats, popularTopics, recentActivity, testimonials,
-  ] = await Promise.all([
-    // Courses for the animated marquee — most-enrolled first, published only
+  // Run queries in two sequential batches to avoid overwhelming the
+  // connection pool on cold start. Batch 1 = critical above-the-fold data.
+  const [marqueeCourses, featuredScholars, categoriesRaw] = await Promise.all([
     prisma.course.findMany({
-      where: { published: true, status: "PUBLISHED" },
-      take: 16,
-      orderBy: { enrollments: { _count: "desc" } },
+      where:   { published: true },
+      take:    16,
+      orderBy: { createdAt: "desc" },          // cheaper than _count sort
       include: {
         category: { select: { id: true, name: true, slug: true, icon: true, color: true } },
         author:   { select: { id: true, name: true, image: true } },
@@ -51,57 +51,62 @@ async function getHomeData() {
       orderBy: { order: "asc" },
       include: { _count: { select: { courses: true } } },
     }),
-    Promise.all([
-      prisma.course.count({ where: { published: true, status: "PUBLISHED" } }),
-      prisma.scholar.count(),
-      prisma.user.count(),
-    ]),
-    Promise.all([
-      prisma.comment.count({
-        where: { createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } },
-      }),
-      prisma.course.count({
-        where: { createdAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) }, published: true },
-      }),
-      prisma.user.count({
-        where: { createdAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } },
-      }),
-    ]),
-    prisma.lecture.findMany({
-      where:  { published: true },
-      select: { tags: true },
-      take:   100,
-    }),
-    Promise.all([
-      prisma.comment.findMany({
-        take:    3,
-        orderBy: { createdAt: "desc" },
-        include: {
-          author:  { select: { name: true, image: true } },
-          lecture: { select: { title: true, slug: true } },
-        },
-      }),
-      prisma.lecture.findMany({
-        where:   { published: true },
-        take:    2,
-        orderBy: { createdAt: "desc" },
-        include: {
-          author:  { select: { name: true } },
-          scholar: { include: { user: { select: { name: true } } } },
-        },
-      }),
-      prisma.scholar.findMany({
-        take:    2,
-        orderBy: { createdAt: "desc" },
-        include: { user: { select: { name: true } } },
-      }),
-    ]),
-    prisma.user.findMany({
-      where:  { bio: { not: null }, role: "USER" },
-      take:   3,
-      select: { name: true, image: true, bio: true },
-    }),
   ]);
+
+  // Batch 2 = stats + activity (below the fold)
+  const [counts, recentStats, popularTopics, recentActivity, testimonials] =
+    await Promise.all([
+      Promise.all([
+        prisma.course.count({ where: { published: true } }),
+        prisma.scholar.count(),
+        prisma.user.count(),
+      ]),
+      Promise.all([
+        prisma.comment.count({
+          where: { createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } },
+        }),
+        prisma.course.count({
+          where: { createdAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) }, published: true },
+        }),
+        prisma.user.count({
+          where: { createdAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } },
+        }),
+      ]),
+      prisma.lecture.findMany({
+        where:  { published: true },
+        select: { tags: true },
+        take:   100,
+      }),
+      Promise.all([
+        prisma.comment.findMany({
+          take:    3,
+          orderBy: { createdAt: "desc" },
+          include: {
+            author:  { select: { name: true, image: true } },
+            lecture: { select: { title: true, slug: true } },
+          },
+        }),
+        prisma.lecture.findMany({
+          where:   { published: true },
+          take:    2,
+          orderBy: { createdAt: "desc" },
+          include: {
+            author:  { select: { name: true } },
+            scholar: { include: { user: { select: { name: true } } } },
+          },
+        }),
+        prisma.scholar.findMany({
+          take:    2,
+          orderBy: { createdAt: "desc" },
+          include: { user: { select: { name: true } } },
+        }),
+      ]),
+      prisma.user.findMany({
+        where:  { bio: { not: null }, role: "USER" },
+        take:   3,
+        select: { name: true, image: true, bio: true },
+      }),
+    ]);
 
   // Batch-fetch average ratings for marquee courses — single query, no N+1
   const courseIds = marqueeCourses.map((c) => c.id);

@@ -1,21 +1,21 @@
 import Link from "next/link";
 import { prisma } from "@/app/lib/prism";
-import { LectureCard } from "@/app/components/lectures/LectureCard";
 import { ScholarCard } from "@/app/components/scholars/ScholarCard";
-import { CourseCard } from "@/app/components/courses/CourseCard";
+import { CourseMarquee } from "@/app/components/courses/CourseMarquee";
+import { ContinueLearningStrip } from "@/app/components/courses/ContinueLearningStrip";
+import { CategoryExplorer } from "@/app/components/CategoryExplorer";
 import { TestimonialsSection } from "@/app/components/TestimonialsSection";
 import { NewsletterSignup } from "@/app/components/NewsletterSignup";
 import { EnhancedSearch } from "@/app/components/EnhancedSearch";
-import { PersonalizedRecommendations } from "@/app/components/PersonalizedRecommendations";
 import { RecentActivityFeed } from "@/app/components/RecentActivityFeed";
 import { PopularTopics } from "@/app/components/PopularTopics";
 import { QuickAccess } from "@/app/components/QuickAccess";
-import type { Lecture, Scholar, SessionUser } from "@/app/types/auth.types";
+import type { Scholar, SessionUser } from "@/app/types/auth.types";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/lib/auth";
 import {
-  FiArrowRight, FiBookOpen, FiUsers,
-  FiVideo, FiMessageCircle, FiClock,
+  FiArrowRight, FiBookOpen, FiUsers, FiUser,
+  FiMessageCircle, FiClock,
 } from "react-icons/fi";
 import { GiMoon, GiStarFormation } from "react-icons/gi";
 
@@ -23,28 +23,20 @@ import { GiMoon, GiStarFormation } from "react-icons/gi";
 
 async function getHomeData() {
   const [
-    featuredLectures, latestLectures, featuredScholars,
-    featuredCourses,
+    marqueeCourses, featuredScholars,
+    categoriesRaw,
     counts, recentStats, popularTopics, recentActivity, testimonials,
   ] = await Promise.all([
-    prisma.lecture.findMany({
-      where:   { published: true, featured: true },
-      take:    3,
-      orderBy: { createdAt: "desc" },
+    // Courses for the animated marquee — most-enrolled first, published only
+    prisma.course.findMany({
+      where: { published: true, status: "PUBLISHED" },
+      take: 16,
+      orderBy: { enrollments: { _count: "desc" } },
       include: {
-        author:  { select: { id: true, name: true, image: true } },
-        scholar: { include: { user: { select: { name: true } } } },
-        _count:  { select: { comments: true } },
-      },
-    }),
-    prisma.lecture.findMany({
-      where:   { published: true },
-      take:    6,
-      orderBy: { createdAt: "desc" },
-      include: {
-        author:  { select: { id: true, name: true, image: true } },
-        scholar: { include: { user: { select: { name: true } } } },
-        _count:  { select: { comments: true } },
+        category: { select: { id: true, name: true, slug: true, icon: true, color: true } },
+        author:   { select: { id: true, name: true, image: true } },
+        scholar:  { select: { id: true, photo: true, verified: true, user: { select: { name: true } } } },
+        _count:   { select: { modules: true, enrollments: true, ratings: true } },
       },
     }),
     prisma.scholar.findMany({
@@ -55,20 +47,12 @@ async function getHomeData() {
         _count: { select: { lectures: true } },
       },
     }),
-    // Featured courses
-    prisma.course.findMany({
-      where: { published: true, featured: true, status: "PUBLISHED" },
-      take: 3,
-      orderBy: { createdAt: "desc" },
-      include: {
-        category: { select: { id: true, name: true, slug: true, icon: true, color: true } },
-        author:   { select: { id: true, name: true, image: true } },
-        scholar:  { select: { id: true, photo: true, verified: true, user: { select: { name: true } } } },
-        _count:   { select: { modules: true, enrollments: true, ratings: true } },
-      },
+    prisma.category.findMany({
+      orderBy: { order: "asc" },
+      include: { _count: { select: { courses: true } } },
     }),
     Promise.all([
-      prisma.lecture.count({ where: { published: true } }),
+      prisma.course.count({ where: { published: true, status: "PUBLISHED" } }),
       prisma.scholar.count(),
       prisma.user.count(),
     ]),
@@ -76,7 +60,7 @@ async function getHomeData() {
       prisma.comment.count({
         where: { createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } },
       }),
-      prisma.lecture.count({
+      prisma.course.count({
         where: { createdAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) }, published: true },
       }),
       prisma.user.count({
@@ -119,28 +103,50 @@ async function getHomeData() {
     }),
   ]);
 
+  // Batch-fetch average ratings for marquee courses — single query, no N+1
+  const courseIds = marqueeCourses.map((c) => c.id);
+  const ratings   = await prisma.courseRating.groupBy({
+    by:     ["courseId"],
+    where:  { courseId: { in: courseIds } },
+    _avg:   { rating: true },
+  });
+  const ratingMap = new Map(ratings.map((r) => [r.courseId, r._avg.rating ?? 0]));
+
+  const categories = categoriesRaw
+    .map((c) => ({ ...c, courseCount: c._count.courses }))
+    .filter((c) => c.courseCount > 0);
+
   return {
-    featuredLectures, latestLectures, featuredScholars,
-    featuredCourses,
+    marqueeCourses, ratingMap, featuredScholars,
+    categories,
     counts, recentStats, popularTopics, recentActivity, testimonials,
   };
 }
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+async function getContinueLearning(userId: string) {
+  const enrollments = await prisma.enrollment.findMany({
+    where: {
+      userId,
+      status: "ACTIVE",
+      progress: { gt: 0, lt: 100 },
+    },
+    orderBy: { updatedAt: "desc" },
+    take: 3,
+    include: {
+      course: { select: { id: true, slug: true, title: true, thumbnailUrl: true } },
+    },
+  });
 
-type PrismaLecture = {
-  id: string; title: string; slug: string; description: string;
-  content: string | null; type: "TEXT" | "VIDEO" | "AUDIO" | "PDF";
-  mediaUrl: string | null; thumbnailUrl: string | null;
-  tags: string[]; published: boolean; featured: boolean;
-  views: number; createdAt: Date;
-  author: { id: string; name: string; image: string | null };
-  scholar: {
-    id: string; bio: string; photo: string | null;
-    topics: string[]; user: { name: string };
-  } | null;
-  _count: { comments: number };
-};
+  return enrollments.map((e) => ({
+    courseId:     e.course.id,
+    slug:         e.course.slug,
+    title:        e.course.title,
+    thumbnailUrl: e.course.thumbnailUrl,
+    progress:     e.progress,
+  }));
+}
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 type PrismaScholar = {
   id: string; userId: string; bio: string; photo: string | null;
@@ -150,17 +156,6 @@ type PrismaScholar = {
 };
 
 // ─── Mappers ──────────────────────────────────────────────────────────────────
-
-function mapLecture(l: PrismaLecture): Lecture {
-  return {
-    ...l,
-    createdAt: l.createdAt.toISOString(),
-    scholar: l.scholar
-      ? { id: l.scholar.id, bio: l.scholar.bio, photo: l.scholar.photo,
-          topics: l.scholar.topics, user: { name: l.scholar.user.name } }
-      : null,
-  };
-}
 
 function mapScholar(s: PrismaScholar): Scholar {
   return { ...s };
@@ -223,19 +218,39 @@ export default async function HomePage() {
   const session = await getServerSession(authOptions);
   const user    = session?.user as SessionUser | null;
 
-  const {
-    featuredLectures, latestLectures, featuredScholars,
-    featuredCourses,
-    counts, recentStats, popularTopics, recentActivity, testimonials,
-  } = await getHomeData();
+  const [
+    {
+      marqueeCourses, ratingMap, featuredScholars,
+      categories,
+      counts, recentStats, popularTopics, recentActivity, testimonials,
+    },
+    continueLearning,
+  ] = await Promise.all([
+    getHomeData(),
+    user ? getContinueLearning(user.id) : Promise.resolve([]),
+  ]);
 
-  const [lectureCount, scholarCount, userCount]           = counts;
-  const [recentComments, recentLectures, recentUsers]     = recentStats;
+  const [courseCount, scholarCount, userCount]            = counts;
+  const [recentComments, recentCourses, recentUsers]      = recentStats;
   const [recentCommentsData, recentLecturesData, recentScholarsData] = recentActivity;
 
-  const mappedFeatured = featuredLectures.map(mapLecture);
-  const mappedLatest   = latestLectures.map(mapLecture);
   const mappedScholars = featuredScholars.map(mapScholar);
+
+  // Enrich marquee courses with their batch-fetched average rating, then
+  // split into two rows for the opposite-direction scrolling banner.
+  const enrichedCourses = marqueeCourses.map((c) => ({
+    id:           c.id,
+    slug:         c.slug,
+    title:        c.title,
+    thumbnailUrl: c.thumbnailUrl,
+    difficulty:   c.difficulty,
+    avgRating:    ratingMap.get(c.id) ?? 0,
+    enrollCount:  c._count.enrollments,
+    categoryName: c.category?.name ?? null,
+    categoryIcon: c.category?.icon ?? null,
+  }));
+  const marqueeTopRow    = enrichedCourses.filter((_, i) => i % 2 === 0);
+  const marqueeBottomRow = enrichedCourses.filter((_, i) => i % 2 === 1);
 
   // Popular topics
   const tagCounts: Record<string, number> = {};
@@ -322,21 +337,19 @@ export default async function HomePage() {
           </h1>
 
           <p className="text-base sm:text-lg text-[var(--text-secondary)] max-w-xl mb-10 leading-relaxed">
-            Access authentic Islamic lectures, connect with qualified scholars,
+            Access authentic Islamic courses, connect with qualified scholars,
             and deepen your understanding of the Deen.
           </p>
 
           <EnhancedSearch />
 
-          <PersonalizedRecommendations />
-
           {/* CTAs */}
-          <div className="flex flex-wrap items-center justify-center gap-3">
+          <div className="flex flex-wrap items-center justify-center gap-3 mt-8">
             <Link
-              href="/lectures"
+              href="/courses"
               className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-gold-500 to-gold-600 hover:from-gold-400 hover:to-gold-500 text-white rounded-xl font-semibold shadow-md shadow-gold-600/30 hover:shadow-gold-500/40 transition-all duration-300 hover:scale-105 active:scale-95 text-sm"
             >
-              Explore Lectures <FiArrowRight size={15} />
+              Explore Courses <FiArrowRight size={15} />
             </Link>
             <Link
               href="/scholars"
@@ -351,11 +364,11 @@ export default async function HomePage() {
       {/* ── Stats ── */}
       <section className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 animate-fadeInUp delay-100">
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3 sm:gap-4">
-          <StatCard icon={<FiVideo />}         count={lectureCount}   label="Lectures"       />
+          <StatCard icon={<FiBookOpen />}      count={courseCount}    label="Courses"        />
           <StatCard icon={<FiUsers />}         count={scholarCount}   label="Scholars"       />
-          <StatCard icon={<FiBookOpen />}      count={userCount}      label="Students"       />
+          <StatCard icon={<FiUser />}          count={userCount}      label="Students"       />
           <StatCard icon={<FiMessageCircle />} count={recentComments} label="Comments (24h)" />
-          <StatCard icon={<FiClock />}         count={recentLectures} label="New This Week"  />
+          <StatCard icon={<FiClock />}         count={recentCourses}  label="New This Week"  />
         </div>
         <div className="mt-8 text-center">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-[var(--border-strong)] bg-[var(--accent-dim)]">
@@ -367,70 +380,26 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ── Featured Lectures ── */}
-      {mappedFeatured.length > 0 && (
-        <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 animate-fadeInUp delay-200">
-          <SectionHeader
-            eyebrow="Handpicked for you"
-            title="Featured Lectures"
-            href="/lectures?featured=true"
-            linkLabel="View all"
-          />
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {mappedFeatured.map((lecture) => (
-              <LectureCard key={lecture.id} lecture={lecture} variant="featured" />
-            ))}
+      {/* ── Continue Learning (real progress, signed-in users only) ── */}
+      <ContinueLearningStrip courses={continueLearning} userName={user?.name} />
+
+      {/* ── Course Showcase — animated marquee, opposite-direction rows ── */}
+      {enrichedCourses.length > 0 && (
+        <section className="w-full py-12 sm:py-16 border-t border-[var(--border)] animate-fadeInUp delay-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
+            <SectionHeader
+              eyebrow="Structured Learning"
+              title="Explore Our Courses"
+              href="/courses"
+              linkLabel="All Courses"
+            />
           </div>
+          <CourseMarquee topRow={marqueeTopRow} bottomRow={marqueeBottomRow} />
         </section>
       )}
 
-      {/* ── Latest Lectures ── */}
- <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 border-t border-[var(--border)]">
-  <SectionHeader
-    eyebrow="Most recent"
-    title="Latest Lectures"
-    href="/lectures"
-    linkLabel="View all"
-  />
-
-  {mappedLatest.length > 0 ? (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      {mappedLatest.map((lecture, i) => (
-        <div
-          key={lecture.id}
-          className="animate-fadeInUp"
-          style={{ animationDelay: `${i * 80}ms` }}
-        >
-          <LectureCard lecture={lecture} />
-        </div>
-      ))}
-    </div>
-  ) : (
-    <div className="flex flex-col items-center justify-center py-16 text-center">
-      <div className="w-14 h-14 rounded-2xl bg-[var(--accent-dim)] border border-[var(--border-strong)] flex items-center justify-center mb-4">
-        <FiBookOpen className="text-[var(--accent)] text-xl" />
-      </div>
-      <p className="text-[var(--text-primary)] font-semibold mb-1">No lectures yet</p>
-      <p className="text-[var(--text-muted)] text-sm">Check back soon for new content.</p>
-    </div>
-  )}
-</section>
-      {/* ── Featured Courses ── */}
-      {featuredCourses.length > 0 && (
-        <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 border-t border-[var(--border)]">
-          <SectionHeader
-            eyebrow="Structured Learning"
-            title="Featured Courses"
-            href="/courses"
-            linkLabel="All Courses"
-          />
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {featuredCourses.map((course) => (
-              <CourseCard key={course.id} course={course} />
-            ))}
-          </div>
-        </section>
-      )}
+      {/* ── Browse by Category ── */}
+      <CategoryExplorer categories={categories} />
 
       {/* ── Popular Topics ── */}
       <PopularTopics topics={processedPopularTopics} />
@@ -498,10 +467,10 @@ export default async function HomePage() {
                     My Profile <FiArrowRight size={15} />
                   </Link>
                   <Link
-                    href="/lectures"
+                    href="/courses"
                     className="inline-flex items-center gap-2 px-7 py-3.5 border border-[var(--border-strong)] hover:border-[var(--accent)] hover:bg-[var(--accent-dim)] text-[var(--text-primary)] rounded-xl font-medium transition-all duration-300 hover:scale-105 active:scale-95 text-sm"
                   >
-                    Browse Lectures
+                    Browse Courses
                   </Link>
                 </div>
               </>
@@ -522,10 +491,10 @@ export default async function HomePage() {
                     Create Free Account <FiArrowRight size={15} />
                   </Link>
                   <Link
-                    href="/lectures"
+                    href="/courses"
                     className="inline-flex items-center gap-2 px-7 py-3.5 border border-[var(--border-strong)] hover:border-[var(--accent)] hover:bg-[var(--accent-dim)] text-[var(--text-primary)] rounded-xl font-medium transition-all duration-300 hover:scale-105 active:scale-95 text-sm"
                   >
-                    Browse Lectures
+                    Browse Courses
                   </Link>
                 </div>
               </>

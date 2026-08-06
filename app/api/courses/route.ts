@@ -148,7 +148,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   // Rate-limit course creation — 20 per hour per user
   const ip = getClientIp(req);
-  const rl = checkRateLimit(`course-create:${ip}`, { limit: 20, window: 3600 });
+  const rl = await checkRateLimit(`course-create:${ip}`, { limit: 20, window: 3600 });
   if (!rl.success) return errorResponse("Too many requests. Please try again later.", 429);
 
   try {

@@ -19,6 +19,7 @@ interface LectureNav {
   duration:  number | null;
   order:     number;
   completed: boolean;
+  locked:    boolean;
 }
 
 interface ModuleNav {
@@ -31,13 +32,14 @@ interface ModuleNav {
 }
 
 interface CurriculumData {
-  courseId:       string;
-  courseTitle:    string;
-  courseSlug:     string;
-  modules:        ModuleNav[];
-  totalLectures:  number;
-  totalCompleted: number;
-  percent:        number;
+  courseId:           string;
+  courseTitle:        string;
+  courseSlug:         string;
+  sequentialLearning: boolean;
+  modules:            ModuleNav[];
+  totalLectures:      number;
+  totalCompleted:     number;
+  percent:            number;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -162,6 +164,13 @@ export function CourseSidebar({
                 />
               </div>
             </div>
+
+            {data.sequentialLearning && (
+              <p className="flex items-center gap-1.5 mt-2.5 text-[10px] text-[var(--text-muted)]">
+                <FiLock size={9} />
+                Lessons unlock in order
+              </p>
+            )}
           </>
         ) : (
           <div className="space-y-2">
@@ -223,46 +232,48 @@ export function CourseSidebar({
                 <div className="bg-[var(--bg-primary)]">
                   {mod.lectures.map((lec, lIdx) => {
                     const isActive = lec.slug === activeLectureSlug;
-                    return (
-                      <Link
-                        key={lec.id}
-                        href={`/courses/${courseSlug}/learn/${lec.slug}`}
-                        className={`flex items-start gap-2.5 px-4 py-3 border-b border-[var(--border-subtle)] transition-colors ${
-                          isActive
-                            ? "bg-[var(--accent-dim)] border-l-2 border-l-[var(--accent)]"
-                            : "hover:bg-[var(--bg-card-hover)]"
-                        }`}
-                        aria-current={isActive ? "page" : undefined}
+
+                    const indicator = lec.locked ? (
+                      <span
+                        className="w-5 h-5 rounded-full border border-[var(--border-subtle)] text-[var(--text-muted)] flex items-center justify-center"
+                        aria-label="Locked"
                       >
-                        {/* Complete / active / locked indicator — numbered circle (Udacity checklist style) */}
+                        <FiLock size={10} />
+                      </span>
+                    ) : lec.completed ? (
+                      <span
+                        className="w-5 h-5 rounded-full bg-emerald-400/15 border border-emerald-400 flex items-center justify-center"
+                        aria-label="Completed"
+                      >
+                        <FiCheckCircle size={11} className="text-emerald-400" />
+                      </span>
+                    ) : isActive ? (
+                      <span
+                        className="w-5 h-5 rounded-full bg-[var(--accent)] text-white text-[9px] font-bold flex items-center justify-center"
+                        aria-label="Current lesson"
+                      >
+                        {lIdx + 1}
+                      </span>
+                    ) : (
+                      <span
+                        className="w-5 h-5 rounded-full border border-[var(--border-strong)] text-[var(--text-muted)] text-[9px] font-semibold flex items-center justify-center"
+                        aria-label={`Lesson ${lIdx + 1}`}
+                      >
+                        {lIdx + 1}
+                      </span>
+                    );
+
+                    const rowContent = (
+                      <>
                         <div className="flex-shrink-0 mt-0.5 w-5 h-5 flex items-center justify-center">
-                          {lec.completed ? (
-                            <span
-                              className="w-5 h-5 rounded-full bg-emerald-400/15 border border-emerald-400 flex items-center justify-center"
-                              aria-label="Completed"
-                            >
-                              <FiCheckCircle size={11} className="text-emerald-400" />
-                            </span>
-                          ) : isActive ? (
-                            <span
-                              className="w-5 h-5 rounded-full bg-[var(--accent)] text-white text-[9px] font-bold flex items-center justify-center"
-                              aria-label="Current lesson"
-                            >
-                              {lIdx + 1}
-                            </span>
-                          ) : (
-                            <span
-                              className="w-5 h-5 rounded-full border border-[var(--border-strong)] text-[var(--text-muted)] text-[9px] font-semibold flex items-center justify-center"
-                              aria-label={`Lesson ${lIdx + 1}`}
-                            >
-                              {lIdx + 1}
-                            </span>
-                          )}
+                          {indicator}
                         </div>
 
                         <div className="flex-1 min-w-0">
                           <p className={`text-xs leading-snug line-clamp-2 ${
-                            isActive
+                            lec.locked
+                              ? "text-[var(--text-muted)]"
+                              : isActive
                               ? "text-[var(--accent)] font-semibold"
                               : lec.completed
                               ? "text-[var(--text-muted)]"
@@ -281,6 +292,34 @@ export function CourseSidebar({
                             )}
                           </div>
                         </div>
+                      </>
+                    );
+
+                    if (lec.locked) {
+                      return (
+                        <div
+                          key={lec.id}
+                          className="flex items-start gap-2.5 px-4 py-3 border-b border-[var(--border-subtle)] opacity-60 cursor-not-allowed"
+                          title="Complete the previous lessons to unlock this one"
+                          aria-disabled="true"
+                        >
+                          {rowContent}
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <Link
+                        key={lec.id}
+                        href={`/courses/${courseSlug}/learn/${lec.slug}`}
+                        className={`flex items-start gap-2.5 px-4 py-3 border-b border-[var(--border-subtle)] transition-colors ${
+                          isActive
+                            ? "bg-[var(--accent-dim)] border-l-2 border-l-[var(--accent)]"
+                            : "hover:bg-[var(--bg-card-hover)]"
+                        }`}
+                        aria-current={isActive ? "page" : undefined}
+                      >
+                        {rowContent}
                       </Link>
                     );
                   })}

@@ -8,10 +8,13 @@
     "start": "next start",
     "lint": "eslint",
     "lint:fix": "eslint --fix",
+    "seed": "node prisma/seed.mjs",
     "type": "module",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "@prisma/adapter-pg": "^7.4.2"
   },
-     "prisma": {
+  "prisma": {
     "seed": "node prisma/seed.mjs"
   },
   "dependencies": {
@@ -21,6 +24,7 @@
     "@radix-ui/themes": "^3.3.0",
     "@tanstack/react-query": "^5.90.21",
     "@types/nodemailer": "8.0.1",
+    "@upstash/redis": "^1.38.2",
     "bcryptjs": "^3.0.3",
     "cloudinary": "^2.9.0",
     "clsx": "^2.1.1",
@@ -49,6 +53,7 @@
     "eslint-config-next": "16.1.6",
     "postcss": "^8.5.8",
     "prisma": "^7.4.2",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.10"
   }
 }

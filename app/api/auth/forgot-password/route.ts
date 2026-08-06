@@ -11,7 +11,7 @@ const schema = z.object({ email: z.string().email() });
 export async function POST(req: NextRequest) {
   // Rate-limit: 3 requests per email per 15 min
   const ip = getClientIp(req);
-  const rl = checkRateLimit(`forgot:${ip}`, { limit: 3, window: 900 });
+  const rl = await checkRateLimit(`forgot:${ip}`, { limit: 3, window: 900 });
   if (!rl.success) {
     // Still return 200 to not leak info
     return successResponse({ message: "If this email exists, a reset link has been sent." });

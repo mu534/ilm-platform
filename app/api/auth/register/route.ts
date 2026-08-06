@@ -9,7 +9,7 @@ import { generateToken, sendEmail, verificationEmailHtml } from "../../../lib/em
 export async function POST(req: NextRequest) {
   // Rate-limit: 5 registrations per IP per 15 min
   const ip = getClientIp(req);
-  const rl = checkRateLimit(`register:${ip}`, { limit: 5, window: 900 });
+  const rl = await checkRateLimit(`register:${ip}`, { limit: 5, window: 900 });
   if (!rl.success) return errorResponse("Too many attempts. Please try again later.", 429);
 
   try {

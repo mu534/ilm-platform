@@ -8,7 +8,7 @@ import { FileUploader } from "../../../../components/FileUploader";
 import { PublishingChecklist } from "../../../../components/courses/PublishingChecklist";
 import {
   FiSave, FiX, FiPlus, FiTrash2, FiArrowLeft,
-  FiSettings, FiSearch, FiGlobe, FiInfo,
+  FiSettings, FiSearch, FiGlobe, FiInfo, FiLock,
 } from "react-icons/fi";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -40,6 +40,7 @@ interface FormState {
   seoDescription:    string;
   // Settings
   enrollmentType:    "FREE";
+  sequentialLearning: boolean;
 }
 
 const EMPTY_FORM: FormState = {
@@ -49,6 +50,7 @@ const EMPTY_FORM: FormState = {
   published: false, featured: false,
   seoTitle: "", seoDescription: "",
   enrollmentType: "FREE",
+  sequentialLearning: false,
 };
 
 const LANGUAGES = [
@@ -157,6 +159,7 @@ export default function EditCoursePage() {
             seoTitle:          c.seoTitle          ?? "",
             seoDescription:    c.seoDescription    ?? "",
             enrollmentType:    c.enrollmentType     ?? "FREE",
+            sequentialLearning: c.sequentialLearning ?? false,
           });
         }
       } finally { setLoading(false); }
@@ -436,6 +439,31 @@ export default function EditCoursePage() {
                 <p className="text-xs text-[var(--text-muted)] mt-3 pl-6">
                   Paid enrollment will be available in a future update.
                 </p>
+              </div>
+            </div>
+
+            {/* Sequential learning */}
+            <div>
+              <label className="block text-xs text-[var(--text-muted)] font-medium mb-1.5">
+                <FiLock size={12} className="inline mr-1" />
+                Learning Path
+              </label>
+              <div className="glass-card rounded-xl p-4 border border-[var(--border)]">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={form.sequentialLearning}
+                    onChange={(e) => set("sequentialLearning", e.target.checked)}
+                    className="mt-0.5 w-4 h-4 accent-[var(--accent)]"
+                  />
+                  <div>
+                    <p className="text-sm font-medium text-[var(--text-primary)]">Require sequential learning</p>
+                    <p className="text-xs text-[var(--text-muted)] mt-0.5">
+                      Students must complete each lesson before the next one unlocks. Turn this off
+                      to let students jump to any lesson freely.
+                    </p>
+                  </div>
+                </label>
               </div>
             </div>
 

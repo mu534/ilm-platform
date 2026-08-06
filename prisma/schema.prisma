@@ -224,6 +224,10 @@ model Course {
   seoDescription    String?
   // Enrollment (extensible — free for now, paid can be added later)
   enrollmentType    String       @default("FREE") // FREE | PAID (future)
+  // When true, students must complete lectures in order — later lessons
+  // stay locked until every lesson before them (in module/lecture order)
+  // is marked complete.
+  sequentialLearning Boolean     @default(false)
   status            CourseStatus @default(DRAFT)
   featured          Boolean      @default(false)
   published         Boolean      @default(false)

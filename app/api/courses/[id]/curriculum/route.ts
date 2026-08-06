@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "../../../../lib/auth";
 import { prisma } from "../../../../lib/prism";
 import { successResponse, errorResponse, handleApiError } from "../../../../utils/api";
+import { computeLockedLectureIds } from "../../../../lib/sequentialLearning";
 import type { SessionUser } from "../../../../types/auth.types";
 
 /**
@@ -23,7 +24,7 @@ export async function GET(
     const course = await prisma.course.findUnique({
       where: { id: courseId },
       select: {
-        id: true, title: true, slug: true,
+        id: true, title: true, slug: true, sequentialLearning: true,
         modules: {
           orderBy: { order: "asc" },
           select: {
@@ -62,20 +63,25 @@ export async function GET(
       }
     }
 
-    // Annotate each lecture with completion status
+    // Annotate each lecture with completion + locked status
+    const orderedLectureIds = course.modules.flatMap((m) => m.lectures.map((l) => l.id));
+    const lockedSet = computeLockedLectureIds(orderedLectureIds, completedSet, course.sequentialLearning);
+
     const modules = course.modules.map((mod) => ({
       ...mod,
       lectures: mod.lectures.map((lec) => ({
         ...lec,
         completed: completedSet.has(lec.id),
+        locked:    lockedSet.has(lec.id),
       })),
       completedCount: mod.lectures.filter((l) => completedSet.has(l.id)).length,
     }));
 
     return successResponse({
-      courseId:       course.id,
-      courseTitle:    course.title,
-      courseSlug:     course.slug,
+      courseId:           course.id,
+      courseTitle:        course.title,
+      courseSlug:         course.slug,
+      sequentialLearning: course.sequentialLearning,
       modules,
       totalLectures,
       totalCompleted,

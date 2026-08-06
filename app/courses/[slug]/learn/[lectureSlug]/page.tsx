@@ -1,9 +1,10 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import Image from "next/image";
 import Link from "next/link";
 import { authOptions } from "../../../../lib/auth";
 import { prisma } from "../../../../lib/prism";
+import { isLectureLocked } from "../../../../lib/sequentialLearning";
 import { CommentSection } from "../../../../components/CommentSection";
 import { LikeButton } from "../../../../components/lectures/LikeButton";
 import { LectureResources } from "../../../../components/lectures/LectureResources";
@@ -41,7 +42,7 @@ async function getLecture(courseSlug: string, lectureSlug: string) {
           courseId: true,
           course: {
             select: {
-              id: true, title: true, slug: true, categoryId: true,
+              id: true, title: true, slug: true, categoryId: true, sequentialLearning: true,
               modules: {
                 orderBy: { order: "asc" },
                 select: {
@@ -144,6 +145,30 @@ export default async function ClassroomLecturePage({ params }: Props) {
   const course    = lecture.module.course;
   const section   = lecture.module;
   const courseId  = course.id;
+
+  // ── Sequential learning enforcement ──────────────────────────────────────
+  // The sidebar only *displays* locked lessons — this is what actually stops
+  // a student from skipping ahead by pasting in a later lesson's URL.
+  // Staff (admin/scholar) previewing their own course bypass this.
+  const isStaff = user?.role === "ADMIN" || user?.role === "SCHOLAR";
+  if (course.sequentialLearning && !isStaff) {
+    const orderedLectures  = course.modules.flatMap((m) => m.lectures);
+    const orderedLectureIds = orderedLectures.map((l) => l.id);
+
+    let completedIds = new Set<string>();
+    if (user) {
+      const progress = await prisma.lectureProgress.findMany({
+        where:  { userId: user.id, lectureId: { in: orderedLectureIds }, completed: true },
+        select: { lectureId: true },
+      });
+      completedIds = new Set(progress.map((p) => p.lectureId));
+    }
+
+    if (isLectureLocked(lecture.id, orderedLectureIds, completedIds, true)) {
+      const firstIncomplete = orderedLectures.find((l) => !completedIds.has(l.id));
+      redirect(firstIncomplete ? `/courses/${course.slug}/learn/${firstIncomplete.slug}` : `/courses/${course.slug}`);
+    }
+  }
 
   // Record last-viewed (non-blocking). Access itself was already verified
   // by the classroom layout above this page.

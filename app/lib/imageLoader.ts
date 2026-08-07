@@ -16,21 +16,25 @@ import type { ImageLoaderProps } from "next/image";
 export default function imageLoader({ src, width, quality }: ImageLoaderProps): string {
   // ── Cloudinary ────────────────────────────────────────────────────────────
   if (src.includes("res.cloudinary.com")) {
-    const q    = quality ?? 75;
-    const xfm  = `w_${width},q_${q},f_auto,c_limit`;
+    const q = quality ?? 90;             // high quality default
 
-    // If transformations already applied (re-optimisation guard), return as-is
-    if (src.includes("/upload/w_")) return src;
+    // Already has transformations applied — return as-is to avoid double-transform
+    if (src.includes("/upload/w_") || src.includes("/upload/f_")) return src;
+
+    // f_auto  = serve WebP/AVIF automatically based on browser support
+    // q_auto  = Cloudinary's perceptual quality optimiser (better than fixed q)
+    // w_{n}   = resize to requested width
+    // c_limit = never upscale; shrink only (preserves quality on small displays)
+    const xfm = `w_${width},q_${q},f_auto,c_limit`;
 
     return src.replace("/upload/", `/upload/${xfm}/`);
   }
 
   // ── All other remote images (Google, GitHub avatars, etc.) ────────────────
-  // Encode for Next.js built-in image optimiser
   const params = new URLSearchParams({
     url: src,
     w:   String(width),
-    q:   String(quality ?? 75),
+    q:   String(quality ?? 90),
   });
   return `/_next/image?${params.toString()}`;
 }

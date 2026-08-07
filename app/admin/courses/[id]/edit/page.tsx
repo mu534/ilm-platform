@@ -325,8 +325,8 @@ export default function EditCoursePage() {
               </div>
             </div>
 
-            <FileUploader accept="image/*" folder="ilm-platform/courses/thumbnails" label="Thumbnail Image" onUpload={(url) => set("thumbnailUrl", url)} currentUrl={form.thumbnailUrl} />
-            <FileUploader accept="image/*" folder="ilm-platform/courses/banners"    label="Banner Image"    onUpload={(url) => set("bannerUrl",    url)} currentUrl={form.bannerUrl}    />
+            <FileUploader accept="image/*" folder="ilm-platform/courses/thumbnails" label="Thumbnail Image" onUpload={(url) => set("thumbnailUrl", url)} currentUrl={form.thumbnailUrl} aspectRatio="16/9" />
+            <FileUploader accept="image/*" folder="ilm-platform/courses/banners"    label="Banner Image (wide hero)"    onUpload={(url) => set("bannerUrl",    url)} currentUrl={form.bannerUrl}    aspectRatio="3/1" />
 
             <ListEditor label="Learning Objectives" items={form.objectives}   onChange={(v) => set("objectives",   v)} placeholder="Students will be able to…" />
             <ListEditor label="Prerequisites"       items={form.prerequisites} onChange={(v) => set("prerequisites", v)} placeholder="Basic knowledge of…" />

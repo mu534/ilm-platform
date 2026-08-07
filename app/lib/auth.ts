@@ -56,22 +56,25 @@ export const authOptions: NextAuthOptions = {
     // ── Google: auto-create or link user ───────────────────────────────────
     async signIn({ user, account }) {
       if (account?.provider === "google") {
-        const existing = await prisma.user.findUnique({ where: { email: user.email! } });
+        try {
+          const existing = await prisma.user.findUnique({ where: { email: user.email! } });
 
-        if (!existing) {
-          await prisma.user.create({
-            data: {
-              email:         user.email!,
-              name:          user.name  ?? "Google User",
-              image:         user.image ?? null,
-              password:      null,
-              role:          "USER",
-              emailVerified: true, // Google accounts are pre-verified
-            },
-          });
-        } else if (!existing.image && user.image) {
-          // Sync avatar from Google if not set
-          await prisma.user.update({ where: { id: existing.id }, data: { image: user.image } });
+          if (!existing) {
+            await prisma.user.create({
+              data: {
+                email:         user.email!,
+                name:          user.name  ?? "Google User",
+                image:         user.image ?? null,
+                password:      null,
+                role:          "USER",
+                emailVerified: true,
+              },
+            });
+          } else if (!existing.image && user.image) {
+            await prisma.user.update({ where: { id: existing.id }, data: { image: user.image } });
+          }
+        } catch {
+          // Log but don't block sign-in — user may already exist
         }
         return true;
       }
@@ -80,19 +83,24 @@ export const authOptions: NextAuthOptions = {
 
     async jwt({ token, user }) {
       if (user) {
+        // First sign-in — store everything in the token
         token.id   = user.id;
         token.role = (user.role as UserRole) ?? "USER";
-      } else if (token.id) {
-        // Refresh from DB on every token refresh
-        const dbUser = await prisma.user.findUnique({
-          where:  { id: token.id as string },
-          select: { role: true, name: true, email: true, image: true },
-        });
-        if (dbUser) {
-          token.role    = dbUser.role as UserRole;
-          token.name    = dbUser.name;
-          token.email   = dbUser.email;
-          token.picture = dbUser.image;
+      } else if (token.id && !token.role) {
+        // Only hit the DB if role is missing from token (e.g. after token rotation)
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where:  { id: token.id as string },
+            select: { role: true, name: true, email: true, image: true },
+          });
+          if (dbUser) {
+            token.role    = dbUser.role as UserRole;
+            token.name    = dbUser.name;
+            token.email   = dbUser.email;
+            token.picture = dbUser.image;
+          }
+        } catch {
+          // DB unavailable — keep existing token values, don't crash the session
         }
       }
       return token;

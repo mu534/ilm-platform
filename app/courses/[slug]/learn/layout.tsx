@@ -1,10 +1,10 @@
 import { notFound, redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
-import { authOptions } from "../../../../../Downloads/ilm/app/lib/auth";
-import { prisma } from "../../../../../Downloads/ilm/app/lib/prism";
-import { CourseSidebar } from "../../../../../Downloads/ilm/app/components/lectures/CourseSidebar";
-import { EnrollmentGate } from "../../../../../Downloads/ilm/app/components/lectures/EnrollmentGate";
-import type { SessionUser } from "../../../../../Downloads/ilm/app/types/auth.types";
+import { authOptions } from "../../../lib/auth";
+import { prisma } from "../../../lib/prism";
+import { CourseSidebar } from "../../../components/lectures/CourseSidebar";
+import { EnrollmentGate } from "../../../components/courses/EnrollmentGate";
+import type { SessionUser } from "../../../types/auth.types";
 
 interface Props {
   children: React.ReactNode;
@@ -21,14 +21,10 @@ async function getCourseShell(slug: string) {
 /**
  * The classroom shell.
  *
- * This layout is what makes the course "own" the learning experience:
- * it renders the curriculum sidebar exactly once, and every lecture the
- * student opens underneath `/courses/[slug]/learn/*` streams into the
- * same persistent frame — no full remount, no sidebar flicker, no
- * leaving the workspace to find the next lesson.
- *
- * Enrollment/authorization is gated here, once, for the whole classroom —
- * individual lecture pages don't need to repeat this check.
+ * Renders the curriculum sidebar once — all lecture pages underneath
+ * /courses/[slug]/learn/* stream into the same persistent frame.
+ * Enrollment is gated here for the entire classroom; individual
+ * lecture pages do not need to repeat this check.
  */
 export default async function LearnLayout({ children, params }: Props) {
   const { slug } = await params;
@@ -39,10 +35,12 @@ export default async function LearnLayout({ children, params }: Props) {
 
   if (!course) notFound();
 
-  const user = session?.user as SessionUser | undefined;
-  if (!user) redirect(`/login?callbackUrl=/courses/${course.slug}`);
+  const user     = session?.user as SessionUser | undefined;
+  const isStaff  = user?.role === "ADMIN" || user?.role === "SCHOLAR";
 
-  const isStaff = user.role === "ADMIN" || user.role === "SCHOLAR";
+  // Redirect unauthenticated users to login
+  if (!user) redirect(`/login?callbackUrl=/courses/${course.slug}/learn`);
+
   let hasAccess = isStaff;
 
   if (!isStaff) {
@@ -53,13 +51,22 @@ export default async function LearnLayout({ children, params }: Props) {
   }
 
   if (!hasAccess) {
-    return <EnrollmentGate courseSlug={course.slug} courseTitle={course.title} />;
+    return (
+      <EnrollmentGate
+        courseSlug={course.slug}
+        courseTitle={course.title}
+      />
+    );
   }
 
   return (
-    <div className="flex min-h-screen bg-[var(--bg-primary)]">
-      <CourseSidebar courseId={course.id} courseSlug={course.slug} />
-      <div className="flex-1 min-w-0 flex flex-col">
+    <div className="flex min-h-[100dvh] bg-[var(--bg-primary)]">
+      {/* Persistent sidebar — stays mounted across lecture navigations */}
+      <CourseSidebar
+        courseId={course.id}
+        activeLectureId=""   /* will be overridden per-lecture via the sidebar's own state */
+      />
+      <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
         {children}
       </div>
     </div>

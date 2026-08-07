@@ -496,10 +496,6 @@
   from { transform: translateX(0); }
   to   { transform: translateX(-50%); }
 }
-@keyframes marquee-right {
-  from { transform: translateX(-50%); }
-  to   { transform: translateX(0); }
-}
 
 .animate-fadeInUp     { animation: fadeInUp  0.5s ease-out forwards; }
 .animate-fadeIn       { animation: fadeIn    0.4s ease-out forwards; }
@@ -508,12 +504,17 @@
 .animate-pulse-accent { animation: pulse-accent 2.5s ease-in-out infinite; }
 .animate-slide-right  { animation: slide-in-right 0.4s ease-out forwards; }
 
-/* Animated course banner — duplicated track scrolls seamlessly; pauses on hover/focus */
+/* Animated course banner — duplicated track scrolls seamlessly; pauses on hover/focus.
+   Both rows use the same marquee-left keyframe.
+   The reverse row uses animation-direction: reverse so it starts from position 0
+   (left edge) and scrolls rightward — no mid-track jump on load. */
 .marquee-track {
+  display: flex;
+  will-change: transform;
   animation: marquee-left var(--marquee-duration, 40s) linear infinite;
 }
 .marquee-track--reverse {
-  animation-name: marquee-right;
+  animation-direction: reverse;
 }
 .marquee-group:hover .marquee-track,
 .marquee-group:focus-within .marquee-track {

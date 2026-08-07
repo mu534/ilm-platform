@@ -70,15 +70,20 @@ function MarqueeCard({ course }: { course: MarqueeCourse }) {
 }
 
 function MarqueeRow({ courses, reverse, duration }: { courses: MarqueeCourse[]; reverse?: boolean; duration: number }) {
-  // Duplicate the row so the track can loop seamlessly from -50% back to 0.
-  const doubled = [...courses, ...courses];
+  // Pad the original set to at least 8 cards so the track always overflows
+  // the viewport even on large screens. Then duplicate once for seamless loop.
+  const minCards  = 8;
+  const copies    = Math.ceil(minCards / Math.max(courses.length, 1));
+  const padded    = Array.from({ length: copies }, () => courses).flat();
+  const track     = [...padded, ...padded]; // duplicate = seamless -50% loop
+
   return (
     <div className="marquee-group overflow-hidden">
       <div
         className={`marquee-track flex gap-5 w-max ${reverse ? "marquee-track--reverse" : ""}`}
         style={{ "--marquee-duration": `${duration}s` } as React.CSSProperties}
       >
-        {doubled.map((course, i) => (
+        {track.map((course, i) => (
           <MarqueeCard key={`${course.id}-${i}`} course={course} />
         ))}
       </div>

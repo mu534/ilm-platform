@@ -3,19 +3,33 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { FiLoader, FiCheckCircle, FiArrowRight } from "react-icons/fi";
+import { FiLoader, FiCheckCircle, FiArrowRight, FiLock } from "react-icons/fi";
 
 interface EnrollButtonProps {
   courseId:   string;
   courseSlug: string;
   isLoggedIn: boolean;
+  isPaid?:    boolean;
+  price?:     number;   // smallest currency unit (cents)
+  currency?:  string;
 }
 
-export function EnrollButton({ courseId, courseSlug, isLoggedIn }: EnrollButtonProps) {
+function formatPrice(price: number, currency: string): string {
+  try {
+    return new Intl.NumberFormat("en-US", { style: "currency", currency: currency.toUpperCase() })
+      .format(price / 100);
+  } catch {
+    return `${(price / 100).toFixed(2)} ${currency.toUpperCase()}`;
+  }
+}
+
+export function EnrollButton({ courseId, courseSlug, isLoggedIn, isPaid, price = 0, currency = "usd" }: EnrollButtonProps) {
   const router  = useRouter();
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState("");
   const [success, setSuccess] = useState(false);
+
+  const priceLabel = isPaid ? formatPrice(price, currency) : null;
 
   if (!isLoggedIn) {
     return (
@@ -24,17 +38,17 @@ export function EnrollButton({ courseId, courseSlug, isLoggedIn }: EnrollButtonP
           href={`/login?callbackUrl=/courses/${courseSlug}`}
           className="flex items-center justify-center gap-2 w-full py-3 px-4 rounded-xl bg-[var(--accent)] hover:bg-[var(--accent-light)] text-white font-semibold text-sm transition-colors"
         >
-          Sign in to Enroll
+          {isPaid ? `Sign in to Purchase — ${priceLabel}` : "Sign in to Enroll"}
           <FiArrowRight size={14} />
         </Link>
         <p className="text-xs text-center text-[var(--text-muted)]">
-          Free · No credit card required
+          {isPaid ? "Secure checkout via Stripe" : "Free · No credit card required"}
         </p>
       </div>
     );
   }
 
-  const handleEnroll = async () => {
+  const handleFreeEnroll = async () => {
     setLoading(true);
     setError("");
     try {
@@ -67,6 +81,28 @@ export function EnrollButton({ courseId, courseSlug, isLoggedIn }: EnrollButtonP
     }
   };
 
+  const handleCheckout = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const res  = await fetch(`/api/courses/${courseId}/checkout`, { method: "POST" });
+      const data = await res.json();
+
+      if (!data.success) {
+        if (res.status === 409) { router.refresh(); return; }
+        setError(data.error ?? "Couldn't start checkout. Please try again.");
+        setLoading(false);
+        return;
+      }
+
+      // Stripe's hosted page is a different origin — full navigation, not router.push
+      window.location.href = data.data.url;
+    } catch {
+      setError("Something went wrong. Please try again.");
+      setLoading(false);
+    }
+  };
+
   if (success) {
     return (
       <div className="space-y-2.5">
@@ -84,14 +120,19 @@ export function EnrollButton({ courseId, courseSlug, isLoggedIn }: EnrollButtonP
   return (
     <div className="space-y-2.5">
       <button
-        onClick={handleEnroll}
+        onClick={() => void (isPaid ? handleCheckout() : handleFreeEnroll())}
         disabled={loading}
         className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-[var(--accent)] hover:bg-[var(--accent-light)] text-white font-semibold text-sm transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
       >
         {loading ? (
           <>
             <FiLoader className="animate-spin" size={14} />
-            Enrolling…
+            {isPaid ? "Redirecting to checkout…" : "Enrolling…"}
+          </>
+        ) : isPaid ? (
+          <>
+            <FiLock size={13} />
+            Enroll Now — {priceLabel}
           </>
         ) : (
           <>
@@ -102,7 +143,7 @@ export function EnrollButton({ courseId, courseSlug, isLoggedIn }: EnrollButtonP
       </button>
       {error && <p className="text-xs text-red-400 text-center">{error}</p>}
       <p className="text-xs text-center text-[var(--text-muted)]">
-        Learn at your own pace · No deadlines
+        {isPaid ? "Secure checkout via Stripe · One-time payment" : "Learn at your own pace · No deadlines"}
       </p>
     </div>
   );

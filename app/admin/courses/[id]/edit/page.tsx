@@ -39,7 +39,9 @@ interface FormState {
   seoTitle:          string;
   seoDescription:    string;
   // Settings
-  enrollmentType:    "FREE";
+  enrollmentType:    "FREE" | "PAID";
+  price:             number; // cents
+  currency:          string;
   sequentialLearning: boolean;
 }
 
@@ -50,6 +52,8 @@ const EMPTY_FORM: FormState = {
   published: false, featured: false,
   seoTitle: "", seoDescription: "",
   enrollmentType: "FREE",
+  price: 0,
+  currency: "usd",
   sequentialLearning: false,
 };
 
@@ -159,6 +163,8 @@ export default function EditCoursePage() {
             seoTitle:          c.seoTitle          ?? "",
             seoDescription:    c.seoDescription    ?? "",
             enrollmentType:    c.enrollmentType     ?? "FREE",
+            price:             c.price              ?? 0,
+            currency:          c.currency           ?? "usd",
             sequentialLearning: c.sequentialLearning ?? false,
           });
         }
@@ -428,17 +434,66 @@ export default function EditCoursePage() {
             {/* Enrollment type */}
             <div>
               <label className="block text-xs text-[var(--text-muted)] font-medium mb-1.5">Enrollment Type</label>
-              <div className="glass-card rounded-xl p-4 border border-[var(--border)]">
+              <div className="glass-card rounded-xl p-4 border border-[var(--border)] space-y-3">
                 <label className="flex items-start gap-3 cursor-pointer">
-                  <input type="radio" checked name="enrollmentType" value="FREE" readOnly className="mt-0.5 accent-[var(--accent)]" />
+                  <input
+                    type="radio"
+                    checked={form.enrollmentType === "FREE"}
+                    onChange={() => set("enrollmentType", "FREE")}
+                    name="enrollmentType"
+                    value="FREE"
+                    className="mt-0.5 accent-[var(--accent)]"
+                  />
                   <div>
                     <p className="text-sm font-medium text-[var(--text-primary)]">Free</p>
                     <p className="text-xs text-[var(--text-muted)]">Any registered student can enroll at no cost.</p>
                   </div>
                 </label>
-                <p className="text-xs text-[var(--text-muted)] mt-3 pl-6">
-                  Paid enrollment will be available in a future update.
-                </p>
+
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="radio"
+                    checked={form.enrollmentType === "PAID"}
+                    onChange={() => set("enrollmentType", "PAID")}
+                    name="enrollmentType"
+                    value="PAID"
+                    className="mt-0.5 accent-[var(--accent)]"
+                  />
+                  <div>
+                    <p className="text-sm font-medium text-[var(--text-primary)]">Paid</p>
+                    <p className="text-xs text-[var(--text-muted)]">Students pay once via Stripe checkout before they can enroll.</p>
+                  </div>
+                </label>
+
+                {form.enrollmentType === "PAID" && (
+                  <div className="grid grid-cols-2 gap-3 pl-6 pt-1">
+                    <div>
+                      <label className="block text-[11px] text-[var(--text-muted)] mb-1">Price</label>
+                      <input
+                        type="number"
+                        min={0}
+                        step="0.01"
+                        value={form.price / 100}
+                        onChange={(e) => set("price", Math.round(Number(e.target.value) * 100))}
+                        className={inputClass()}
+                        placeholder="29.99"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] text-[var(--text-muted)] mb-1">Currency</label>
+                      <select value={form.currency} onChange={(e) => set("currency", e.target.value)} className={inputClass()}>
+                        <option value="usd">USD ($)</option>
+                        <option value="eur">EUR (€)</option>
+                        <option value="gbp">GBP (£)</option>
+                        <option value="cad">CAD ($)</option>
+                        <option value="aud">AUD ($)</option>
+                      </select>
+                    </div>
+                    <p className="col-span-2 text-[11px] text-[var(--text-muted)]">
+                      Requires Stripe to be configured (STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET) — see .env.example.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
 

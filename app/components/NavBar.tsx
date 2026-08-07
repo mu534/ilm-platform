@@ -135,6 +135,11 @@ export function Navbar() {
                       </Link>
                     </DropdownMenu.Item>
                     <DropdownMenu.Item asChild>
+                      <Link href="/settings" className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-dim)] rounded-xl cursor-pointer transition-colors">
+                        <FiSettings size={14} className="text-[var(--accent)]" /> Settings
+                      </Link>
+                    </DropdownMenu.Item>
+                    <DropdownMenu.Item asChild>
                       <Link href="/dashboard" className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-dim)] rounded-xl cursor-pointer transition-colors">
                         <FiActivity size={14} className="text-[var(--accent)]" /> My Learning
                       </Link>
@@ -210,6 +215,7 @@ export function Navbar() {
               {session ? (
                 <>
                   <Link href="/profile"    onClick={() => setMobileOpen(false)} className="block px-3 py-2.5 rounded-xl text-sm text-[var(--text-secondary)] hover:bg-[var(--accent-dim)] transition-all">Profile</Link>
+                  <Link href="/settings"   onClick={() => setMobileOpen(false)} className="block px-3 py-2.5 rounded-xl text-sm text-[var(--text-secondary)] hover:bg-[var(--accent-dim)] transition-all">Settings</Link>
                   <Link href="/dashboard"  onClick={() => setMobileOpen(false)} className="block px-3 py-2.5 rounded-xl text-sm text-[var(--text-secondary)] hover:bg-[var(--accent-dim)] transition-all">My Learning</Link>
                   {user?.role === "ADMIN" && (
                     <Link href="/admin"    onClick={() => setMobileOpen(false)} className="block px-3 py-2.5 rounded-xl text-sm text-[var(--accent)] hover:bg-[var(--accent-dim)] transition-all">Admin</Link>

@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../../../lib/auth";
 import { prisma } from "../../../../lib/prism";
+import { createEnrollment, AlreadyEnrolledError } from "../../../../lib/enrollment";
 import { successResponse, errorResponse, handleApiError } from "../../../../utils/api";
 import type { SessionUser } from "../../../../types/auth.types";
 
@@ -18,48 +19,26 @@ export async function POST(
     const { id: courseId } = await params;
 
     const course = await prisma.course.findUnique({
-      where: { id: courseId, published: true },
-      include: {
-        modules: {
-          select: {
-            lectures: { where: { published: true }, select: { id: true } },
-          },
-        },
-      },
+      where:  { id: courseId, published: true },
+      select: { id: true, enrollmentType: true, price: true },
     });
     if (!course) return errorResponse("Course not found or not published", 404);
 
-    // Prevent duplicate enrollment
-    const existing = await prisma.enrollment.findUnique({
-      where: { userId_courseId: { userId: user.id, courseId } },
-    });
-    if (existing) return errorResponse("You are already enrolled in this course", 409);
+    // Paid courses go through /checkout instead — this endpoint only
+    // grants access directly for free courses.
+    if (course.enrollmentType === "PAID" && course.price > 0) {
+      return errorResponse("This is a paid course — use the checkout flow to enroll", 402);
+    }
 
-    // Create enrollment + initialise progress records in one transaction
-    const allLectureIds = course.modules.flatMap((m) => m.lectures.map((l) => l.id));
-
-    const [enrollment] = await prisma.$transaction([
-      // 1. Create enrollment
-      prisma.enrollment.create({
-        data: { userId: user.id, courseId },
-        include: {
-          course: {
-            select: { id: true, title: true, slug: true, thumbnailUrl: true },
-          },
-        },
-      }),
-      // 2. Pre-create LectureProgress rows so progress % is always accurate
-      prisma.lectureProgress.createMany({
-        data: allLectureIds.map((lectureId) => ({
-          userId:    user.id,
-          lectureId,
-          completed: false,
-        })),
-        skipDuplicates: true,
-      }),
-    ]);
-
-    return successResponse(enrollment, 201);
+    try {
+      const enrollment = await createEnrollment(user.id, courseId);
+      return successResponse(enrollment, 201);
+    } catch (err) {
+      if (err instanceof AlreadyEnrolledError) {
+        return errorResponse("You are already enrolled in this course", 409);
+      }
+      throw err;
+    }
   } catch (error) {
     return handleApiError(error);
   }

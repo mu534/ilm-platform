@@ -85,7 +85,10 @@ export const courseSchema = z.object({
   published:         z.boolean().default(false),
   categoryId:        z.string().optional(),
   scholarId:         z.string().optional(),
-  enrollmentType:    z.enum(["FREE"]).default("FREE"), // extensible for future PAID
+  enrollmentType:    z.enum(["FREE", "PAID"]).default("FREE"),
+  price:             z.number().int().min(0).max(99999999).default(0), // cents
+  currency:          z.string().min(3).max(3).default("usd"),
+  sequentialLearning: z.boolean().default(false),
   // SEO
   seoTitle:          z.string().max(70,  "SEO title max 70 chars").optional().or(z.literal("")),
   seoDescription:    z.string().max(160, "SEO description max 160 chars").optional().or(z.literal("")),

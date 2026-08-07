@@ -122,9 +122,20 @@ describe("courseSchema", () => {
     expect(result.success).toBe(true);
   });
 
-  it("rejects an enrollmentType other than FREE", () => {
-    const result = courseSchema.safeParse({ ...base, enrollmentType: "PAID" });
+  it("accepts PAID enrollmentType with a price", () => {
+    const result = courseSchema.safeParse({ ...base, enrollmentType: "PAID", price: 2999, currency: "usd" });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects an enrollmentType outside FREE/PAID", () => {
+    const result = courseSchema.safeParse({ ...base, enrollmentType: "SUBSCRIPTION" });
     expect(result.success).toBe(false);
+  });
+
+  it("defaults price to 0 and currency to usd when omitted", () => {
+    const result = courseSchema.parse(base);
+    expect(result.price).toBe(0);
+    expect(result.currency).toBe("usd");
   });
 
   it("rejects an SEO title over 70 characters", () => {

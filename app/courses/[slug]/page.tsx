@@ -450,9 +450,17 @@ export default async function CourseDetailPage({ params }: Props) {
               <div className="border border-[var(--border)] rounded-xl overflow-hidden bg-[var(--bg-card)]">
                 <div className="p-5 border-b border-[var(--border)]">
                   <div className="flex items-center justify-between mb-4">
-                    <span className="text-2xl font-bold text-[var(--text-primary)]">Free</span>
-                    <span className="text-xs font-medium text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-full">
-                      Open Enrollment
+                    <span className="text-2xl font-bold text-[var(--text-primary)]">
+                      {course.enrollmentType === "PAID" && course.price > 0
+                        ? new Intl.NumberFormat("en-US", { style: "currency", currency: course.currency.toUpperCase() }).format(course.price / 100)
+                        : "Free"}
+                    </span>
+                    <span className={`text-xs font-medium px-2.5 py-1 rounded-full border ${
+                      course.enrollmentType === "PAID" && course.price > 0
+                        ? "text-[var(--accent)] bg-[var(--accent-dim)] border-[var(--border-subtle)]"
+                        : "text-emerald-400 bg-emerald-500/10 border-emerald-500/20"
+                    }`}>
+                      {course.enrollmentType === "PAID" && course.price > 0 ? "One-time payment" : "Open Enrollment"}
                     </span>
                   </div>
 
@@ -472,6 +480,9 @@ export default async function CourseDetailPage({ params }: Props) {
                       courseId={course.id}
                       courseSlug={course.slug}
                       isLoggedIn={!!user}
+                      isPaid={course.enrollmentType === "PAID" && course.price > 0}
+                      price={course.price}
+                      currency={course.currency}
                     />
                   )}
                 </div>

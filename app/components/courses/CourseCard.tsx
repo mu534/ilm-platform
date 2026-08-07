@@ -16,6 +16,8 @@ interface CourseCardProps {
     featured:          boolean;
     tags?:             string[];
     enrollmentType?:   string;
+    price?:            number;
+    currency?:         string;
     category?:  { id: string; name: string; icon?: string | null; color?: string | null } | null;
     author:     { id: string; name: string; image?: string | null };
     scholar?:   { id: string; photo?: string | null; verified: boolean; user: { name: string } } | null;
@@ -72,9 +74,13 @@ export function CourseCard({ course }: CourseCardProps) {
             </span>
           )}
 
-          {/* Top-right: Free / Featured badge */}
+          {/* Top-right: Free / Price / Featured badge */}
           <span className="absolute top-2.5 right-2.5 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[var(--accent)] text-white tracking-wide shadow-[var(--shadow-sm)]">
-            {course.featured ? "Featured" : "Free Course"}
+            {course.featured
+              ? "Featured"
+              : course.enrollmentType === "PAID" && (course.price ?? 0) > 0
+              ? new Intl.NumberFormat("en-US", { style: "currency", currency: (course.currency ?? "usd").toUpperCase() }).format((course.price ?? 0) / 100)
+              : "Free Course"}
           </span>
         </div>
 

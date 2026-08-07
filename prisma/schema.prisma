@@ -156,6 +156,13 @@ model User {
   forumVotes        ForumVote[]
   courses           Course[]
   preferredLanguage String            @default("en")
+  stripeCustomerId  String?
+  payments          Payment[]
+  // Notification preferences — gate which in-app notifications get created.
+  // Transactional ones (course approval, quiz results, certificates) are
+  // always sent regardless, same as you can't turn off "your order shipped".
+  notifyNewContent  Boolean           @default(true) // new lectures/courses from scholars you follow or courses you're enrolled in
+  notifyComments    Boolean           @default(true) // replies to your comments
 
   @@map("users")
 }
@@ -223,7 +230,14 @@ model Course {
   seoTitle          String?
   seoDescription    String?
   // Enrollment (extensible — free for now, paid can be added later)
-  enrollmentType    String       @default("FREE") // FREE | PAID (future)
+  enrollmentType    String       @default("FREE") // FREE | PAID
+  // Price in the smallest currency unit (e.g. cents for USD). 0 = free.
+  price             Int          @default(0)
+  currency          String       @default("usd")
+  // Cached Stripe IDs so we don't recreate the Product/Price on every checkout
+  stripeProductId   String?
+  stripePriceId     String?
+  payments          Payment[]
   // When true, students must complete lectures in order — later lessons
   // stay locked until every lesson before them (in module/lecture order)
   // is marked complete.
@@ -356,6 +370,32 @@ model Enrollment {
   @@index([userId])
   @@index([courseId])
   @@map("enrollments")
+}
+
+enum PaymentStatus {
+  PENDING    // Checkout session created, not yet paid
+  COMPLETED  // Payment confirmed via webhook, enrollment granted
+  FAILED     // Checkout expired or payment failed
+  REFUNDED
+}
+
+model Payment {
+  id                      String        @id @default(cuid())
+  userId                  String
+  user                    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId                String
+  course                  Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  amount                  Int           // in smallest currency unit (cents)
+  currency                String
+  status                  PaymentStatus @default(PENDING)
+  stripeCheckoutSessionId String        @unique
+  stripePaymentIntentId   String?
+  createdAt               DateTime      @default(now())
+  updatedAt               DateTime      @updatedAt
+
+  @@index([userId])
+  @@index([courseId])
+  @@map("payments")
 }
 
 model LectureProgress {

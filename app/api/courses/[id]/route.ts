@@ -155,9 +155,17 @@ export async function PATCH(
       delete (courseData as Record<string, unknown>).published;
     }
 
+    // Stripe Price objects are immutable — if the price or currency changed,
+    // drop the cached stripePriceId so /checkout creates a fresh one instead
+    // of charging the old amount.
+    const priceChanged =
+      (courseData.price !== undefined && courseData.price !== course.price) ||
+      (courseData.currency !== undefined && courseData.currency !== course.currency);
+    const priceInvalidation = priceChanged ? { stripePriceId: null } : {};
+
     const updated = await prisma.course.update({
       where: { id },
-      data:  { ...courseData, ...adminData, ...reReviewFields },
+      data:  { ...courseData, ...adminData, ...reReviewFields, ...priceInvalidation },
       select: courseDetailSelect,
     });
 

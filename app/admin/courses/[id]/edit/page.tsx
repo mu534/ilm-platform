@@ -475,13 +475,13 @@ export default function EditCoursePage() {
                         step="0.01"
                         value={form.price / 100}
                         onChange={(e) => set("price", Math.round(Number(e.target.value) * 100))}
-                        className={inputClass()}
+                        className={ic()}
                         placeholder="29.99"
                       />
                     </div>
                     <div>
                       <label className="block text-[11px] text-[var(--text-muted)] mb-1">Currency</label>
-                      <select value={form.currency} onChange={(e) => set("currency", e.target.value)} className={inputClass()}>
+                      <select value={form.currency} onChange={(e) => set("currency", e.target.value)} className={ic()}>
                         <option value="usd">USD ($)</option>
                         <option value="eur">EUR (€)</option>
                         <option value="gbp">GBP (£)</option>

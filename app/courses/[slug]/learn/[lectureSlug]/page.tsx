@@ -351,7 +351,6 @@ export default async function ClassroomLecturePage({ params }: Props) {
         courseId={courseId}
         courseSlug={course.slug}
         courseTitle={course.title}
-        categoryId={course.categoryId}
         sectionTitle={section.title}
         lectureNumber={navInfo.lectureNumber}
         totalLectures={navInfo.totalLectures}

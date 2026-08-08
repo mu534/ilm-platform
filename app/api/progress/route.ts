@@ -42,28 +42,62 @@ export async function GET(req: NextRequest) {
           modules: {
             select: {
               lectures: { where: { published: true }, select: { id: true } },
+              quizzes:  { select: { id: true, passingScore: true } },
             },
           },
         },
       });
-      if (!course) return successResponse({ lectureIds: [], progress: [], completedCount: 0, totalCount: 0, percent: 0 });
+      if (!course) return successResponse({ lectureIds: [], progress: [], completedCount: 0, totalCount: 0, percent: 0, quizzes: [] });
 
       const lectureIds = course.modules.flatMap((m) => m.lectures.map((l) => l.id));
+      const allQuizIds = course.modules.flatMap((m) => m.quizzes.map((q) => q.id));
 
-      const progressRecords = await prisma.lectureProgress.findMany({
-        where: { userId: user.id, lectureId: { in: lectureIds } },
-      });
+      const [progressRecords, passedAttempts, certificate] = await Promise.all([
+        prisma.lectureProgress.findMany({
+          where: { userId: user.id, lectureId: { in: lectureIds } },
+        }),
+        allQuizIds.length > 0
+          ? prisma.quizAttempt.findMany({
+              where:    { userId: user.id, quizId: { in: allQuizIds }, passed: true },
+              select:   { quizId: true },
+              distinct: ["quizId"],
+            })
+          : Promise.resolve([]),
+        prisma.certificate.findUnique({
+          where: { userId_courseId: { userId: user.id, courseId } },
+          select: { id: true, issuedAt: true },
+        }),
+      ]);
 
-      const completed = progressRecords.filter((p) => p.completed).length;
-      const total     = lectureIds.length;
-      const percent   = total > 0 ? Math.round((completed / total) * 100) : 0;
+      const completed  = progressRecords.filter((p) => p.completed).length;
+      const total      = lectureIds.length;
+      const percent    = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+      const passedQuizIds = new Set(passedAttempts.map((a) => a.quizId));
+      const quizSummary   = course.modules.flatMap((m) =>
+        m.quizzes.map((q) => ({
+          quizId:  q.id,
+          passed:  passedQuizIds.has(q.id),
+          required: true,
+        })),
+      );
+
+      const quizzesRemaining  = quizSummary.filter((q) => !q.passed).length;
+      const certificateReady  = percent >= 100 && quizzesRemaining === 0;
 
       return successResponse({
         lectureIds,
-        progress: progressRecords,
-        completedCount: completed,
-        totalCount: total,
+        progress:          progressRecords,
+        completedCount:    completed,
+        totalCount:        total,
         percent,
+        // Quiz completion — separate from lecture progress so UI can clearly
+        // distinguish "all lectures done" from "course fully complete"
+        quizzes:           quizSummary,
+        quizzesRemaining,
+        // Server-authoritative certificate eligibility flag
+        certificateReady,
+        certificate:       certificate ?? null,
       });
     }
 

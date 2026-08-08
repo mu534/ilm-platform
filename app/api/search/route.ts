@@ -120,8 +120,7 @@ export async function GET(request: NextRequest) {
     const response = NextResponse.json({ success: true, data: results });
     response.headers.set("Cache-Control", "public, s-maxage=120, stale-while-revalidate=300");
     return response;
-  } catch (error) {
-    console.error("Search error:", error);
+  } catch {
     return NextResponse.json({ success: false, error: "Search failed" }, { status: 500 });
   }
 }

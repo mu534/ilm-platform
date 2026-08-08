@@ -135,13 +135,11 @@ export async function GET(
       // Standalone lecture (not attached to a course module)
       const isOwner = user && lecture.author.id === user.id;
       const isAdmin = user?.role === "ADMIN";
-      // Not visible publicly unless published AND approved
       if (!lecture.published && !isOwner && !isAdmin) {
         return errorResponse("Lecture not found", 404);
       }
-      // Approved check for non-staff
-      const isApproved = (lecture as unknown as { approvalStatus?: string }).approvalStatus === "APPROVED";
-      if (!isOwner && !isAdmin && !isApproved) {
+      // Lecture must also be approved for non-staff public access
+      if (!isOwner && !isAdmin && lecture.approvalStatus !== "APPROVED") {
         return errorResponse("Lecture not found", 404);
       }
     }

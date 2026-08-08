@@ -53,8 +53,7 @@ export async function GET() {
         scholarName: lecture.scholar?.user.name ?? null,
       })),
     );
-  } catch (error) {
-    console.error("Recommendation API error:", error);
+  } catch {
     return NextResponse.json({ error: "Unable to load recommendations" }, { status: 500 });
   }
 }

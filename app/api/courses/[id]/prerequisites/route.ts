@@ -18,28 +18,34 @@ const addPrerequisiteSchema = z.object({
  * A cycle exists if dependentCourseId is already an ancestor (prerequisite, direct
  * or transitive) of prerequisiteCourseId. Walk UPWARD from prerequisiteCourseId
  * through the prerequisite graph and check if we reach dependentCourseId.
+ *
+ * Max depth of 20 prevents runaway traversal on pathological graphs.
  */
 async function wouldCreateCycle(
   prerequisiteCourseId: string,
   dependentCourseId: string,
 ): Promise<boolean> {
-  const visited = new Set<string>();
-  const queue   = [prerequisiteCourseId];
+  const MAX_DEPTH = 20;
+  const visited   = new Set<string>();
+  const queue: Array<{ id: string; depth: number }> = [
+    { id: prerequisiteCourseId, depth: 0 },
+  ];
 
   while (queue.length > 0) {
-    const current = queue.shift()!;
-    if (visited.has(current)) continue;
-    visited.add(current);
+    const item = queue.shift()!;
+    if (item.depth > MAX_DEPTH) continue; // stop runaway traversal
+    if (visited.has(item.id)) continue;
+    visited.add(item.id);
 
     // Get the prerequisites OF current (courses that current depends on)
     const prereqsOfCurrent = await prisma.coursePrerequisite.findMany({
-      where:  { dependentCourseId: current },
+      where:  { dependentCourseId: item.id },
       select: { prerequisiteCourseId: true },
     });
 
     for (const p of prereqsOfCurrent) {
       if (p.prerequisiteCourseId === dependentCourseId) return true;
-      queue.push(p.prerequisiteCourseId);
+      queue.push({ id: p.prerequisiteCourseId, depth: item.depth + 1 });
     }
   }
 

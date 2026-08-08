@@ -9,12 +9,13 @@ import {
   slugify,
 } from "../../utils/api";
 import { notifyScholarFollowers } from "../../lib/notifications";
+import { ContentApprovalStatus } from "../../../generated/prisma/enums";
 
 type LectureType = "TEXT" | "VIDEO";
 
 interface LectureWhereInput {
   published?:      boolean;
-  approvalStatus?: string;
+  approvalStatus?: ContentApprovalStatus;
   featured?:       boolean;
   scholarId?:      string;
   type?:           LectureType;

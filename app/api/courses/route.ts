@@ -5,6 +5,8 @@ import { prisma } from "../../lib/prism";
 import { courseSchema } from "../../lib/validations";
 import { successResponse, errorResponse, handleApiError, slugify } from "../../utils/api";
 import { checkRateLimit, getClientIp } from "../../lib/rateLimit";
+import { publicCourseWhere } from "../../lib/courseAccess";
+import { requireAdminOrScholar } from "../../lib/authorization";
 import type { SessionUser } from "../../types/auth.types";
 import type { CourseWhereInput } from "../../../generated/prisma/models/Course";
 import { CourseStatus, DifficultyLevel } from "../../../generated/prisma/enums";
@@ -56,7 +58,6 @@ export async function GET(req: NextRequest) {
     const session  = await getServerSession(authOptions);
     const user     = session?.user as SessionUser | undefined;
     const isAdmin  = user?.role === "ADMIN";
-    const isScholar = user?.role === "SCHOLAR";
 
     const { searchParams } = new URL(req.url);
     const page       = Math.max(1, Number(searchParams.get("page") ?? 1));
@@ -79,9 +80,7 @@ export async function GET(req: NextRequest) {
       if (published !== null) where.published = published === "true";
     } else {
       // Public — only published+approved courses
-      where.published      = true;
-      where.status         = CourseStatus.PUBLISHED;
-      where.approvalStatus = "APPROVED";
+      Object.assign(where, publicCourseWhere);
     }
 
     if (search) {
@@ -152,13 +151,7 @@ export async function POST(req: NextRequest) {
   if (!rl.success) return errorResponse("Too many requests. Please try again later.", 429);
 
   try {
-    const session = await getServerSession(authOptions);
-    const user    = session?.user as SessionUser | undefined;
-    if (!user) return errorResponse("Unauthorized", 401);
-
-    if (!["ADMIN", "SCHOLAR"].includes(user.role)) {
-      return errorResponse("Only Admins and Scholars can create courses", 403);
-    }
+    const user = await requireAdminOrScholar();
 
     const body = (await req.json()) as unknown;
     const data = courseSchema.parse(body);
@@ -168,8 +161,11 @@ export async function POST(req: NextRequest) {
     const status         = isAdmin ? CourseStatus.PUBLISHED : CourseStatus.DRAFT;
     const approvalStatus = isAdmin ? "APPROVED"             : "DRAFT";
 
-    // Force published=false for scholars regardless of what they send
+    // Force published=false for scholars; featured is admin-only
     const publishedValue = isAdmin ? (data.published ?? false) : false;
+    if (!isAdmin) {
+      delete (data as Record<string, unknown>).featured;
+    }
 
     const slug = await generateUniqueSlug(data.title);
 
@@ -178,6 +174,7 @@ export async function POST(req: NextRequest) {
         ...data,
         slug,
         published:       publishedValue,
+        featured:        isAdmin ? (data.featured ?? false) : false,
         authorId:        user.id,
         status,
         approvalStatus,

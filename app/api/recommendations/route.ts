@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/lib/auth";
 import { prisma } from "@/app/lib/prism";
+import { publicCourseWhere } from "@/app/lib/courseAccess";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -14,6 +15,10 @@ export async function GET() {
     const recommendations = await prisma.lecture.findMany({
       where: {
         published: true,
+        OR: [
+          { moduleId: null },
+          { module: { course: { ...publicCourseWhere } } },
+        ],
       },
       take: 4,
       orderBy: [

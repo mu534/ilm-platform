@@ -1,16 +1,13 @@
 import { NextRequest } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "../../../lib/auth";
 import { prisma } from "../../../lib/prism";
-import { successResponse, errorResponse, handleApiError } from "../../../utils/api";
-import type { SessionUser } from "../../../types/auth.types";
+import { requireAdmin } from "../../../lib/authorization";
+import { publicCourseWhere } from "../../../lib/courseAccess";
+import { successResponse, handleApiError } from "../../../utils/api";
 
 // GET /api/admin/analytics — full platform analytics (admin only)
 export async function GET(_req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    const user = session?.user as SessionUser | undefined;
-    if (user?.role !== "ADMIN") return errorResponse("Forbidden", 403);
+    await requireAdmin();
 
     const now       = new Date();
     const day30Ago  = new Date(now.getTime() - 30  * 24 * 60 * 60 * 1000);
@@ -54,7 +51,7 @@ export async function GET(_req: NextRequest) {
     ] = await Promise.all([
       prisma.user.count(),
       prisma.scholar.count(),
-      prisma.course.count({ where: { published: true } }),
+      prisma.course.count({ where: { ...publicCourseWhere } }),
       prisma.lecture.count({ where: { published: true } }),
       prisma.enrollment.count(),
       prisma.comment.count(),
@@ -72,7 +69,7 @@ export async function GET(_req: NextRequest) {
       prisma.course.count({ where: { approvalStatus: "PENDING" } }),
 
       prisma.course.findMany({
-        where: { published: true },
+        where: { ...publicCourseWhere },
         take: 5,
         orderBy: { enrollments: { _count: "desc" } },
         select: {

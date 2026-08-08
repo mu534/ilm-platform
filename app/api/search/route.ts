@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/app/lib/prism";
+import { publicCourseWhere } from "@/app/lib/courseAccess";
 import type { LectureWhereInput } from "../../../generated/prisma/models/Lecture";
 import { LectureType } from "../../../generated/prisma/enums";
 
@@ -27,9 +28,32 @@ export async function GET(request: NextRequest) {
       const where: LectureWhereInput = {
         published: true,
         OR: [
-          { title:       { contains: query, mode: "insensitive" } },
-          { description: { contains: query, mode: "insensitive" } },
-          { tags:        { hasSome:  [query] } },
+          // Course-linked lectures must belong to a public course
+          {
+            AND: [
+              { module: { course: { ...publicCourseWhere } } },
+              {
+                OR: [
+                  { title:       { contains: query, mode: "insensitive" } },
+                  { description: { contains: query, mode: "insensitive" } },
+                  { tags:        { hasSome:  [query] } },
+                ],
+              },
+            ],
+          },
+          // Standalone published lectures (no module)
+          {
+            AND: [
+              { moduleId: null },
+              {
+                OR: [
+                  { title:       { contains: query, mode: "insensitive" } },
+                  { description: { contains: query, mode: "insensitive" } },
+                  { tags:        { hasSome:  [query] } },
+                ],
+              },
+            ],
+          },
         ],
       };
       if (lectType !== "all" && (lectType === "TEXT" || lectType === "VIDEO" || lectType === "AUDIO" || lectType === "PDF")) {
@@ -55,7 +79,7 @@ export async function GET(request: NextRequest) {
     if (type === "all" || type === "courses") {
       results.courses = await prisma.course.findMany({
         where: {
-          published: true,
+          ...publicCourseWhere,
           OR: [
             { title:       { contains: query, mode: "insensitive" } },
             { description: { contains: query, mode: "insensitive" } },

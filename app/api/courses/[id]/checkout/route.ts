@@ -1,37 +1,35 @@
 import { NextRequest } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "../../../../lib/auth";
 import { prisma } from "../../../../lib/prism";
 import { getStripe } from "../../../../lib/stripe";
+import { requireUserFresh } from "../../../../lib/authorization";
+import { isPublicCourse, getTrustedAppUrl } from "../../../../lib/courseAccess";
 import { successResponse, errorResponse, handleApiError } from "../../../../utils/api";
-import type { SessionUser } from "../../../../types/auth.types";
 
 /**
  * POST /api/courses/[id]/checkout
- * Creates a Stripe Checkout Session and returns its URL for the client to
- * redirect to. Access is only granted once Stripe confirms payment via the
- * `checkout.session.completed` webhook — never here.
+ * Creates a Stripe Checkout Session. Price always comes from the DB.
+ * Redirect URLs use the trusted app URL — never the request Origin.
  */
 export async function POST(
-  req: NextRequest,
+  _req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    const user = session?.user as SessionUser | undefined;
-    if (!user) return errorResponse("Sign in required to purchase this course", 401);
-
+    const user = await requireUserFresh();
     const { id: courseId } = await params;
 
     const course = await prisma.course.findUnique({
-      where:  { id: courseId, published: true },
+      where:  { id: courseId },
       select: {
         id: true, slug: true, title: true, thumbnailUrl: true,
         enrollmentType: true, price: true, currency: true,
         stripeProductId: true, stripePriceId: true,
+        published: true, status: true, approvalStatus: true,
       },
     });
-    if (!course) return errorResponse("Course not found or not published", 404);
+    if (!course || !isPublicCourse(course)) {
+      return errorResponse("Course not found or not published", 404);
+    }
     if (course.enrollmentType !== "PAID" || course.price <= 0) {
       return errorResponse("This course is free — use the regular enroll endpoint", 400);
     }
@@ -43,7 +41,6 @@ export async function POST(
 
     const stripe = getStripe();
 
-    // ── Get or create the Stripe Customer for this user ──────────────────────
     const dbUser = await prisma.user.findUnique({
       where:  { id: user.id },
       select: { stripeCustomerId: true, email: true, name: true },
@@ -59,8 +56,6 @@ export async function POST(
       await prisma.user.update({ where: { id: user.id }, data: { stripeCustomerId: customerId } });
     }
 
-    // ── Get or create the Stripe Product/Price for this course ───────────────
-    // Cached on the course row so we don't recreate them on every checkout.
     let priceId = course.stripePriceId;
     if (!priceId) {
       const product = await stripe.products.create({
@@ -80,7 +75,7 @@ export async function POST(
       });
     }
 
-    const origin = req.headers.get("origin") ?? process.env.NEXTAUTH_URL ?? "";
+    const origin = getTrustedAppUrl();
 
     const checkoutSession = await stripe.checkout.sessions.create({
       mode:                 "payment",

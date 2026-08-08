@@ -1,10 +1,9 @@
 import { NextRequest } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "../../lib/auth";
 import { prisma } from "../../lib/prism";
 import { quizSchema } from "../../lib/validations";
+import { requireUserFresh, requireAdminOrScholar } from "../../lib/authorization";
+import { requireCourseLearnAccess, isPublicCourse } from "../../lib/courseAccess";
 import { successResponse, errorResponse, handleApiError } from "../../utils/api";
-import type { SessionUser } from "../../types/auth.types";
 
 // GET /api/quizzes?moduleId=xxx
 export async function GET(req: NextRequest) {
@@ -12,6 +11,29 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const moduleId = searchParams.get("moduleId");
     if (!moduleId) return errorResponse("moduleId is required", 400);
+
+    const courseModule = await prisma.module.findUnique({
+      where: { id: moduleId },
+      select: {
+        courseId: true,
+        course: {
+          select: {
+            id: true, authorId: true,
+            published: true, status: true, approvalStatus: true,
+          },
+        },
+      },
+    });
+    if (!courseModule) return errorResponse("Module not found", 404);
+
+    try {
+      const user = await requireUserFresh();
+      await requireCourseLearnAccess(user, courseModule.courseId);
+    } catch {
+      if (!isPublicCourse(courseModule.course)) {
+        return errorResponse("Module not found", 404);
+      }
+    }
 
     const quizzes = await prisma.quiz.findMany({
       where: { moduleId },
@@ -28,22 +50,18 @@ export async function GET(req: NextRequest) {
 // POST /api/quizzes
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    const user = session?.user as SessionUser | undefined;
-    if (!user) return errorResponse("Unauthorized", 401);
-    if (!["ADMIN", "SCHOLAR"].includes(user.role)) return errorResponse("Forbidden", 403);
+    const user = await requireAdminOrScholar();
 
     const body = (await req.json()) as unknown;
     const data = quizSchema.parse(body);
 
-    // Verify module belongs to user's course (unless admin)
     if (user.role !== "ADMIN") {
-      const module = await prisma.module.findUnique({
+      const courseModule = await prisma.module.findUnique({
         where: { id: data.moduleId },
         include: { course: { select: { authorId: true } } },
       });
-      if (!module) return errorResponse("Module not found", 404);
-      if (module.course.authorId !== user.id) return errorResponse("Forbidden", 403);
+      if (!courseModule) return errorResponse("Module not found", 404);
+      if (courseModule.course.authorId !== user.id) return errorResponse("Forbidden", 403);
     }
 
     const quiz = await prisma.quiz.create({

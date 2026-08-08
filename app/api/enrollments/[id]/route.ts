@@ -1,9 +1,12 @@
 import { NextRequest } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "../../../lib/auth";
 import { prisma } from "../../../lib/prism";
+import { requireAdmin } from "../../../lib/authorization";
 import { successResponse, errorResponse, handleApiError } from "../../../utils/api";
-import type { SessionUser } from "../../../types/auth.types";
+import { z } from "zod";
+
+const enrollmentStatusSchema = z.object({
+  status: z.enum(["ACTIVE", "COMPLETED", "DROPPED"]),
+});
 
 // DELETE /api/enrollments/[id] — admin removes an enrollment
 export async function DELETE(
@@ -11,9 +14,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    const user = session?.user as SessionUser | undefined;
-    if (user?.role !== "ADMIN") return errorResponse("Forbidden", 403);
+    await requireAdmin();
 
     const { id } = await params;
     const enrollment = await prisma.enrollment.findUnique({ where: { id } });
@@ -32,16 +33,15 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    const user = session?.user as SessionUser | undefined;
-    if (user?.role !== "ADMIN") return errorResponse("Forbidden", 403);
+    await requireAdmin();
 
     const { id } = await params;
-    const body = (await req.json()) as { status?: "ACTIVE" | "COMPLETED" | "DROPPED" };
+    const body = (await req.json()) as unknown;
+    const { status } = enrollmentStatusSchema.parse(body);
 
     const enrollment = await prisma.enrollment.update({
       where: { id },
-      data: { status: body.status },
+      data: { status },
       include: {
         user:   { select: { id: true, name: true, email: true } },
         course: { select: { id: true, title: true } },

@@ -1,10 +1,8 @@
 import { NextRequest } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "../../../../lib/auth";
 import { prisma } from "../../../../lib/prism";
+import { requireAdmin, requireUserFresh } from "../../../../lib/authorization";
 import { successResponse, errorResponse, handleApiError } from "../../../../utils/api";
 import { checkCoursePublishable } from "../../../../lib/courseValidation";
-import type { SessionUser } from "../../../../types/auth.types";
 import { z } from "zod";
 
 const reviewSchema = z.object({
@@ -24,10 +22,6 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    const user = session?.user as SessionUser | undefined;
-    if (!user) return errorResponse("Unauthorized", 401);
-
     const { id } = await params;
     const course = await prisma.course.findUnique({ where: { id } });
     if (!course) return errorResponse("Course not found", 404);
@@ -35,13 +29,12 @@ export async function PATCH(
     const body = (await req.json()) as unknown;
     const { action, note } = reviewSchema.parse(body);
 
-    const isAdmin = user.role === "ADMIN";
-    const isOwner = course.authorId === user.id;
-
     if (action === "submit") {
+      const user = await requireUserFresh();
+      const isAdmin = user.role === "ADMIN";
+      const isOwner = course.authorId === user.id;
       if (!isOwner && !isAdmin) return errorResponse("Forbidden", 403);
 
-      // Allow re-submission from DRAFT or REJECTED states
       const submittableStates = ["DRAFT", "REJECTED"];
       if (!submittableStates.includes(course.approvalStatus)) {
         return errorResponse(
@@ -54,7 +47,6 @@ export async function PATCH(
         data: { approvalStatus: "PENDING", status: "PENDING_REVIEW" },
       });
 
-      // Notify all admins
       const admins = await prisma.user.findMany({
         where: { role: "ADMIN" },
         select: { id: true },
@@ -74,9 +66,8 @@ export async function PATCH(
     }
 
     if (action === "approve") {
-      if (!isAdmin) return errorResponse("Only admins can approve courses", 403);
+      await requireAdmin();
 
-      // Run publishing checklist before approving
       const check = await checkCoursePublishable(id);
       if (!check.valid) {
         return errorResponse(
@@ -108,7 +99,7 @@ export async function PATCH(
     }
 
     if (action === "reject") {
-      if (!isAdmin) return errorResponse("Only admins can reject courses", 403);
+      await requireAdmin();
       if (!note) return errorResponse("A rejection note is required", 400);
       await prisma.course.update({
         where: { id },

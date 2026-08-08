@@ -502,6 +502,7 @@ model Certificate {
   issuedAt       DateTime @default(now())
   certificateUrl String?  // generated PDF URL on Cloudinary
 
+  @@unique([userId, courseId])
   @@index([userId])
   @@index([courseId])
   @@map("certificates")

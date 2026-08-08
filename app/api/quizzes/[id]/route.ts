@@ -1,22 +1,18 @@
 import { NextRequest } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "../../../lib/auth";
 import { prisma } from "../../../lib/prism";
-import { quizSchema, quizQuestionSchema } from "../../../lib/validations";
+import { quizSchema } from "../../../lib/validations";
+import { requireUserFresh, getOptionalUser } from "../../../lib/authorization";
+import { requireQuizLearningAccess } from "../../../lib/courseAccess";
 import { successResponse, errorResponse, handleApiError } from "../../../utils/api";
-import type { SessionUser } from "../../../types/auth.types";
 
 // GET /api/quizzes/[id] — full quiz with questions (answers hidden for students)
 export async function GET(
-  req: NextRequest,
+  _req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    const user = session?.user as SessionUser | undefined;
+    const user = await getOptionalUser();
     const { id } = await params;
-
-    const isInstructor = user?.role === "ADMIN" || user?.role === "SCHOLAR";
 
     const quiz = await prisma.quiz.findUnique({
       where: { id },
@@ -31,22 +27,51 @@ export async function GET(
             order: true,
             points: true,
             explanation: true,
-            // Only expose correct answer to instructors
-            ...(isInstructor ? { correctAnswer: true } : {}),
+            correctAnswer: true,
           },
         },
         module: {
           select: {
-            id: true, title: true,
-            course: { select: { id: true, title: true, slug: true } },
+            id: true,
+            title: true,
+            course: { select: { id: true, title: true, slug: true, authorId: true } },
           },
         },
         _count: { select: { questions: true, attempts: true } },
       },
     });
 
-    if (!quiz) return errorResponse("Quiz not found", 404);
-    return successResponse(quiz);
+    if (!quiz?.module?.course) return errorResponse("Quiz not found", 404);
+
+    const course = quiz.module.course;
+    let canSeeAnswers = false;
+
+    if (user) {
+      const fresh = await requireUserFresh();
+      canSeeAnswers =
+        fresh.role === "ADMIN" || course.authorId === fresh.id;
+
+      if (!canSeeAnswers) {
+        // Students must be enrolled (and pass sequential gates) to view the quiz
+        await requireQuizLearningAccess({
+          userId: fresh.id,
+          role: fresh.role,
+          quizId: id,
+        });
+      }
+    } else {
+      return errorResponse("Unauthorized", 401);
+    }
+
+    const questions = quiz.questions.map((q) => {
+      if (canSeeAnswers) return q;
+      const { correctAnswer, explanation, ...safe } = q;
+      void correctAnswer;
+      void explanation;
+      return safe;
+    });
+
+    return successResponse({ ...quiz, questions });
   } catch (error) {
     return handleApiError(error);
   }
@@ -58,11 +83,9 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    const user = session?.user as SessionUser | undefined;
-    if (!user) return errorResponse("Unauthorized", 401);
-
+    const user = await requireUserFresh();
     const { id } = await params;
+
     const quiz = await prisma.quiz.findUnique({
       where: { id },
       include: { module: { include: { course: { select: { authorId: true } } } } },
@@ -88,11 +111,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    const user = session?.user as SessionUser | undefined;
-    if (!user) return errorResponse("Unauthorized", 401);
-
+    const user = await requireUserFresh();
     const { id } = await params;
+
     const quiz = await prisma.quiz.findUnique({
       where: { id },
       include: { module: { include: { course: { select: { authorId: true } } } } },

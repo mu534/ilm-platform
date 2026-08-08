@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { prisma } from "../../../../lib/prism";
+import { publicCourseWhere } from "../../../../lib/courseAccess";
 import { CheckoutSuccessPoller } from "../../../../components/courses/CheckoutSuccessPoller";
 
 interface Props {
@@ -9,7 +10,7 @@ interface Props {
 export default async function CheckoutSuccessPage({ params }: Props) {
   const { slug } = await params;
   const course = await prisma.course.findFirst({
-    where:  { slug, published: true },
+    where:  { slug, ...publicCourseWhere },
     select: { id: true, slug: true, title: true },
   });
   if (!course) notFound();

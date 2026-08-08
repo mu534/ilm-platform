@@ -1,24 +1,32 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "../../../../lib/auth";
 import { prisma } from "../../../../lib/prism";
+import { requireUserFresh } from "../../../../lib/authorization";
 import { errorResponse } from "../../../../utils/api";
-import type { SessionUser } from "../../../../types/auth.types";
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
 
 /**
  * GET /api/certificates/[id]/pdf
  * Returns an HTML page styled for printing/saving as PDF.
  * Users can open this URL and use Ctrl+P → Save as PDF.
- *
- * For server-generated PDFs, integrate Puppeteer or @react-pdf/renderer.
  */
 export async function GET(
-  req: NextRequest,
+  _req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const session = await getServerSession(authOptions);
-  const user    = session?.user as SessionUser | undefined;
-  if (!user) return errorResponse("Unauthorized", 401);
+  let user;
+  try {
+    user = await requireUserFresh();
+  } catch {
+    return errorResponse("Unauthorized", 401);
+  }
 
   const { id } = await params;
 
@@ -40,19 +48,19 @@ export async function GET(
     return errorResponse("Forbidden", 403);
   }
 
-  const BASE = process.env.NEXTAUTH_URL ?? "https://ilm-platform.com";
   const issuedDate = new Date(cert.issuedAt).toLocaleDateString("en-US", {
     year: "numeric", month: "long", day: "numeric",
   });
-  const instructor = cert.course?.scholar?.user.name ?? "Ilm Platform";
-  const courseTitle = cert.course?.title ?? cert.title;
+  const instructor = escapeHtml(cert.course?.scholar?.user.name ?? "Ilm Platform");
+  const courseTitle = escapeHtml(cert.course?.title ?? cert.title);
+  const studentName = escapeHtml(cert.user.name ?? "Student");
 
   const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Certificate — ${cert.user.name}</title>
+  <title>Certificate — ${studentName}</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@400;500&display=swap');
     * { margin:0; padding:0; box-sizing:border-box; }
@@ -196,7 +204,7 @@ export async function GET(
     <div class="divider"></div>
 
     <div class="certifies">This certifies that</div>
-    <div class="name">${cert.user.name}</div>
+    <div class="name">${studentName}</div>
     <div class="completed-text">has successfully completed the course</div>
     <div class="course-title">${courseTitle}</div>
 
@@ -208,8 +216,8 @@ export async function GET(
       </div>
       <div class="cert-id">
         <div style="font-size:11px;color:#6b5d52;margin-bottom:4px;">Date Issued</div>
-        <div style="font-family:'Cormorant Garamond',serif;font-size:15px;color:#4a3520;">${issuedDate}</div>
-        <div style="margin-top:6px;">Certificate ID: ${cert.id.slice(0, 8).toUpperCase()}</div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:15px;color:#4a3520;">${escapeHtml(issuedDate)}</div>
+        <div style="margin-top:6px;">Certificate ID: ${escapeHtml(cert.id.slice(0, 8).toUpperCase())}</div>
       </div>
       <div class="sig-block">
         <div class="sig-name">Ilm Platform</div>

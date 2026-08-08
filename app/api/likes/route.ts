@@ -1,9 +1,8 @@
 import { NextRequest } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "../../lib/auth";
 import { prisma } from "../../lib/prism";
+import { requireUserFresh, getOptionalUser } from "../../lib/authorization";
+import { requireLectureLearningAccess } from "../../lib/courseAccess";
 import { successResponse, errorResponse, handleApiError } from "../../utils/api";
-import type { SessionUser } from "../../types/auth.types";
 import { z } from "zod";
 
 const likeSchema = z.object({
@@ -13,12 +12,16 @@ const likeSchema = z.object({
 // POST /api/likes — toggle like on a lecture
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    const user = session?.user as SessionUser | undefined;
-    if (!user) return errorResponse("Unauthorized", 401);
+    const user = await requireUserFresh();
 
     const body = (await req.json()) as unknown;
     const { lectureId } = likeSchema.parse(body);
+
+    await requireLectureLearningAccess({
+      userId: user.id,
+      role: user.role,
+      lectureId,
+    });
 
     const existing = await prisma.like.findUnique({
       where: { userId_lectureId: { userId: user.id, lectureId } },
@@ -43,8 +46,7 @@ export async function POST(req: NextRequest) {
 // GET /api/likes?lectureId=xxx
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    const user = session?.user as SessionUser | undefined;
+    const user = await getOptionalUser();
 
     const { searchParams } = new URL(req.url);
     const lectureId = searchParams.get("lectureId");

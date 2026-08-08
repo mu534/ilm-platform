@@ -11,8 +11,14 @@ export class AlreadyEnrolledError extends Error {
  *
  * Used by both the free-course enroll endpoint and the Stripe webhook that
  * grants access after a successful paid checkout — keeping this in one
- * place means the two paths can never quietly drift apart (e.g. one of
- * them forgetting the `published: true` filter, as happened once before).
+ * place means the two paths can never quietly drift apart.
+ *
+ * Pre-enrollment progress abuse: if orphan LectureProgress rows exist for
+ * this course's lectures (created before enrollment was enforced), they are
+ * deleted before seeding so illegitimate completions cannot carry over.
+ * Re-enrollment after a prior enrollment is blocked by AlreadyEnrolledError
+ * while a row still exists; if the student unenrolled (row deleted), wiping
+ * orphans is the correct reset.
  */
 export async function createEnrollment(userId: string, courseId: string) {
   const existing = await prisma.enrollment.findUnique({
@@ -34,16 +40,25 @@ export async function createEnrollment(userId: string, courseId: string) {
 
   const allLectureIds = course.modules.flatMap((m) => m.lectures.map((l) => l.id));
 
-  const [enrollment] = await prisma.$transaction([
-    prisma.enrollment.create({
+  return prisma.$transaction(async (tx) => {
+    if (allLectureIds.length > 0) {
+      await tx.lectureProgress.deleteMany({
+        where: { userId, lectureId: { in: allLectureIds } },
+      });
+    }
+
+    const created = await tx.enrollment.create({
       data:    { userId, courseId },
       include: { course: { select: { id: true, title: true, slug: true, thumbnailUrl: true } } },
-    }),
-    prisma.lectureProgress.createMany({
-      data: allLectureIds.map((lectureId) => ({ userId, lectureId, completed: false })),
-      skipDuplicates: true,
-    }),
-  ]);
+    });
 
-  return enrollment;
+    if (allLectureIds.length > 0) {
+      await tx.lectureProgress.createMany({
+        data: allLectureIds.map((lectureId) => ({ userId, lectureId, completed: false })),
+        skipDuplicates: true,
+      });
+    }
+
+    return created;
+  });
 }

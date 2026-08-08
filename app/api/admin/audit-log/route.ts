@@ -1,15 +1,11 @@
 import { NextRequest } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "../../../lib/auth";
 import { prisma } from "../../../lib/prism";
-import { successResponse, errorResponse, handleApiError } from "../../../utils/api";
-import type { SessionUser } from "../../../types/auth.types";
+import { requireAdmin } from "../../../lib/authorization";
+import { successResponse, handleApiError } from "../../../utils/api";
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    const user    = session?.user as SessionUser | undefined;
-    if (user?.role !== "ADMIN") return errorResponse("Forbidden", 403);
+    await requireAdmin();
 
     const { searchParams } = new URL(req.url);
     const page     = Math.max(1, Number(searchParams.get("page")     ?? 1));
@@ -28,19 +24,21 @@ export async function GET(req: NextRequest) {
       } : {}),
     };
 
-    const [total, items] = await Promise.all([
+    const [total, logs] = await Promise.all([
       prisma.auditLog.count({ where }),
       prisma.auditLog.findMany({
         where,
-        skip:    (page - 1) * pageSize,
-        take:    pageSize,
+        skip: (page - 1) * pageSize,
+        take: pageSize,
         orderBy: { createdAt: "desc" },
-        include: { user: { select: { id: true, name: true, email: true } } },
+        include: {
+          user: { select: { id: true, name: true, email: true } },
+        },
       }),
     ]);
 
     return successResponse({
-      items,
+      logs,
       total,
       page,
       pageSize,

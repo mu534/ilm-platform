@@ -1,9 +1,8 @@
 import { NextRequest } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "../../lib/auth";
 import { prisma } from "../../lib/prism";
+import { requireUserFresh } from "../../lib/authorization";
+import { requireEnrollment, isPublicCourse } from "../../lib/courseAccess";
 import { successResponse, errorResponse, handleApiError } from "../../utils/api";
-import type { SessionUser } from "../../types/auth.types";
 import { z } from "zod";
 
 const questionSchema = z.object({
@@ -19,6 +18,16 @@ export async function GET(req: NextRequest) {
     const courseId = searchParams.get("courseId") ?? "";
     const page     = Math.max(1, Number(searchParams.get("page") ?? 1));
     const pageSize = 20;
+
+    if (courseId) {
+      const course = await prisma.course.findUnique({
+        where: { id: courseId },
+        select: { published: true, status: true, approvalStatus: true },
+      });
+      if (!course || !isPublicCourse(course)) {
+        return errorResponse("Course not found", 404);
+      }
+    }
 
     const where = courseId ? { courseId } : {};
 
@@ -45,12 +54,14 @@ export async function GET(req: NextRequest) {
 // POST /api/forum — create question
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    const user = session?.user as SessionUser | undefined;
-    if (!user) return errorResponse("Unauthorized", 401);
+    const user = await requireUserFresh();
 
     const body = (await req.json()) as unknown;
     const data = questionSchema.parse(body);
+
+    if (data.courseId) {
+      await requireEnrollment(user.id, data.courseId);
+    }
 
     const question = await prisma.forumQuestion.create({
       data: {

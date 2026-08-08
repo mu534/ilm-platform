@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/app/lib/prism";
+import { publicCourseWhere } from "@/app/lib/courseAccess";
 import { CourseCard } from "@/app/components/courses/CourseCard";
 import { SortSelect } from "@/app/components/courses/SortSelect";
 import type { DifficultyLevel } from "@/app/types/auth.types";
@@ -43,9 +44,7 @@ async function getCoursesData(params: SearchParams) {
       : undefined;
 
   const where = {
-    published:      true,
-    status:         "PUBLISHED"  as const,
-    approvalStatus: "APPROVED"   as const,
+    ...publicCourseWhere,
     ...(validDifficulty ? { difficulty: validDifficulty } : {}),
     ...(categoryId      ? { categoryId }                  : {}),
     ...(search ? {

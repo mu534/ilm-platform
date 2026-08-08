@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { prisma } from "./lib/prism";
+import { publicCourseWhere } from "./lib/courseAccess";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = process.env.NEXTAUTH_URL ?? "https://ilm-platform.com";
@@ -14,9 +15,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${baseUrl}/register`,lastModified: new Date(), changeFrequency: "monthly",priority: 0.4 },
   ];
 
-  // Dynamic: published lectures
+  // Dynamic: published lectures (standalone or under a public course)
   const lectures = await prisma.lecture.findMany({
-    where: { published: true },
+    where: {
+      published: true,
+      OR: [
+        { moduleId: null },
+        { module: { course: { ...publicCourseWhere } } },
+      ],
+    },
     select: { slug: true, updatedAt: true },
     orderBy: { updatedAt: "desc" },
     take: 1000,
@@ -29,9 +36,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority:        0.7,
   }));
 
-  // Dynamic: published courses
+  // Dynamic: publicly accessible courses only
   const courses = await prisma.course.findMany({
-    where: { published: true },
+    where: { ...publicCourseWhere },
     select: { slug: true, updatedAt: true },
     orderBy: { updatedAt: "desc" },
     take: 500,

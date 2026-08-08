@@ -1,23 +1,23 @@
 import { NextRequest } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "../../../lib/auth";
 import { prisma } from "../../../lib/prism";
+import { requireAdmin, requireUserFresh } from "../../../lib/authorization";
 import {
   successResponse,
   errorResponse,
   handleApiError,
 } from "../../../utils/api";
-import type { SessionUser } from "../../../types/next-auth";
+import { z } from "zod";
+
+const approveSchema = z.object({
+  approved: z.boolean(),
+});
 
 export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) return errorResponse("Unauthorized", 401);
-
-    const { id: userId, role: userRole } = session.user as SessionUser;
+    const user = await requireUserFresh();
     const { id } = await params;
 
     const comment = await prisma.comment.findUnique({
@@ -25,8 +25,8 @@ export async function DELETE(
     });
     if (!comment) return errorResponse("Comment not found", 404);
 
-    const isAdmin = userRole === "ADMIN";
-    const isOwner = comment.authorId === userId;
+    const isAdmin = user.role === "ADMIN";
+    const isOwner = comment.authorId === user.id;
 
     if (!isAdmin && !isOwner) return errorResponse("Forbidden", 403);
 
@@ -42,18 +42,15 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) return errorResponse("Unauthorized", 401);
+    await requireAdmin();
 
-    const { role: userRole } = session.user as SessionUser;
-    if (userRole !== "ADMIN") return errorResponse("Forbidden", 403);
-
-    const body = (await req.json()) as { approved: boolean };
+    const body = (await req.json()) as unknown;
+    const { approved } = approveSchema.parse(body);
     const { id } = await params;
 
     const comment = await prisma.comment.update({
       where: { id },
-      data: { approved: body.approved },
+      data: { approved },
     });
 
     return successResponse(comment);

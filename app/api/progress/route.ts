@@ -1,29 +1,32 @@
 import { NextRequest } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "../../lib/auth";
 import { prisma } from "../../lib/prism";
-import { successResponse, errorResponse, handleApiError } from "../../utils/api";
-import type { SessionUser } from "../../types/auth.types";
+import { requireUserFresh } from "../../lib/authorization";
+import { requireEnrollment, requireLectureLearningAccess } from "../../lib/courseAccess";
+import { issueCompletionCertificate } from "../../lib/certificates";
+import { successResponse, handleApiError } from "../../utils/api";
 import { z } from "zod";
 
 const progressSchema = z.object({
   lectureId:      z.string().min(1),
   completed:      z.boolean().optional(),
-  watchedSeconds: z.number().int().min(0).optional(),
+  watchedSeconds: z.number().int().min(0).max(86_400).optional(),
 });
 
 // GET /api/progress?courseId=xxx — get user progress for a course
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    const user = session?.user as SessionUser | undefined;
-    if (!user) return errorResponse("Unauthorized", 401);
+    const user = await requireUserFresh();
 
     const { searchParams } = new URL(req.url);
     const courseId  = searchParams.get("courseId");
     const lectureId = searchParams.get("lectureId");
 
     if (lectureId) {
+      await requireLectureLearningAccess({
+        userId: user.id,
+        role: user.role,
+        lectureId,
+      });
       const progress = await prisma.lectureProgress.findUnique({
         where: { userId_lectureId: { userId: user.id, lectureId } },
       });
@@ -31,7 +34,8 @@ export async function GET(req: NextRequest) {
     }
 
     if (courseId) {
-      // Get all lecture IDs in this course
+      await requireEnrollment(user.id, courseId);
+
       const course = await prisma.course.findUnique({
         where: { id: courseId },
         select: {
@@ -42,7 +46,7 @@ export async function GET(req: NextRequest) {
           },
         },
       });
-      if (!course) return errorResponse("Course not found", 404);
+      if (!course) return successResponse({ lectureIds: [], progress: [], completedCount: 0, totalCount: 0, percent: 0 });
 
       const lectureIds = course.modules.flatMap((m) => m.lectures.map((l) => l.id));
 
@@ -63,7 +67,7 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // Return all progress for the user (for student dashboard)
+    // Return recent progress for the user (for student dashboard)
     const allProgress = await prisma.lectureProgress.findMany({
       where: { userId: user.id },
       orderBy: { lastViewedAt: "desc" },
@@ -92,24 +96,30 @@ export async function GET(req: NextRequest) {
 // POST /api/progress — upsert progress for a lecture
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    const user = session?.user as SessionUser | undefined;
-    if (!user) return errorResponse("Unauthorized", 401);
+    const user = await requireUserFresh();
 
     const body = (await req.json()) as unknown;
     const { lectureId, completed, watchedSeconds } = progressSchema.parse(body);
+
+    // Enrollment + lecture→course chain + sequential lock (when completing)
+    await requireLectureLearningAccess({
+      userId: user.id,
+      role: user.role,
+      lectureId,
+      enforceSequential: completed === true,
+    });
 
     const now = new Date();
     const data: {
       lastViewedAt: Date;
       completed?: boolean;
-      completedAt?: Date;
+      completedAt?: Date | null;
       watchedSeconds?: number;
     } = { lastViewedAt: now };
 
     if (completed !== undefined) {
       data.completed = completed;
-      if (completed) data.completedAt = now;
+      data.completedAt = completed ? now : null;
     }
     if (watchedSeconds !== undefined) data.watchedSeconds = watchedSeconds;
 
@@ -119,7 +129,6 @@ export async function POST(req: NextRequest) {
       update: data,
     });
 
-    // After marking complete, recalculate course enrollment progress
     if (completed) {
       await recalculateCourseProgress(user.id, lectureId);
     }
@@ -130,7 +139,6 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// Recalculate and update enrollment.progress percentage
 async function recalculateCourseProgress(userId: string, lectureId: string) {
   try {
     const lecture = await prisma.lecture.findUnique({
@@ -160,14 +168,18 @@ async function recalculateCourseProgress(userId: string, lectureId: string) {
       ? Math.round((completedCount / allLectureIds.length) * 100)
       : 0;
 
+    // Progress % is lecture-based; COMPLETED + certificate require all
+    // lectures AND quizzes (enforced inside issueCompletionCertificate).
     await prisma.enrollment.update({
       where: { userId_courseId: { userId, courseId } },
-      data: {
-        progress: percent,
-        status: percent >= 100 ? "COMPLETED" : "ACTIVE",
-        completedAt: percent >= 100 ? new Date() : null,
-      },
+      data: { progress: percent },
     });
+
+    if (percent >= 100) {
+      await prisma.$transaction(async (tx) => {
+        await issueCompletionCertificate(tx, userId, courseId);
+      });
+    }
   } catch {
     // Non-critical — don't throw
   }

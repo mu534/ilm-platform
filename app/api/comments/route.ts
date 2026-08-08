@@ -1,21 +1,60 @@
 import { NextRequest } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "../../lib/auth";
 import { prisma } from "../../lib/prism";
 import { commentSchema } from "../../lib/validations";
+import { requireUserFresh } from "../../lib/authorization";
+import { requireLectureLearningAccess } from "../../lib/courseAccess";
 import {
   successResponse,
   errorResponse,
   handleApiError,
 } from "../../utils/api";
 import { checkRateLimit } from "../../lib/rateLimit";
-import type { SessionUser } from "../../types/auth.types";
 
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const lectureId = searchParams.get("lectureId");
     if (!lectureId) return errorResponse("lectureId is required", 400);
+
+    // Comments are only readable when the caller can access the lecture.
+    // Unauthenticated users may read comments on published standalone lectures
+    // that belong to a public course — enforce via learning access when logged in;
+    // for anonymous, require the lecture+course to be publicly published.
+    const lecture = await prisma.lecture.findUnique({
+      where: { id: lectureId },
+      select: {
+        id: true,
+        published: true,
+        module: {
+          select: {
+            course: {
+              select: { published: true, status: true, approvalStatus: true },
+            },
+          },
+        },
+      },
+    });
+    if (!lecture) return errorResponse("Lecture not found", 404);
+
+    const course = lecture.module?.course;
+    if (course) {
+      const isPublic =
+        lecture.published &&
+        course.published &&
+        course.status === "PUBLISHED" &&
+        course.approvalStatus === "APPROVED";
+      if (!isPublic) {
+        // Allow enrolled/staff via requireLectureLearningAccess
+        const user = await requireUserFresh();
+        await requireLectureLearningAccess({
+          userId: user.id,
+          role: user.role,
+          lectureId,
+        });
+      }
+    } else if (!lecture.published) {
+      return errorResponse("Lecture not found", 404);
+    }
 
     const comments = await prisma.comment.findMany({
       where: { lectureId, approved: true },
@@ -33,30 +72,33 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return errorResponse("You must be logged in to comment", 401);
-    }
+    const user = await requireUserFresh();
 
-    const { id: authorId } = session.user as SessionUser;
-
-    // Rate limit: 10 comments per user per minute
-    const rl = await checkRateLimit(`comment:${authorId}`, { limit: 10, window: 60 });
+    const rl = await checkRateLimit(`comment:${user.id}`, { limit: 10, window: 60 });
     if (!rl.success) return errorResponse("Too many comments. Please slow down.", 429);
 
     const body = (await req.json()) as unknown;
     const data = commentSchema.parse(body);
 
-    const lecture = await prisma.lecture.findUnique({
-      where: { id: data.lectureId },
+    await requireLectureLearningAccess({
+      userId: user.id,
+      role: user.role,
+      lectureId: data.lectureId,
     });
-    if (!lecture) return errorResponse("Lecture not found", 404);
+
+    if (data.parentId) {
+      const parent = await prisma.comment.findFirst({
+        where: { id: data.parentId, lectureId: data.lectureId },
+        select: { id: true },
+      });
+      if (!parent) return errorResponse("Parent comment not found", 404);
+    }
 
     const comment = await prisma.comment.create({
       data: {
         body:      data.body,
         lectureId: data.lectureId,
-        authorId,
+        authorId:  user.id,
         parentId:  data.parentId ?? null,
       },
       include: {

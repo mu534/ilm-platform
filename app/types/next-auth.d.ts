@@ -28,5 +28,7 @@ declare module "next-auth/jwt" {
   interface JWT extends DefaultJWT {
     id: string;
     role: UserRole;
+    /** Epoch ms of last DB role sync — used to refresh stale JWT roles. */
+    roleSyncedAt?: number;
   }
 }

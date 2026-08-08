@@ -1,23 +1,24 @@
 import { NextRequest } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "../../../lib/auth";
 import { prisma } from "../../../lib/prism";
 import { lectureSchema } from "../../../lib/validations";
+import { requireUserFresh } from "../../../lib/authorization";
+import {
+  isPublicCourse,
+  requireLectureLearningAccess,
+} from "../../../lib/courseAccess";
 import {
   successResponse,
   errorResponse,
   handleApiError,
 } from "../../../utils/api";
-import type { SessionUser } from "../../../types/next-auth";
+import { getOptionalUser } from "../../../lib/authorization";
 
-const lectureSelect = {
+const lecturePublicSelect = {
   id: true,
   title: true,
   slug: true,
   description: true,
-  content: true,
   type: true,
-  mediaUrl: true,
   thumbnailUrl: true,
   tags: true,
   published: true,
@@ -40,11 +41,27 @@ const lectureSelect = {
     select: {
       id: true,
       courseId: true,
-      course: { select: { id: true, title: true, slug: true } },
+      course: {
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+          authorId: true,
+          published: true,
+          status: true,
+          approvalStatus: true,
+        },
+      },
     },
   },
   _count: { select: { comments: true } },
-};
+} as const;
+
+const lectureFullSelect = {
+  ...lecturePublicSelect,
+  content: true,
+  mediaUrl: true,
+} as const;
 
 export async function GET(
   req: NextRequest,
@@ -56,11 +73,68 @@ export async function GET(
 
     const lecture = await prisma.lecture.findFirst({
       where: { OR: [{ id }, { slug: id }] },
-      select: lectureSelect,
+      select: lectureFullSelect,
     });
     if (!lecture) return errorResponse("Lecture not found", 404);
 
-    // Only count genuine reads — not the Course Builder loading a lesson to edit it.
+    const user = await getOptionalUser();
+    const course = lecture.module?.course ?? null;
+
+    // Edit fetch: only owner/admin
+    if (isEditFetch) {
+      if (!user) return errorResponse("Unauthorized", 401);
+      const fresh = await requireUserFresh();
+      const isStaff =
+        fresh.role === "ADMIN" || lecture.author.id === fresh.id;
+      if (!isStaff) return errorResponse("Forbidden", 403);
+      return successResponse(lecture);
+    }
+
+    // Course-linked lectures: protected content requires enrollment/staff.
+    // Metadata-only response for public course catalog browsing without enrollment.
+    if (course) {
+      const staff =
+        user &&
+        (user.role === "ADMIN" || course.authorId === user.id);
+
+      if (staff) {
+        // fresh role for staff content access
+        const fresh = await requireUserFresh();
+        if (fresh.role !== "ADMIN" && course.authorId !== fresh.id) {
+          return errorResponse("Forbidden", 403);
+        }
+      } else if (user) {
+        try {
+          await requireLectureLearningAccess({
+            userId: user.id,
+            role: user.role,
+            lectureId: lecture.id,
+            enforceSequential: true,
+          });
+        } catch {
+          // Not enrolled — only return public metadata if course is public
+          if (!isPublicCourse(course) || !lecture.published) {
+            return errorResponse("Lecture not found", 404);
+          }
+          const { content, mediaUrl, ...meta } = lecture;
+          return successResponse({ ...meta, content: null, mediaUrl: null });
+        }
+      } else {
+        if (!isPublicCourse(course) || !lecture.published) {
+          return errorResponse("Lecture not found", 404);
+        }
+        const { content, mediaUrl, ...meta } = lecture;
+        return successResponse({ ...meta, content: null, mediaUrl: null });
+      }
+    } else {
+      // Standalone lecture
+      const isOwner = user && lecture.author.id === user.id;
+      const isAdmin = user?.role === "ADMIN";
+      if (!lecture.published && !isOwner && !isAdmin) {
+        return errorResponse("Lecture not found", 404);
+      }
+    }
+
     if (!isEditFetch) {
       await prisma.lecture.update({
         where: { id: lecture.id },
@@ -79,29 +153,28 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) return errorResponse("Unauthorized", 401);
-
-    const { id: userId, role: userRole } = session.user as SessionUser;
+    const user = await requireUserFresh();
     const { id } = await params;
 
-    const lecture = await prisma.lecture.findUnique({
-      where: { id },
-    });
+    const lecture = await prisma.lecture.findUnique({ where: { id } });
     if (!lecture) return errorResponse("Lecture not found", 404);
 
-    const isAdmin = userRole === "ADMIN";
-    const isOwner = lecture.authorId === userId;
-
+    const isAdmin = user.role === "ADMIN";
+    const isOwner = lecture.authorId === user.id;
     if (!isAdmin && !isOwner) return errorResponse("Forbidden", 403);
 
     const body = (await req.json()) as unknown;
     const data = lectureSchema.partial().parse(body);
 
+    // Featured is admin-only
+    if (!isAdmin) {
+      delete (data as Record<string, unknown>).featured;
+    }
+
     const updated = await prisma.lecture.update({
       where: { id },
       data,
-      select: lectureSelect,
+      select: lectureFullSelect,
     });
 
     return successResponse(updated);
@@ -115,20 +188,14 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) return errorResponse("Unauthorized", 401);
-
-    const { id: userId, role: userRole } = session.user as SessionUser;
+    const user = await requireUserFresh();
     const { id } = await params;
 
-    const lecture = await prisma.lecture.findUnique({
-      where: { id },
-    });
+    const lecture = await prisma.lecture.findUnique({ where: { id } });
     if (!lecture) return errorResponse("Lecture not found", 404);
 
-    const isAdmin = userRole === "ADMIN";
-    const isOwner = lecture.authorId === userId;
-
+    const isAdmin = user.role === "ADMIN";
+    const isOwner = lecture.authorId === user.id;
     if (!isAdmin && !isOwner) return errorResponse("Forbidden", 403);
 
     await prisma.lecture.delete({ where: { id } });

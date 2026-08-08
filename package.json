@@ -4,15 +4,16 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
     "lint:fix": "eslint --fix",
+    "postinstall": "prisma generate",
+    "prisma:generate": "prisma generate",
     "seed": "node prisma/seed.mjs",
-    "type": "module",
+    "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest",
-    "@prisma/adapter-pg": "^7.4.2"
+    "test:watch": "vitest"
   },
   "prisma": {
     "seed": "node prisma/seed.mjs"

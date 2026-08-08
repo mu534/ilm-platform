@@ -1,10 +1,9 @@
 import { NextRequest } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "../../../../lib/auth";
 import { prisma } from "../../../../lib/prism";
+import { requireUserFresh } from "../../../../lib/authorization";
 import { createEnrollment, AlreadyEnrolledError } from "../../../../lib/enrollment";
+import { isPublicCourse } from "../../../../lib/courseAccess";
 import { successResponse, errorResponse, handleApiError } from "../../../../utils/api";
-import type { SessionUser } from "../../../../types/auth.types";
 
 // POST /api/courses/[id]/enroll
 export async function POST(
@@ -12,17 +11,19 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    const user = session?.user as SessionUser | undefined;
-    if (!user) return errorResponse("Sign in required to enroll in this course", 401);
-
+    const user = await requireUserFresh();
     const { id: courseId } = await params;
 
     const course = await prisma.course.findUnique({
-      where:  { id: courseId, published: true },
-      select: { id: true, enrollmentType: true, price: true },
+      where:  { id: courseId },
+      select: {
+        id: true, enrollmentType: true, price: true,
+        published: true, status: true, approvalStatus: true,
+      },
     });
-    if (!course) return errorResponse("Course not found or not published", 404);
+    if (!course || !isPublicCourse(course)) {
+      return errorResponse("Course not found or not published", 404);
+    }
 
     // Paid courses go through /checkout instead — this endpoint only
     // grants access directly for free courses.
@@ -50,10 +51,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    const user = session?.user as SessionUser | undefined;
-    if (!user) return errorResponse("Unauthorized", 401);
-
+    const user = await requireUserFresh();
     const { id: courseId } = await params;
 
     const enrollment = await prisma.enrollment.findUnique({
@@ -77,14 +75,18 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    const user = session?.user as SessionUser | undefined;
-    if (!user) return successResponse({ enrolled: false });
-
     const { id: courseId } = await params;
 
+    let userId: string | null = null;
+    try {
+      const user = await requireUserFresh();
+      userId = user.id;
+    } catch {
+      return successResponse({ enrolled: false });
+    }
+
     const enrollment = await prisma.enrollment.findUnique({
-      where: { userId_courseId: { userId: user.id, courseId } },
+      where: { userId_courseId: { userId, courseId } },
       select: { id: true, status: true, progress: true, enrolledAt: true, completedAt: true },
     });
 

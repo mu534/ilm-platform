@@ -8,15 +8,7 @@ import { createEnrollment, AlreadyEnrolledError } from "../../../lib/enrollment"
  * POST /api/webhooks/stripe
  *
  * This is the ONLY place that grants access to a paid course — never the
- * checkout-creation endpoint, and never anything client-side. Stripe calls
- * this directly from their servers once a payment is actually confirmed.
- *
- * Register this URL in the Stripe Dashboard (or via `stripe listen` for
- * local testing) subscribed to at least `checkout.session.completed`.
- *
- * Signature verification requires the RAW request body — this route reads
- * it via req.text() before any JSON parsing, which Next.js Route Handlers
- * support natively (no special config needed, unlike the old Pages Router).
+ * checkout-creation endpoint, and never anything client-side.
  */
 export async function POST(req: NextRequest) {
   const signature = req.headers.get("stripe-signature");
@@ -54,14 +46,11 @@ export async function POST(req: NextRequest) {
         break;
       }
       default:
-        // Unhandled event types are fine to ignore
         break;
     }
   } catch (err) {
     // eslint-disable-next-line no-console
     console.error(`[stripe webhook] Error handling ${event.type}:`, err);
-    // Return 500 so Stripe retries — this is a server-side failure, not a
-    // bad event, and we want another attempt rather than silently dropping it.
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 
@@ -69,6 +58,15 @@ export async function POST(req: NextRequest) {
 }
 
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
+  // Only grant access for actually paid sessions
+  if (session.payment_status !== "paid" && session.payment_status !== "no_payment_required") {
+    // eslint-disable-next-line no-console
+    console.error(
+      `[stripe webhook] Ignoring session ${session.id} with payment_status=${session.payment_status}`,
+    );
+    return;
+  }
+
   const payment = await prisma.payment.findUnique({
     where: { stripeCheckoutSessionId: session.id },
   });
@@ -81,20 +79,47 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   // Idempotent — Stripe may deliver the same event more than once.
   if (payment.status === "COMPLETED") return;
 
+  // Validate metadata against the authoritative Payment row — never trust
+  // client-controlled metadata alone for user/course identity.
+  const metaUserId = session.metadata?.userId;
+  const metaCourseId = session.metadata?.courseId;
+  if (
+    (metaUserId && metaUserId !== payment.userId) ||
+    (metaCourseId && metaCourseId !== payment.courseId)
+  ) {
+    // eslint-disable-next-line no-console
+    console.error(
+      `[stripe webhook] Metadata mismatch for session ${session.id}: ` +
+      `meta=(${metaUserId},${metaCourseId}) payment=(${payment.userId},${payment.courseId})`,
+    );
+    return;
+  }
+
+  // Verify the course is still a valid purchasable course
+  const course = await prisma.course.findUnique({
+    where: { id: payment.courseId },
+    select: {
+      id: true, enrollmentType: true, price: true,
+      published: true, status: true, approvalStatus: true,
+    },
+  });
+  if (!course || course.enrollmentType !== "PAID" || course.price <= 0) {
+    // eslint-disable-next-line no-console
+    console.error(`[stripe webhook] Course ${payment.courseId} is not purchasable`);
+    return;
+  }
+
   await prisma.payment.update({
     where: { id: payment.id },
     data: {
-      status:                 "COMPLETED",
-      stripePaymentIntentId:  typeof session.payment_intent === "string" ? session.payment_intent : null,
+      status:                "COMPLETED",
+      stripePaymentIntentId: typeof session.payment_intent === "string" ? session.payment_intent : null,
     },
   });
 
   try {
     await createEnrollment(payment.userId, payment.courseId);
   } catch (err) {
-    // Already enrolled (e.g. duplicate webhook delivery racing itself, or
-    // the user was granted access some other way in the meantime) — the
-    // payment is still correctly marked COMPLETED above, so this is fine.
     if (!(err instanceof AlreadyEnrolledError)) throw err;
   }
 }

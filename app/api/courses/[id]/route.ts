@@ -5,6 +5,8 @@ import { prisma } from "../../../lib/prism";
 import { courseSchema } from "../../../lib/validations";
 import { successResponse, errorResponse, handleApiError } from "../../../utils/api";
 import { getClientIp } from "../../../lib/rateLimit";
+import { isPublicCourse } from "../../../lib/courseAccess";
+import { requireUserFresh } from "../../../lib/authorization";
 import type { SessionUser } from "../../../types/auth.types";
 import { z } from "zod";
 
@@ -89,7 +91,7 @@ export async function GET(
 
     const isAdmin  = user?.role === "ADMIN";
     const isOwner  = user?.id === course.author.id;
-    const isPublic = course.published && course.approvalStatus === "APPROVED";
+    const isPublic = isPublicCourse(course);
 
     // Gate: non-public courses are only visible to their owner or admins
     if (!isPublic && !isAdmin && !isOwner) {
@@ -119,9 +121,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    const user    = session?.user as SessionUser | undefined;
-    if (!user) return errorResponse("Unauthorized", 401);
+    const user = await requireUserFresh();
 
     const { id } = await params;
     const course = await prisma.course.findUnique({ where: { id } });
@@ -150,9 +150,10 @@ export async function PATCH(
       ? { approvalStatus: "PENDING" as const, status: "PENDING_REVIEW" as const, published: false }
       : {};
 
-    // Scholars can never directly publish — strip published field for non-admins
+    // Scholars can never directly publish — strip published/featured for non-admins
     if (!isAdmin) {
       delete (courseData as Record<string, unknown>).published;
+      delete (courseData as Record<string, unknown>).featured;
     }
 
     // Stripe Price objects are immutable — if the price or currency changed,
@@ -196,9 +197,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    const user    = session?.user as SessionUser | undefined;
-    if (!user) return errorResponse("Unauthorized", 401);
+    const user = await requireUserFresh();
 
     const { id } = await params;
     const course = await prisma.course.findUnique({

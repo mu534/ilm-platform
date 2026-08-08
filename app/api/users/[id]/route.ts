@@ -1,25 +1,21 @@
 import { NextRequest } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "../../../lib/auth";
 import { prisma } from "../../../lib/prism";
 import { updateUserSchema } from "../../../lib/validations";
+import { requireAdmin, requireUserFresh } from "../../../lib/authorization";
 import { successResponse, errorResponse, handleApiError } from "../../../utils/api";
 import { getClientIp } from "../../../lib/rateLimit";
-import type { SessionUser } from "../../../types/auth.types";
 
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) return errorResponse("Unauthorized", 401);
-
-    const { id: userId, role: userRole } = session.user as SessionUser;
-    const isAdmin = userRole === "ADMIN";
+    const actor = await requireUserFresh();
     const { id } = await params;
 
-    if (!isAdmin && userId !== id) return errorResponse("Forbidden", 403);
+    if (actor.role !== "ADMIN" && actor.id !== id) {
+      return errorResponse("Forbidden", 403);
+    }
 
     const user = await prisma.user.findUnique({
       where: { id },
@@ -45,19 +41,21 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) return errorResponse("Unauthorized", 401);
-
-    const { id: userId, role: userRole } = session.user as SessionUser;
-    const isAdmin = userRole === "ADMIN";
+    const actor = await requireUserFresh();
     const { id } = await params;
 
-    if (!isAdmin && userId !== id) return errorResponse("Forbidden", 403);
+    if (actor.role !== "ADMIN" && actor.id !== id) {
+      return errorResponse("Forbidden", 403);
+    }
 
     const body = (await req.json()) as Record<string, unknown>;
 
-    // Only admins can change roles
-    if (!isAdmin) delete body.role;
+    // Role changes require a fresh ADMIN check against the database
+    if (body.role !== undefined) {
+      await requireAdmin();
+    } else if (actor.role !== "ADMIN") {
+      delete body.role;
+    }
 
     const data = updateUserSchema.parse(body);
 
@@ -67,7 +65,6 @@ export async function PATCH(
       select: { id: true, name: true, email: true, role: true, image: true, bio: true },
     });
 
-    // Auto-create Scholar profile when role is changed to SCHOLAR
     if (data.role === "SCHOLAR") {
       const existing = await prisma.scholar.findUnique({ where: { userId: id } });
       if (!existing) {
@@ -82,18 +79,17 @@ export async function PATCH(
       }
     }
 
-    // Audit log for role changes (admin action)
-    if (isAdmin && data.role) {
+    if (actor.role === "ADMIN" && data.role) {
       await prisma.auditLog.create({
         data: {
-          userId,
+          userId:     actor.id,
           action:     "CHANGE_ROLE",
           entityType: "User",
           entityId:   id,
           metadata:   JSON.stringify({ newRole: data.role }),
           ipAddress:  getClientIp(req),
         },
-      }).catch(() => {}); // non-critical
+      }).catch(() => {});
     }
 
     return successResponse(user);
@@ -107,16 +103,10 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) return errorResponse("Unauthorized", 401);
-
-    const { id: userId, role: userRole } = session.user as SessionUser;
-    if (userRole !== "ADMIN") return errorResponse("Forbidden", 403);
-
+    const admin = await requireAdmin();
     const { id } = await params;
 
-    // Prevent admin from deleting themselves
-    if (id === userId) return errorResponse("Cannot delete your own account", 400);
+    if (id === admin.id) return errorResponse("Cannot delete your own account", 400);
 
     const target = await prisma.user.findUnique({
       where: { id },
@@ -125,10 +115,9 @@ export async function DELETE(
 
     await prisma.user.delete({ where: { id } });
 
-    // Audit log
     await prisma.auditLog.create({
       data: {
-        userId,
+        userId:     admin.id,
         action:     "DELETE_USER",
         entityType: "User",
         entityId:   id,

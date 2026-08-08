@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/app/lib/prism";
+import { publicCourseWhere } from "@/app/lib/courseAccess";
 import { ScholarCard } from "@/app/components/scholars/ScholarCard";
 import { CourseMarquee } from "@/app/components/courses/CourseMarquee";
 import { ContinueLearningStrip } from "@/app/components/courses/ContinueLearningStrip";
@@ -29,7 +30,7 @@ async function getHomeData() {
   // connection pool on cold start. Batch 1 = critical above-the-fold data.
   const [marqueeCourses, featuredScholars, categoriesRaw] = await Promise.all([
     prisma.course.findMany({
-      where:   { published: true },
+      where:   { ...publicCourseWhere },
       take:    16,
       orderBy: { createdAt: "desc" },          // cheaper than _count sort
       include: {
@@ -57,7 +58,7 @@ async function getHomeData() {
   const [counts, recentStats, popularTopics, recentActivity, testimonials] =
     await Promise.all([
       Promise.all([
-        prisma.course.count({ where: { published: true } }),
+        prisma.course.count({ where: { ...publicCourseWhere } }),
         prisma.scholar.count(),
         prisma.user.count(),
       ]),
@@ -66,7 +67,7 @@ async function getHomeData() {
           where: { createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } },
         }),
         prisma.course.count({
-          where: { createdAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) }, published: true },
+          where: { createdAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) }, ...publicCourseWhere },
         }),
         prisma.user.count({
           where: { createdAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } },

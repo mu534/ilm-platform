@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/app/lib/prism";
+import { publicCourseWhere } from "@/app/lib/courseAccess";
 import { formatDate } from "@/app/utils/api";
 import {
   FiMessageCircle, FiVideo, FiUser, FiArrowLeft,
@@ -19,7 +20,13 @@ async function getActivity() {
       },
     }),
     prisma.lecture.findMany({
-      where: { published: true },
+      where: {
+        published: true,
+        OR: [
+          { moduleId: null },
+          { module: { course: { ...publicCourseWhere } } },
+        ],
+      },
       take: 10,
       orderBy: { createdAt: "desc" },
       include: {
@@ -28,7 +35,7 @@ async function getActivity() {
       },
     }),
     prisma.course.findMany({
-      where: { published: true },
+      where: { ...publicCourseWhere },
       take: 5,
       orderBy: { createdAt: "desc" },
       select: {

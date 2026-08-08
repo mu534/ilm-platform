@@ -1,10 +1,9 @@
 import { NextRequest } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "../../../../lib/auth";
 import { prisma } from "../../../../lib/prism";
 import { uploadToCloudinary } from "../../../../lib/cloudinary";
+import { requireUserFresh } from "../../../../lib/authorization";
+import { requireLectureLearningAccess } from "../../../../lib/courseAccess";
 import { successResponse, errorResponse, handleApiError } from "../../../../utils/api";
-import type { SessionUser } from "../../../../types/next-auth";
 
 const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100 MB
 
@@ -34,14 +33,24 @@ function resolveCategory(value: unknown): MediaCategory {
 
 /**
  * GET /api/lectures/[id]/media
- * Returns all media attached to a lecture.
+ * Returns media attached to a lecture — only for enrolled learners,
+ * course owners, or admins. Unpublished course resources are not public.
  */
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    const user = await requireUserFresh();
     const { id } = await params;
+
+    await requireLectureLearningAccess({
+      userId: user.id,
+      role: user.role,
+      lectureId: id,
+      enforceSequential: true,
+    });
+
     const media = await prisma.media.findMany({
       where:   { lectureId: id },
       orderBy: { createdAt: "asc" },
@@ -54,29 +63,19 @@ export async function GET(
 
 /**
  * POST /api/lectures/[id]/media
- *
- * Two ways to attach a resource:
- *  - multipart/form-data with a `file` field — uploads to Cloudinary
- *    (PDFs, notes, workbooks, slides, recordings…)
- *  - application/json with `{ url, filename, category }` — attaches an
- *    external link directly (Qur'an verse pages, hadith collections,
- *    articles, any other URL) with no upload involved.
- *
- * Both accept an optional `category`: "RESOURCE" (default) or "REFERENCE".
  */
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    const user    = session?.user as SessionUser | undefined;
-    if (!user) return errorResponse("Unauthorized", 401);
-    if (!["ADMIN", "SCHOLAR"].includes(user.role)) return errorResponse("Forbidden", 403);
+    const user = await requireUserFresh();
+    if (!["ADMIN", "SCHOLAR"].includes(user.role)) {
+      return errorResponse("Forbidden", 403);
+    }
 
     const { id: lectureId } = await params;
 
-    // Verify lecture exists and user has access
     const lecture = await prisma.lecture.findUnique({ where: { id: lectureId } });
     if (!lecture) return errorResponse("Lecture not found", 404);
     if (user.role !== "ADMIN" && lecture.authorId !== user.id) {
@@ -85,7 +84,6 @@ export async function POST(
 
     const contentType = req.headers.get("content-type") ?? "";
 
-    // ── External link (no upload) ──────────────────────────────────────────
     if (contentType.includes("application/json")) {
       const body = (await req.json()) as { url?: unknown; filename?: unknown; category?: unknown };
       const url      = typeof body.url === "string" ? body.url.trim() : "";
@@ -112,7 +110,6 @@ export async function POST(
       return successResponse(media, 201);
     }
 
-    // ── File upload ─────────────────────────────────────────────────────────
     const formData     = await req.formData();
     const file          = formData.get("file");
     const nameOverride  = formData.get("filename");
@@ -152,16 +149,13 @@ export async function POST(
 
 /**
  * PATCH /api/lectures/[id]/media?mediaId=xxx
- * Re-tags a resource's category (RESOURCE <-> REFERENCE).
  */
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    const user    = session?.user as SessionUser | undefined;
-    if (!user) return errorResponse("Unauthorized", 401);
+    const user = await requireUserFresh();
 
     const { id: lectureId } = await params;
     const mediaId = new URL(req.url).searchParams.get("mediaId");
@@ -189,16 +183,13 @@ export async function PATCH(
 
 /**
  * DELETE /api/lectures/[id]/media?mediaId=xxx
- * Removes a media resource from a lecture.
  */
 export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    const user    = session?.user as SessionUser | undefined;
-    if (!user) return errorResponse("Unauthorized", 401);
+    const user = await requireUserFresh();
 
     const { id: lectureId } = await params;
     const mediaId = new URL(req.url).searchParams.get("mediaId");
@@ -209,7 +200,6 @@ export async function DELETE(
     });
     if (!media) return errorResponse("Media not found", 404);
 
-    // Verify ownership
     const lecture = await prisma.lecture.findUnique({ where: { id: lectureId } });
     if (user.role !== "ADMIN" && lecture?.authorId !== user.id) {
       return errorResponse("Forbidden", 403);

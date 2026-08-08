@@ -1,25 +1,26 @@
 import { NextRequest } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "../../../../lib/auth";
 import { prisma } from "../../../../lib/prism";
-import { successResponse, errorResponse, handleApiError } from "../../../../utils/api";
+import { requireUserFresh } from "../../../../lib/authorization";
+import { requireCourseLearnAccess } from "../../../../lib/courseAccess";
+import { successResponse, handleApiError } from "../../../../utils/api";
 import { computeLockedLectureIds } from "../../../../lib/sequentialLearning";
-import type { SessionUser } from "../../../../types/auth.types";
 
 /**
  * GET /api/courses/[id]/curriculum
  *
  * Returns the full curriculum for a course with per-lecture completion
  * status for the authenticated user. Used by the learning sidebar.
+ * Requires enrollment (or staff preview).
  */
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    const user = await requireUserFresh();
     const { id: courseId } = await params;
-    const session = await getServerSession(authOptions);
-    const user    = session?.user as SessionUser | undefined;
+
+    const accessCourse = await requireCourseLearnAccess(user, courseId);
 
     const course = await prisma.course.findUnique({
       where: { id: courseId },
@@ -44,28 +45,30 @@ export async function GET(
       },
     });
 
-    if (!course) return errorResponse("Course not found", 404);
+    if (!course) {
+      return successResponse(null);
+    }
 
-    // Build a set of completed lecture IDs for this user
     let completedSet = new Set<string>();
     let totalCompleted = 0;
     const totalLectures = course.modules.reduce((s, m) => s + m.lectures.length, 0);
 
-    if (user) {
-      const allIds = course.modules.flatMap((m) => m.lectures.map((l) => l.id));
-      if (allIds.length > 0) {
-        const progress = await prisma.lectureProgress.findMany({
-          where:  { userId: user.id, lectureId: { in: allIds }, completed: true },
-          select: { lectureId: true },
-        });
-        completedSet  = new Set(progress.map((p) => p.lectureId));
-        totalCompleted = progress.length;
-      }
+    const allIds = course.modules.flatMap((m) => m.lectures.map((l) => l.id));
+    if (allIds.length > 0) {
+      const progress = await prisma.lectureProgress.findMany({
+        where:  { userId: user.id, lectureId: { in: allIds }, completed: true },
+        select: { lectureId: true },
+      });
+      completedSet   = new Set(progress.map((p) => p.lectureId));
+      totalCompleted = progress.length;
     }
 
-    // Annotate each lecture with completion + locked status
     const orderedLectureIds = course.modules.flatMap((m) => m.lectures.map((l) => l.id));
-    const lockedSet = computeLockedLectureIds(orderedLectureIds, completedSet, course.sequentialLearning);
+    const lockedSet = computeLockedLectureIds(
+      orderedLectureIds,
+      completedSet,
+      accessCourse.sequentialLearning,
+    );
 
     const modules = course.modules.map((mod) => ({
       ...mod,
@@ -81,11 +84,11 @@ export async function GET(
       courseId:           course.id,
       courseTitle:        course.title,
       courseSlug:         course.slug,
-      sequentialLearning: course.sequentialLearning,
+      sequentialLearning: accessCourse.sequentialLearning,
       modules,
       totalLectures,
       totalCompleted,
-      percent:        totalLectures > 0
+      percent: totalLectures > 0
         ? Math.round((totalCompleted / totalLectures) * 100)
         : 0,
     });

@@ -1,9 +1,8 @@
 import { NextRequest } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "../../lib/auth";
 import { prisma } from "../../lib/prism";
+import { requireUserFresh } from "../../lib/authorization";
+import { requireEnrollment } from "../../lib/courseAccess";
 import { successResponse, errorResponse, handleApiError } from "../../utils/api";
-import type { SessionUser } from "../../types/auth.types";
 import { z } from "zod";
 
 const ratingSchema = z.object({
@@ -15,18 +14,12 @@ const ratingSchema = z.object({
 // POST /api/ratings — upsert course rating
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    const user = session?.user as SessionUser | undefined;
-    if (!user) return errorResponse("Unauthorized", 401);
+    const user = await requireUserFresh();
 
     const body = (await req.json()) as unknown;
     const { courseId, rating, review } = ratingSchema.parse(body);
 
-    // Must be enrolled to rate
-    const enrollment = await prisma.enrollment.findUnique({
-      where: { userId_courseId: { userId: user.id, courseId } },
-    });
-    if (!enrollment) return errorResponse("You must be enrolled to rate this course", 403);
+    await requireEnrollment(user.id, courseId);
 
     const courseRating = await prisma.courseRating.upsert({
       where: { userId_courseId: { userId: user.id, courseId } },
@@ -34,7 +27,6 @@ export async function POST(req: NextRequest) {
       update: { rating, review },
     });
 
-    // Return updated aggregate
     const agg = await prisma.courseRating.aggregate({
       where: { courseId },
       _avg: { rating: true },

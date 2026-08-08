@@ -26,7 +26,8 @@ export async function GET(request: NextRequest) {
     // ── Lectures ─────────────────────────────────────────────────────────────
     if (type === "all" || type === "lectures") {
       const where: LectureWhereInput = {
-        published: true,
+        published:      true,
+        approvalStatus: "APPROVED",
         OR: [
           // Course-linked lectures must belong to a public course
           {
@@ -41,7 +42,7 @@ export async function GET(request: NextRequest) {
               },
             ],
           },
-          // Standalone published lectures (no module)
+          // Standalone published+approved lectures (no module)
           {
             AND: [
               { moduleId: null },

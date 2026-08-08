@@ -13,11 +13,12 @@ import { notifyScholarFollowers } from "../../lib/notifications";
 type LectureType = "TEXT" | "VIDEO";
 
 interface LectureWhereInput {
-  published?: boolean;
-  featured?: boolean;
-  scholarId?: string;
-  type?: LectureType;
-  tags?: { has: string };
+  published?:      boolean;
+  approvalStatus?: string;
+  featured?:       boolean;
+  scholarId?:      string;
+  type?:           LectureType;
+  tags?:           { has: string };
   OR?: Array<{
     title?: { contains: string; mode: "insensitive" };
     description?: { contains: string; mode: "insensitive" };
@@ -45,7 +46,8 @@ export async function GET(req: NextRequest) {
     const where: LectureWhereInput = {};
 
     if (!isAdmin) {
-      where.published = true;
+      where.published       = true;
+      where.approvalStatus  = "APPROVED";
     } else if (published !== null) {
       where.published = published === "true";
     }

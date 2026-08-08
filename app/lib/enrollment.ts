@@ -1,7 +1,12 @@
 import { prisma } from "./prism";
+import { isPublicCourse } from "./courseAccess";
 
 export class AlreadyEnrolledError extends Error {
   constructor() { super("User is already enrolled in this course"); }
+}
+
+export class CourseNotAvailableError extends Error {
+  constructor() { super("Course is not available for enrollment"); }
 }
 
 /**
@@ -41,18 +46,26 @@ export async function checkPrerequisites(
  * published lecture in the course, so progress percentage is accurate
  * from the very first request.
  *
- * Used by both the free-course enroll endpoint and the Stripe webhook that
- * grants access after a successful paid checkout — keeping this in one
- * place means the two paths can never quietly drift apart.
+ * This service is the single authoritative enrollment path shared by both
+ * the free-enroll endpoint and the Stripe webhook. It validates:
+ *   1. Course exists and is publicly available (published + approved)
+ *   2. User is not already enrolled
+ *   3. Prerequisites are satisfied (all must be COMPLETED)
  *
- * Pre-enrollment progress abuse: if orphan LectureProgress rows exist for
- * this course's lectures (created before enrollment was enforced), they are
- * deleted before seeding so illegitimate completions cannot carry over.
- * Re-enrollment after a prior enrollment is blocked by AlreadyEnrolledError
- * while a row still exists; if the student unenrolled (row deleted), wiping
- * orphans is the correct reset.
+ * Callers (enroll endpoint, Stripe webhook) may have already performed some
+ * of these checks — the service re-validates to be safe so no caller can
+ * accidentally bypass a rule by skipping a pre-check.
+ *
+ * Exception: the Stripe webhook passes `skipPublicCheck: true` because a
+ * paid course payment was already accepted; the course may theoretically
+ * have been de-published between checkout and webhook delivery. We still
+ * validate prerequisites in all paths.
  */
-export async function createEnrollment(userId: string, courseId: string) {
+export async function createEnrollment(
+  userId: string,
+  courseId: string,
+  opts: { skipPublicCheck?: boolean } = {},
+) {
   const existing = await prisma.enrollment.findUnique({
     where: { userId_courseId: { userId, courseId } },
   });
@@ -60,7 +73,13 @@ export async function createEnrollment(userId: string, courseId: string) {
 
   const course = await prisma.course.findUnique({
     where:   { id: courseId },
-    include: {
+    select: {
+      id:             true,
+      published:      true,
+      status:         true,
+      approvalStatus: true,
+      enrollmentType: true,
+      price:          true,
       modules: {
         select: {
           lectures: { where: { published: true }, select: { id: true } },
@@ -70,9 +89,16 @@ export async function createEnrollment(userId: string, courseId: string) {
   });
   if (!course) throw new Error("Course not found");
 
+  // Validate the course is still publicly enrollable unless the caller
+  // explicitly skips this check (paid-course Stripe webhook path).
+  if (!opts.skipPublicCheck && !isPublicCourse(course)) {
+    throw new CourseNotAvailableError();
+  }
+
   const allLectureIds = course.modules.flatMap((m) => m.lectures.map((l) => l.id));
 
   return prisma.$transaction(async (tx) => {
+    // Clean up any orphan progress rows from before enrollment enforcement
     if (allLectureIds.length > 0) {
       await tx.lectureProgress.deleteMany({
         where: { userId, lectureId: { in: allLectureIds } },

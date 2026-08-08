@@ -100,8 +100,20 @@ export async function GET(
       _count: { rating: true },
     });
 
+    const isStaff = isAdmin || isOwner;
+
+    // For public viewers, strip out unpublished lecture metadata so private
+    // curriculum structure is not exposed through the course detail endpoint.
+    const visibleModules = isStaff
+      ? course.modules
+      : course.modules.map((m) => ({
+          ...m,
+          lectures: m.lectures.filter((l) => l.published),
+        }));
+
     return successResponse({
       ...course,
+      modules:      visibleModules,
       avgRating:    ratingAgg._avg.rating    ?? 0,
       totalRatings: ratingAgg._count.rating,
     });

@@ -24,6 +24,7 @@ const lecturePublicSelect = {
   published: true,
   featured: true,
   views: true,
+  approvalStatus: true,
   createdAt: true,
   updatedAt: true,
   author: { select: { id: true, name: true, image: true } },
@@ -112,8 +113,8 @@ export async function GET(
             enforceSequential: true,
           });
         } catch {
-          // Not enrolled — only return public metadata if course is public
-          if (!isPublicCourse(course) || !lecture.published) {
+          // Not enrolled — only return public metadata if course and lecture are public+approved
+          if (!isPublicCourse(course) || !lecture.published || lecture.approvalStatus !== "APPROVED") {
             return errorResponse("Lecture not found", 404);
           }
           const { content, mediaUrl, ...meta } = lecture;
@@ -123,14 +124,24 @@ export async function GET(
         if (!isPublicCourse(course) || !lecture.published) {
           return errorResponse("Lecture not found", 404);
         }
+        // Lecture must also be approved for unauthenticated public access
+        if (lecture.approvalStatus !== "APPROVED") {
+          return errorResponse("Lecture not found", 404);
+        }
         const { content, mediaUrl, ...meta } = lecture;
         return successResponse({ ...meta, content: null, mediaUrl: null });
       }
     } else {
-      // Standalone lecture
+      // Standalone lecture (not attached to a course module)
       const isOwner = user && lecture.author.id === user.id;
       const isAdmin = user?.role === "ADMIN";
+      // Not visible publicly unless published AND approved
       if (!lecture.published && !isOwner && !isAdmin) {
+        return errorResponse("Lecture not found", 404);
+      }
+      // Approved check for non-staff
+      const isApproved = (lecture as unknown as { approvalStatus?: string }).approvalStatus === "APPROVED";
+      if (!isOwner && !isAdmin && !isApproved) {
         return errorResponse("Lecture not found", 404);
       }
     }

@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { prisma } from "../../../../lib/prism";
 import { requireUserFresh } from "../../../../lib/authorization";
-import { createEnrollment, AlreadyEnrolledError, checkPrerequisites } from "../../../../lib/enrollment";
+import { createEnrollment, AlreadyEnrolledError, checkPrerequisites, CourseNotAvailableError } from "../../../../lib/enrollment";
 import { isPublicCourse } from "../../../../lib/courseAccess";
 import { successResponse, errorResponse, handleApiError } from "../../../../utils/api";
 
@@ -46,6 +46,9 @@ export async function POST(
     } catch (err) {
       if (err instanceof AlreadyEnrolledError) {
         return errorResponse("You are already enrolled in this course", 409);
+      }
+      if (err instanceof CourseNotAvailableError) {
+        return errorResponse("Course is not available for enrollment", 404);
       }
       throw err;
     }

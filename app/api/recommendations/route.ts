@@ -13,7 +13,8 @@ export async function GET() {
   try {
     const recommendations = await prisma.lecture.findMany({
       where: {
-        published: true,
+        published:      true,
+        approvalStatus: "APPROVED",
         OR: [
           { moduleId: null },
           { module: { course: { ...publicCourseWhere } } },

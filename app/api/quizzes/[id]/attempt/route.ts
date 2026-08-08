@@ -99,8 +99,20 @@ export async function POST(
           },
         },
         include: {
-          answers:  { include: { question: { select: { question: true, explanation: true, correctAnswer: true } } } },
-          quiz:     { select: { title: true, passingScore: true } },
+          // Return question text and explanation so the student can review
+          // their answers — but NOT correctAnswer (that stays server-side).
+          answers: {
+            include: {
+              question: {
+                select: {
+                  question:    true,
+                  explanation: true,
+                  // correctAnswer intentionally omitted from student response
+                },
+              },
+            },
+          },
+          quiz: { select: { title: true, passingScore: true } },
         },
       });
 

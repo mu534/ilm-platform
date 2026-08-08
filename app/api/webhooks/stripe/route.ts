@@ -130,7 +130,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   }
 
   try {
-    await createEnrollment(payment.userId, payment.courseId);
+    await createEnrollment(payment.userId, payment.courseId, { skipPublicCheck: true });
   } catch (err) {
     if (!(err instanceof AlreadyEnrolledError)) throw err;
   }

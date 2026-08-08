@@ -35,18 +35,61 @@ export async function PATCH(
       },
     });
 
-    // If resolved, take content action based on what was reported
+    // Take appropriate moderation action on RESOLVED for each report type.
+    // REVIEWED and DISMISSED are acknowledgement states — no content change.
     if (status === "RESOLVED") {
+      // Comment → hide by setting approved = false
       if (report.commentId) {
         await prisma.comment.update({
           where: { id: report.commentId },
           data:  { approved: false },
-        }).catch(() => {/* comment may have been deleted */});
+        }).catch(() => {/* already deleted */});
       }
+
+      // Forum question → delete (cascade removes replies/votes)
       if (report.forumQuestionId) {
-        // Mark forum question as unresolved (soft hide by locking — field doesn't exist,
-        // so we just log the action; extending to a "hidden" field is a future migration)
-        // For now, the admin can delete directly via admin panel
+        await prisma.forumQuestion.delete({
+          where: { id: report.forumQuestionId },
+        }).catch(() => {/* already deleted */});
+      }
+
+      // Forum reply → delete (cascade removes votes)
+      if (report.forumReplyId) {
+        await prisma.forumReply.delete({
+          where: { id: report.forumReplyId },
+        }).catch(() => {/* already deleted */});
+      }
+
+      // Course → unpublish and move to REJECTED state via existing workflow
+      if (report.courseId) {
+        await prisma.course.update({
+          where: { id: report.courseId },
+          data: {
+            published:      false,
+            status:         "REJECTED",
+            approvalStatus: "REJECTED",
+            approvalNote:   note ?? "Removed following a resolved content report.",
+            reviewedAt:     new Date(),
+          },
+        }).catch(() => {/* already deleted */});
+
+        // Notify the course author
+        const course = await prisma.course.findUnique({
+          where:  { id: report.courseId },
+          select: { authorId: true, title: true },
+        }).catch(() => null);
+
+        if (course) {
+          await prisma.notification.create({
+            data: {
+              userId:  course.authorId,
+              type:    "COURSE_REJECTED",
+              title:   "Course Removed",
+              message: `Your course has been removed following a content review. ${note ? `Reason: ${note}` : ""}`,
+              link:    `/admin/courses`,
+            },
+          }).catch(() => {/* non-critical */});
+        }
       }
     }
 

@@ -1,13 +1,12 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/lib/auth";
 import { prisma } from "@/app/lib/prism";
 import { publicCourseWhere } from "@/app/lib/courseAccess";
+import { getOptionalUser } from "@/app/lib/authorization";
 
 export async function GET() {
-  const session = await getServerSession(authOptions);
+  const user = await getOptionalUser();
 
-  if (!session?.user?.email) {
+  if (!user) {
     return NextResponse.json([], { status: 200 });
   }
 

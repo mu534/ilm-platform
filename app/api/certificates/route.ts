@@ -1,19 +1,16 @@
 import { NextRequest } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "../../lib/auth";
 import { prisma } from "../../lib/prism";
-import { successResponse, errorResponse, handleApiError } from "../../utils/api";
-import type { SessionUser } from "../../types/auth.types";
+import { requireUserFresh } from "../../lib/authorization";
+import { successResponse, handleApiError } from "../../utils/api";
 
-// GET /api/certificates — get current user's certificates
+// GET /api/certificates — get the authenticated user's own certificates only
 export async function GET(_req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    const user = session?.user as SessionUser | undefined;
-    if (!user) return errorResponse("Unauthorized", 401);
+    const user = await requireUserFresh();
 
+    // Always scoped to the authenticated user — never trust a client-supplied userId
     const certificates = await prisma.certificate.findMany({
-      where: { userId: user.id },
+      where:   { userId: user.id },
       orderBy: { issuedAt: "desc" },
       include: {
         course: {

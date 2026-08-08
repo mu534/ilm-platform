@@ -1,14 +1,12 @@
 import { NextRequest } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "../../lib/auth";
 import { prisma } from "../../lib/prism";
+import { requireUserFresh } from "../../lib/authorization";
 import { scholarSchema } from "../../lib/validations";
 import {
   successResponse,
   errorResponse,
   handleApiError,
 } from "../../utils/api";
-import type { SessionUser } from "../../types/next-auth";
 
 interface ScholarWhereInput {
   featured?: boolean;
@@ -42,23 +40,20 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) return errorResponse("Unauthorized", 401);
+    const user = await requireUserFresh();
 
-    const { id: userId, role: userRole } = session.user as SessionUser;
-
-    if (!["ADMIN", "SCHOLAR"].includes(userRole)) {
+    if (!["ADMIN", "SCHOLAR"].includes(user.role)) {
       return errorResponse("Forbidden", 403);
     }
 
-    const existing = await prisma.scholar.findUnique({ where: { userId } });
+    const existing = await prisma.scholar.findUnique({ where: { userId: user.id } });
     if (existing) return errorResponse("Scholar profile already exists", 409);
 
     const body = (await req.json()) as unknown;
     const data = scholarSchema.parse(body);
 
     const scholar = await prisma.scholar.create({
-      data: { ...data, userId },
+      data: { ...data, userId: user.id },
       include: {
         user: { select: { name: true, email: true, image: true } },
       },

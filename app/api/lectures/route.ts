@@ -1,8 +1,7 @@
 import { NextRequest } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "../../lib/auth";
 import { prisma } from "../../lib/prism";
 import { lectureSchema } from "../../lib/validations";
+import { requireUserFresh, getOptionalUser } from "../../lib/authorization";
 import {
   successResponse,
   errorResponse,
@@ -10,7 +9,6 @@ import {
   slugify,
 } from "../../utils/api";
 import { notifyScholarFollowers } from "../../lib/notifications";
-import type { SessionUser } from "../../types/auth.types";
 
 type LectureType = "TEXT" | "VIDEO";
 
@@ -41,9 +39,8 @@ export async function GET(req: NextRequest) {
     const scholarId = searchParams.get("scholarId") ?? "";
     const published = searchParams.get("published");
 
-    const session = await getServerSession(authOptions);
-    const isAdmin =
-      (session?.user as SessionUser | undefined)?.role === "ADMIN";
+    const user     = await getOptionalUser();
+    const isAdmin  = user?.role === "ADMIN";
 
     const where: LectureWhereInput = {};
 
@@ -113,16 +110,10 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) return errorResponse("Unauthorized", 401);
+    const user = await requireUserFresh();
 
-    const { id: authorId, role: userRole } = session.user as SessionUser;
-
-    if (!["ADMIN", "SCHOLAR"].includes(userRole)) {
-      return errorResponse(
-        "Forbidden: Only Admins and Scholars can create lectures",
-        403,
-      );
+    if (!["ADMIN", "SCHOLAR"].includes(user.role)) {
+      return errorResponse("Forbidden: Only Admins and Scholars can create lectures", 403);
     }
 
     const body = (await req.json()) as unknown;
@@ -133,13 +124,13 @@ export async function POST(req: NextRequest) {
       data: {
         ...data,
         slug,
-        authorId,
+        authorId: user.id,
       },
     });
 
     // Notify scholar's followers when published
     if (data.published) {
-      const scholar = await prisma.scholar.findUnique({ where: { userId: authorId } });
+      const scholar = await prisma.scholar.findUnique({ where: { userId: user.id } });
       if (scholar) {
         void notifyScholarFollowers(
           scholar.id,

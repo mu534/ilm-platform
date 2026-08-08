@@ -63,6 +63,14 @@ export async function POST(
       }
     }
 
+    // All questions must be answered — prevent partial submissions to manipulate score
+    if (answers.length !== quiz.questions.length) {
+      throw new HttpError(
+        `All ${quiz.questions.length} question(s) must be answered`,
+        400,
+      );
+    }
+
     // Grade exclusively from DB points / correct answers
     let earnedPoints = 0;
     const totalPoints = quiz.questions.reduce((sum, q) => sum + q.points, 0);

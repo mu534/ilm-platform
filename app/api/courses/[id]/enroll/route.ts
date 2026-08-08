@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { prisma } from "../../../../lib/prism";
 import { requireUserFresh } from "../../../../lib/authorization";
-import { createEnrollment, AlreadyEnrolledError } from "../../../../lib/enrollment";
+import { createEnrollment, AlreadyEnrolledError, checkPrerequisites } from "../../../../lib/enrollment";
 import { isPublicCourse } from "../../../../lib/courseAccess";
 import { successResponse, errorResponse, handleApiError } from "../../../../utils/api";
 
@@ -29,6 +29,15 @@ export async function POST(
     // grants access directly for free courses.
     if (course.enrollmentType === "PAID" && course.price > 0) {
       return errorResponse("This is a paid course — use the checkout flow to enroll", 402);
+    }
+
+    // Prerequisite check — authoritative from DB, never trust client
+    const prereqCheck = await checkPrerequisites(user.id, courseId);
+    if (!prereqCheck.satisfied) {
+      return errorResponse(
+        `You must complete the following courses first: ${prereqCheck.missing.map((c) => c.title).join(", ")}`,
+        403,
+      );
     }
 
     try {

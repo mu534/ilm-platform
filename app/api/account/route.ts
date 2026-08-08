@@ -1,10 +1,8 @@
 import { NextRequest } from "next/server";
-import { getServerSession } from "next-auth";
 import bcrypt from "bcryptjs";
-import { authOptions } from "../../lib/auth";
 import { prisma } from "../../lib/prism";
+import { requireUserFresh } from "../../lib/authorization";
 import { successResponse, errorResponse, handleApiError } from "../../utils/api";
-import type { SessionUser } from "../../types/auth.types";
 import { z } from "zod";
 
 const schema = z.object({
@@ -14,21 +12,12 @@ const schema = z.object({
 
 /**
  * DELETE /api/account
- * Lets a logged-in user permanently delete their own account.
- *
- * - Credential accounts (signed up with email/password) must confirm their
- *   current password.
- * - OAuth-only accounts (no password set) just need the explicit confirm flag,
- *   since there's no password to check.
- *
- * Admins should still use the admin user-management delete, which is
- * separately audit-logged — this endpoint is for self-service only.
+ * Self-service account deletion. Credential accounts must supply their
+ * current password. OAuth-only accounts just need the explicit confirm flag.
  */
 export async function DELETE(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    const sessionUser = session?.user as SessionUser | undefined;
-    if (!sessionUser) return errorResponse("Unauthorized", 401);
+    const sessionUser = await requireUserFresh();
 
     const body = schema.parse(await req.json());
 
@@ -45,7 +34,6 @@ export async function DELETE(req: NextRequest) {
     }
 
     await prisma.user.delete({ where: { id: user.id } });
-
     return successResponse({ deleted: true });
   } catch (error) {
     return handleApiError(error);

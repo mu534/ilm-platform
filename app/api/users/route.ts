@@ -1,24 +1,17 @@
 import { NextRequest } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "../../lib/auth";
 import { prisma } from "../../lib/prism";
+import { requireAdmin } from "../../lib/authorization";
 import {
   successResponse,
   errorResponse,
   handleApiError,
 } from "../../utils/api";
-import type { SessionUser } from "../../types/auth.types";
 import type { UserWhereInput } from "../../../generated/prisma/models/User";
 import { Role } from "../../../generated/prisma/enums";
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    const user = session?.user as SessionUser | undefined;
-
-    if (!user || user.role !== "ADMIN") {
-      return errorResponse("Forbidden", 403);
-    }
+    await requireAdmin();
 
     const { searchParams } = new URL(req.url);
     const page = Math.max(1, Number(searchParams.get("page") ?? 1));

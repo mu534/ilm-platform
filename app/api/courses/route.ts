@@ -1,13 +1,10 @@
 import { NextRequest } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "../../lib/auth";
 import { prisma } from "../../lib/prism";
 import { courseSchema } from "../../lib/validations";
 import { successResponse, errorResponse, handleApiError, slugify } from "../../utils/api";
 import { checkRateLimit, getClientIp } from "../../lib/rateLimit";
 import { publicCourseWhere } from "../../lib/courseAccess";
-import { requireAdminOrScholar } from "../../lib/authorization";
-import type { SessionUser } from "../../types/auth.types";
+import { requireAdminOrScholar, getOptionalUser } from "../../lib/authorization";
 import type { CourseWhereInput } from "../../../generated/prisma/models/Course";
 import { CourseStatus, DifficultyLevel } from "../../../generated/prisma/enums";
 
@@ -55,9 +52,8 @@ async function generateUniqueSlug(base: string): Promise<string> {
 
 export async function GET(req: NextRequest) {
   try {
-    const session  = await getServerSession(authOptions);
-    const user     = session?.user as SessionUser | undefined;
-    const isAdmin  = user?.role === "ADMIN";
+    const user    = await getOptionalUser();
+    const isAdmin = user?.role === "ADMIN";
 
     const { searchParams } = new URL(req.url);
     const page       = Math.max(1, Number(searchParams.get("page") ?? 1));

@@ -1,13 +1,11 @@
 import { NextRequest } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "../../lib/auth";
+import { requireUserFresh } from "../../lib/authorization";
 import { uploadToCloudinary } from "../../lib/cloudinary";
 import {
   successResponse,
   errorResponse,
   handleApiError,
 } from "../../utils/api";
-import type { SessionUser } from "../../types/next-auth";
 
 type ResourceType = "image" | "video" | "raw" | "auto";
 
@@ -24,16 +22,14 @@ function getResourceType(mimeType: string): ResourceType | null {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) return errorResponse("Unauthorized", 401);
+    const user = await requireUserFresh();
 
-    const { role: userRole } = session.user as SessionUser;
-    if (!["ADMIN", "SCHOLAR"].includes(userRole)) {
+    if (!["ADMIN", "SCHOLAR"].includes(user.role)) {
       return errorResponse("Forbidden", 403);
     }
 
     const formData = await req.formData();
-    const file = formData.get("file");
+    const file   = formData.get("file");
     const folder = formData.get("folder");
 
     if (!(file instanceof File)) {
@@ -53,16 +49,12 @@ export async function POST(req: NextRequest) {
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
-    const result = await uploadToCloudinary(
-      buffer,
-      resolvedFolder,
-      resourceType,
-    );
+    const result = await uploadToCloudinary(buffer, resolvedFolder, resourceType);
 
     return successResponse({
-      url: result.url,
+      url:      result.url,
       publicId: result.publicId,
-      type: resourceType,
+      type:     resourceType,
     });
   } catch (error) {
     return handleApiError(error);

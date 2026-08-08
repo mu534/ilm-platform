@@ -1,9 +1,7 @@
 import { NextRequest } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "../../lib/auth";
 import { prisma } from "../../lib/prism";
+import { requireAdmin, getOptionalUser } from "../../lib/authorization";
 import { successResponse, errorResponse, handleApiError } from "../../utils/api";
-import type { SessionUser } from "../../types/auth.types";
 import { z } from "zod";
 
 const cmsSchema = z.object({
@@ -16,7 +14,7 @@ const cmsSchema = z.object({
   order:    z.number().int().default(0),
 });
 
-// GET /api/cms?key=homepage_banner — public, fetch CMS content by key
+// GET /api/cms?key=homepage_banner — public read by key; admin sees all
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -27,13 +25,11 @@ export async function GET(req: NextRequest) {
       return successResponse(item);
     }
 
-    // Return all active CMS items (for admin)
-    const session = await getServerSession(authOptions);
-    const user = session?.user as SessionUser | undefined;
+    const user    = await getOptionalUser();
     const isAdmin = user?.role === "ADMIN";
 
     const items = await prisma.cmsContent.findMany({
-      where: isAdmin ? {} : { active: true },
+      where:   isAdmin ? {} : { active: true },
       orderBy: { order: "asc" },
     });
     return successResponse(items);
@@ -42,12 +38,10 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// POST /api/cms — admin only, create or update CMS content
+// POST /api/cms — admin only
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    const user = session?.user as SessionUser | undefined;
-    if (user?.role !== "ADMIN") return errorResponse("Forbidden", 403);
+    await requireAdmin();
 
     const body = (await req.json()) as unknown;
     const data = cmsSchema.parse(body);
@@ -66,9 +60,7 @@ export async function POST(req: NextRequest) {
 // DELETE /api/cms?key=xxx — admin only
 export async function DELETE(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    const user = session?.user as SessionUser | undefined;
-    if (user?.role !== "ADMIN") return errorResponse("Forbidden", 403);
+    await requireAdmin();
 
     const { searchParams } = new URL(req.url);
     const key = searchParams.get("key");

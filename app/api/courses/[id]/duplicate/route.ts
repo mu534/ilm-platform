@@ -1,9 +1,7 @@
 import { NextRequest } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "../../../../lib/auth";
 import { prisma } from "../../../../lib/prism";
+import { requireUserFresh } from "../../../../lib/authorization";
 import { successResponse, errorResponse, handleApiError, slugify } from "../../../../utils/api";
-import type { SessionUser } from "../../../../types/auth.types";
 
 /**
  * POST /api/courses/[id]/duplicate
@@ -15,9 +13,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    const user    = session?.user as SessionUser | undefined;
-    if (!user) return errorResponse("Unauthorized", 401);
+    const user = await requireUserFresh();
     if (!["ADMIN", "SCHOLAR"].includes(user.role)) {
       return errorResponse("Forbidden", 403);
     }

@@ -1,13 +1,10 @@
 import { NextRequest } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "../../../lib/auth";
 import { prisma } from "../../../lib/prism";
 import { courseSchema } from "../../../lib/validations";
 import { successResponse, errorResponse, handleApiError } from "../../../utils/api";
 import { getClientIp } from "../../../lib/rateLimit";
 import { isPublicCourse } from "../../../lib/courseAccess";
-import { requireUserFresh } from "../../../lib/authorization";
-import type { SessionUser } from "../../../types/auth.types";
+import { requireUserFresh, getOptionalUser } from "../../../lib/authorization";
 import { z } from "zod";
 
 // ── Shared select ─────────────────────────────────────────────────────────────
@@ -78,9 +75,8 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    const user    = session?.user as SessionUser | undefined;
-    const { id }  = await params;
+    const user   = await getOptionalUser();
+    const { id } = await params;
 
     const course = await prisma.course.findFirst({
       where: { OR: [{ id }, { slug: id }] },

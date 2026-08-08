@@ -12,10 +12,11 @@ interface NotifyOptions {
 // Notification types users can mute from Settings. Transactional types
 // (course approval, quiz results, certificates, new followers) are always
 // sent — same principle as not being able to turn off "your order shipped".
-const MUTABLE_TYPES = new Set<NotificationType>(["NEW_LECTURE", "NEW_COURSE", "COMMENT_REPLY"]);
+// COURSE_ANNOUNCEMENT is gated behind notifyNewContent (same as NEW_LECTURE).
+const MUTABLE_TYPES = new Set<NotificationType>(["NEW_LECTURE", "NEW_COURSE", "COMMENT_REPLY", "COURSE_ANNOUNCEMENT"]);
 
 function prefFieldFor(type: NotificationType): "notifyNewContent" | "notifyComments" | null {
-  if (type === "NEW_LECTURE" || type === "NEW_COURSE") return "notifyNewContent";
+  if (type === "NEW_LECTURE" || type === "NEW_COURSE" || type === "COURSE_ANNOUNCEMENT") return "notifyNewContent";
   if (type === "COMMENT_REPLY") return "notifyComments";
   return null;
 }

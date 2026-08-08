@@ -1,9 +1,7 @@
 import { NextRequest } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "../../../lib/auth";
 import { prisma } from "../../../lib/prism";
+import { requireUserFresh } from "../../../lib/authorization";
 import { successResponse, errorResponse, handleApiError } from "../../../utils/api";
-import type { SessionUser } from "../../../types/auth.types";
 import { z } from "zod";
 
 const preferencesSchema = z.object({
@@ -14,9 +12,7 @@ const preferencesSchema = z.object({
 
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions);
-    const user     = session?.user as SessionUser | undefined;
-    if (!user) return errorResponse("Unauthorized", 401);
+    const user = await requireUserFresh();
 
     const prefs = await prisma.user.findUnique({
       where:  { id: user.id },
@@ -32,9 +28,7 @@ export async function GET() {
 
 export async function PATCH(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    const user     = session?.user as SessionUser | undefined;
-    if (!user) return errorResponse("Unauthorized", 401);
+    const user = await requireUserFresh();
 
     const body = preferencesSchema.parse(await req.json());
 

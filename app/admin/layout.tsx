@@ -8,16 +8,17 @@ import { GiMoon } from "react-icons/gi";
 import type { SessionUser } from "@/app/types/auth.types";
 
 const adminNav = [
-  { href: "/admin",             icon: <FiGrid />,      label: "Overview",    adminOnly: true  },
-  { href: "/admin/analytics",   icon: <FiBarChart2 />, label: "Analytics",   adminOnly: true  },
-  { href: "/admin/courses",     icon: <FiLayout />,    label: "Courses",     adminOnly: false },
-  { href: "/admin/categories",  icon: <FiTag />,       label: "Categories",  adminOnly: true  },
-  { href: "/admin/enrollments", icon: <FiList />,      label: "Enrollments", adminOnly: true  },
-  { href: "/admin/users",       icon: <FiUsers />,     label: "Users",       adminOnly: true  },
-  { href: "/admin/scholars",    icon: <FiStar />,      label: "Scholars",    adminOnly: true  },
-  { href: "/admin/reports",     icon: <FiFlag />,      label: "Reports",     adminOnly: true  },
-  { href: "/admin/cms",         icon: <FiFileText />,  label: "CMS",         adminOnly: true  },
-  { href: "/admin/audit-log",   icon: <FiShield />,    label: "Audit Log",   adminOnly: true  },
+  { href: "/admin",              icon: <FiGrid />,      label: "Overview",    adminOnly: true  },
+  { href: "/admin/analytics",    icon: <FiBarChart2 />, label: "Analytics",   adminOnly: true  },
+  { href: "/admin/courses",      icon: <FiLayout />,    label: "Courses",     adminOnly: false },
+  { href: "/admin/categories",   icon: <FiTag />,       label: "Categories",  adminOnly: true  },
+  { href: "/admin/enrollments",  icon: <FiList />,      label: "Enrollments", adminOnly: true  },
+  { href: "/admin/users",        icon: <FiUsers />,     label: "Users",       adminOnly: true  },
+  { href: "/admin/scholars",     icon: <FiStar />,      label: "Scholars",    adminOnly: true  },
+  { href: "/admin/reports",      icon: <FiFlag />,      label: "Reports",     adminOnly: true  },
+  { href: "/admin/cms",          icon: <FiFileText />,  label: "CMS",         adminOnly: true  },
+  { href: "/admin/audit-log",    icon: <FiShield />,    label: "Audit Log",   adminOnly: true  },
+  { href: "/admin/my-analytics", icon: <FiBarChart2 />, label: "My Analytics", adminOnly: false, scholarOnly: true },
 ];
 
 export default async function AdminLayout({
@@ -55,7 +56,11 @@ export default async function AdminLayout({
         {/* Nav */}
         <nav className="p-3 flex-1 flex flex-col gap-0.5">
           {adminNav
-            .filter((item) => isAdmin || !item.adminOnly)
+            .filter((item) => {
+              if (item.adminOnly && !isAdmin) return false;
+              if ((item as { scholarOnly?: boolean }).scholarOnly && isAdmin) return false;
+              return true;
+            })
             .map((item) => (
               <Link
                 key={item.href}

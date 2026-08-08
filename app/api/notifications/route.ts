@@ -1,28 +1,25 @@
 import { NextRequest } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "../../lib/auth";
 import { prisma } from "../../lib/prism";
+import { requireUserFresh } from "../../lib/authorization";
 import { successResponse, errorResponse, handleApiError } from "../../utils/api";
-import type { SessionUser } from "../../types/auth.types";
 
-// GET /api/notifications — get current user's notifications
+// GET /api/notifications — get current user's notifications only
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    const user = session?.user as SessionUser | undefined;
-    if (!user) return errorResponse("Unauthorized", 401);
+    const user = await requireUserFresh();
 
     const { searchParams } = new URL(req.url);
     const unreadOnly = searchParams.get("unread") === "true";
     const page       = Math.max(1, Number(searchParams.get("page") ?? 1));
     const pageSize   = Math.min(50, Number(searchParams.get("pageSize") ?? 20));
 
+    // Always scoped to authenticated user — never trust client-supplied userId
     const where = {
       userId: user.id,
       ...(unreadOnly ? { read: false } : {}),
     };
 
-    const [total, notifications] = await Promise.all([
+    const [total, notifications, unreadCount] = await Promise.all([
       prisma.notification.count({ where }),
       prisma.notification.findMany({
         where,
@@ -30,11 +27,8 @@ export async function GET(req: NextRequest) {
         skip: (page - 1) * pageSize,
         take: pageSize,
       }),
+      prisma.notification.count({ where: { userId: user.id, read: false } }),
     ]);
-
-    const unreadCount = await prisma.notification.count({
-      where: { userId: user.id, read: false },
-    });
 
     return successResponse({ notifications, total, unreadCount });
   } catch (error) {
@@ -42,12 +36,10 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// PATCH /api/notifications — mark all as read
+// PATCH /api/notifications — mark notifications as read (own only)
 export async function PATCH(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    const user = session?.user as SessionUser | undefined;
-    if (!user) return errorResponse("Unauthorized", 401);
+    const user = await requireUserFresh();
 
     const body = (await req.json()) as { ids?: string[]; all?: boolean };
 
@@ -59,7 +51,8 @@ export async function PATCH(req: NextRequest) {
       return successResponse({ message: "All notifications marked as read" });
     }
 
-    if (body.ids?.length) {
+    if (Array.isArray(body.ids) && body.ids.length > 0) {
+      // Scope to user.id to prevent IDOR — can't mark other users' notifications
       await prisma.notification.updateMany({
         where: { userId: user.id, id: { in: body.ids } },
         data:  { read: true },

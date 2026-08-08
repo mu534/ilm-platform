@@ -3,6 +3,7 @@ import { prisma } from "../../lib/prism";
 import { commentSchema } from "../../lib/validations";
 import { requireUserFresh } from "../../lib/authorization";
 import { requireLectureLearningAccess } from "../../lib/courseAccess";
+import { notify } from "../../lib/notifications";
 import {
   successResponse,
   errorResponse,
@@ -105,6 +106,23 @@ export async function POST(req: NextRequest) {
         author: { select: { id: true, name: true, image: true } },
       },
     });
+
+    // Notify the parent comment's author about the reply (if this is a reply)
+    if (data.parentId) {
+      const parentComment = await prisma.comment.findUnique({
+        where:  { id: data.parentId },
+        select: { authorId: true, lecture: { select: { slug: true } } },
+      });
+      if (parentComment && parentComment.authorId !== user.id) {
+        await notify({
+          userId:  parentComment.authorId,
+          type:    "COMMENT_REPLY",
+          title:   "New reply to your comment",
+          message: `${user.name ?? "Someone"} replied: "${data.body.slice(0, 100)}${data.body.length > 100 ? "…" : ""}"`,
+          link:    `/lectures/${parentComment.lecture?.slug ?? data.lectureId}`,
+        }).catch(() => {/* non-critical */});
+      }
+    }
 
     return successResponse(comment, 201);
   } catch (error) {

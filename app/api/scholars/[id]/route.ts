@@ -1,14 +1,12 @@
 import { NextRequest } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "../../../lib/auth";
 import { prisma } from "../../../lib/prism";
+import { requireUserFresh, requireAdmin } from "../../../lib/authorization";
 import { scholarSchema } from "../../../lib/validations";
 import {
   successResponse,
   errorResponse,
   handleApiError,
 } from "../../../utils/api";
-import type { SessionUser } from "../../../types/next-auth";
 
 export async function GET(
   _req: NextRequest,
@@ -53,20 +51,14 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) return errorResponse("Unauthorized", 401);
-
-    const { id: userId, role: userRole } = session.user as SessionUser;
+    const user = await requireUserFresh();
     const { id } = await params;
 
-    const scholar = await prisma.scholar.findUnique({
-      where: { id },
-    });
+    const scholar = await prisma.scholar.findUnique({ where: { id } });
     if (!scholar) return errorResponse("Scholar not found", 404);
 
-    const isAdmin = userRole === "ADMIN";
-    const isOwner = scholar.userId === userId;
-
+    const isAdmin = user.role === "ADMIN";
+    const isOwner = scholar.userId === user.id;
     if (!isAdmin && !isOwner) return errorResponse("Forbidden", 403);
 
     const body = (await req.json()) as unknown;
@@ -89,11 +81,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) return errorResponse("Unauthorized", 401);
-
-    const { role: userRole } = session.user as SessionUser;
-    if (userRole !== "ADMIN") return errorResponse("Forbidden", 403);
+    await requireAdmin();
     const { id } = await params;
 
     await prisma.scholar.delete({ where: { id } });

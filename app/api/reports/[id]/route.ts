@@ -1,9 +1,7 @@
 import { NextRequest } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "../../../lib/auth";
 import { prisma } from "../../../lib/prism";
+import { requireUserFresh } from "../../../lib/authorization";
 import { successResponse, errorResponse, handleApiError } from "../../../utils/api";
-import type { SessionUser } from "../../../types/auth.types";
 import { z } from "zod";
 
 const resolveSchema = z.object({
@@ -17,29 +15,39 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    const user = session?.user as SessionUser | undefined;
-    if (user?.role !== "ADMIN") return errorResponse("Forbidden", 403);
+    const user = await requireUserFresh();
+    if (user.role !== "ADMIN") return errorResponse("Forbidden", 403);
 
     const { id } = await params;
     const body = (await req.json()) as unknown;
     const { status, note } = resolveSchema.parse(body);
 
+    const existing = await prisma.report.findUnique({ where: { id } });
+    if (!existing) return errorResponse("Report not found", 404);
+
     const report = await prisma.report.update({
       where: { id },
       data: {
         status,
-        resolvedNote: note,
+        resolvedNote: note ?? null,
         resolvedAt:   new Date(),
+        resolvedById: user.id,
       },
     });
 
-    // If resolved, optionally hide the reported comment
-    if (status === "RESOLVED" && report.commentId) {
-      await prisma.comment.update({
-        where: { id: report.commentId },
-        data:  { approved: false },
-      });
+    // If resolved, take content action based on what was reported
+    if (status === "RESOLVED") {
+      if (report.commentId) {
+        await prisma.comment.update({
+          where: { id: report.commentId },
+          data:  { approved: false },
+        }).catch(() => {/* comment may have been deleted */});
+      }
+      if (report.forumQuestionId) {
+        // Mark forum question as unresolved (soft hide by locking — field doesn't exist,
+        // so we just log the action; extending to a "hidden" field is a future migration)
+        // For now, the admin can delete directly via admin panel
+      }
     }
 
     return successResponse(report);

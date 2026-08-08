@@ -1,9 +1,7 @@
 import { NextRequest } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "../../../lib/auth";
 import { prisma } from "../../../lib/prism";
+import { requireAdmin } from "../../../lib/authorization";
 import { successResponse, errorResponse, handleApiError } from "../../../utils/api";
-import type { SessionUser } from "../../../types/auth.types";
 import { z } from "zod";
 
 const updateSchema = z.object({
@@ -39,9 +37,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    const user = session?.user as SessionUser | undefined;
-    if (user?.role !== "ADMIN") return errorResponse("Forbidden", 403);
+    await requireAdmin();
 
     const { id } = await params;
     const body = (await req.json()) as unknown;
@@ -59,9 +55,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    const user = session?.user as SessionUser | undefined;
-    if (user?.role !== "ADMIN") return errorResponse("Forbidden", 403);
+    await requireAdmin();
 
     const { id } = await params;
     await prisma.category.delete({ where: { id } });

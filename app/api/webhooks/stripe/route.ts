@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { getStripe } from "../../../lib/stripe";
 import { prisma } from "../../../lib/prism";
-import { createEnrollment, AlreadyEnrolledError } from "../../../lib/enrollment";
+import { createEnrollment, AlreadyEnrolledError, checkPrerequisites } from "../../../lib/enrollment";
 
 /**
  * POST /api/webhooks/stripe
@@ -116,6 +116,18 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       stripePaymentIntentId: typeof session.payment_intent === "string" ? session.payment_intent : null,
     },
   });
+
+  // For paid courses, prerequisites are checked at checkout time (before payment),
+  // but we re-verify here to be safe — the prerequisite state could theoretically
+  // change between checkout creation and payment completion.
+  const prereqCheck = await checkPrerequisites(payment.userId, payment.courseId);
+  if (!prereqCheck.satisfied) {
+    // eslint-disable-next-line no-console
+    console.error(
+      `[stripe webhook] Prerequisites not satisfied for user=${payment.userId} course=${payment.courseId}. Enrollment skipped.`,
+    );
+    return;
+  }
 
   try {
     await createEnrollment(payment.userId, payment.courseId);

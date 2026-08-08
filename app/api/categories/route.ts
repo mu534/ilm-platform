@@ -1,9 +1,7 @@
 import { NextRequest } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "../../lib/auth";
 import { prisma } from "../../lib/prism";
+import { requireAdmin, getOptionalUser } from "../../lib/authorization";
 import { successResponse, errorResponse, handleApiError } from "../../utils/api";
-import type { SessionUser } from "../../types/auth.types";
 import { z } from "zod";
 
 const categorySchema = z.object({
@@ -33,9 +31,7 @@ export async function GET() {
 // POST /api/categories — admin only
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    const user = session?.user as SessionUser | undefined;
-    if (user?.role !== "ADMIN") return errorResponse("Forbidden", 403);
+    await requireAdmin();
 
     const body = (await req.json()) as unknown;
     const data = categorySchema.parse(body);

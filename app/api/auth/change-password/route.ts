@@ -1,8 +1,7 @@
 import { NextRequest } from "next/server";
-import { getServerSession } from "next-auth";
 import bcrypt from "bcryptjs";
-import { authOptions } from "../../../lib/auth";
 import { prisma } from "../../../lib/prism";
+import { requireUserFresh } from "../../../lib/authorization";
 import { successResponse, errorResponse, handleApiError } from "../../../utils/api";
 import { z } from "zod";
 
@@ -17,20 +16,17 @@ const schema = z.object({
 // POST /api/auth/change-password
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) return errorResponse("Unauthorized", 401);
+    const sessionUser = await requireUserFresh();
 
     const body = (await req.json()) as unknown;
     const { currentPassword, newPassword } = schema.parse(body);
 
     const user = await prisma.user.findUnique({
-      where: { id: (session.user as { id: string }).id },
+      where:  { id: sessionUser.id },
       select: { id: true, password: true },
     });
-
     if (!user) return errorResponse("User not found", 404);
 
-    // Google/OAuth users have no password
     if (!user.password) {
       return errorResponse(
         "Your account uses Google sign-in. Password change is not available.",

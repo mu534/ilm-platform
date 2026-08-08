@@ -5,6 +5,38 @@ export class AlreadyEnrolledError extends Error {
 }
 
 /**
+ * Check whether a user has satisfied all prerequisites for a course.
+ * All prerequisite courses must have a COMPLETED enrollment.
+ * Returns { satisfied: true } or { satisfied: false, missing: [...] }.
+ */
+export async function checkPrerequisites(
+  userId: string,
+  courseId: string,
+): Promise<{ satisfied: true } | { satisfied: false; missing: { id: string; title: string; slug: string }[] }> {
+  const prereqs = await prisma.coursePrerequisite.findMany({
+    where:   { dependentCourseId: courseId },
+    include: { prerequisiteCourse: { select: { id: true, title: true, slug: true } } },
+  });
+
+  if (prereqs.length === 0) return { satisfied: true };
+
+  const prereqCourseIds = prereqs.map((p) => p.prerequisiteCourseId);
+
+  const completedEnrollments = await prisma.enrollment.findMany({
+    where:  { userId, courseId: { in: prereqCourseIds }, status: "COMPLETED" },
+    select: { courseId: true },
+  });
+  const completedIds = new Set(completedEnrollments.map((e) => e.courseId));
+
+  const missing = prereqs
+    .filter((p) => !completedIds.has(p.prerequisiteCourseId))
+    .map((p) => p.prerequisiteCourse);
+
+  if (missing.length === 0) return { satisfied: true };
+  return { satisfied: false, missing };
+}
+
+/**
  * Creates an enrollment and pre-seeds LectureProgress rows for every
  * published lecture in the course, so progress percentage is accurate
  * from the very first request.

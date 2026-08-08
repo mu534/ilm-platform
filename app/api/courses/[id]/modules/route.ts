@@ -1,12 +1,9 @@
 import { NextRequest } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "../../../../lib/auth";
 import { prisma } from "../../../../lib/prism";
 import { moduleSchema } from "../../../../lib/validations";
-import { requireAdminOrScholar } from "../../../../lib/authorization";
+import { requireAdminOrScholar, getOptionalUser } from "../../../../lib/authorization";
 import { isPublicCourse } from "../../../../lib/courseAccess";
 import { successResponse, errorResponse, handleApiError } from "../../../../utils/api";
-import type { SessionUser } from "../../../../types/auth.types";
 
 // GET /api/courses/[id]/modules
 export async function GET(
@@ -25,10 +22,8 @@ export async function GET(
     });
     if (!course) return errorResponse("Course not found", 404);
 
-    const session = await getServerSession(authOptions);
-    const user = session?.user as SessionUser | undefined;
-    const isStaff =
-      user?.role === "ADMIN" || (user != null && course.authorId === user.id);
+    const user    = await getOptionalUser();
+    const isStaff = user?.role === "ADMIN" || (user != null && course.authorId === user.id);
 
     if (!isStaff && !isPublicCourse(course)) {
       return errorResponse("Course not found", 404);

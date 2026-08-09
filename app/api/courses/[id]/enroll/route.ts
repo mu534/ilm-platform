@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { prisma } from "../../../../lib/prism";
 import { requireUserFresh } from "../../../../lib/authorization";
-import { createEnrollment, AlreadyEnrolledError, checkPrerequisites, CourseNotAvailableError } from "../../../../lib/enrollment";
+import { createEnrollment, AlreadyEnrolledError, CourseNotAvailableError, PrerequisiteNotMetError } from "../../../../lib/enrollment";
 import { isPublicCourse } from "../../../../lib/courseAccess";
 import { successResponse, errorResponse, handleApiError } from "../../../../utils/api";
 
@@ -31,15 +31,6 @@ export async function POST(
       return errorResponse("This is a paid course — use the checkout flow to enroll", 402);
     }
 
-    // Prerequisite check — authoritative from DB, never trust client
-    const prereqCheck = await checkPrerequisites(user.id, courseId);
-    if (!prereqCheck.satisfied) {
-      return errorResponse(
-        `You must complete the following courses first: ${prereqCheck.missing.map((c) => c.title).join(", ")}`,
-        403,
-      );
-    }
-
     try {
       const enrollment = await createEnrollment(user.id, courseId);
       return successResponse(enrollment, 201);
@@ -49,6 +40,12 @@ export async function POST(
       }
       if (err instanceof CourseNotAvailableError) {
         return errorResponse("Course is not available for enrollment", 404);
+      }
+      if (err instanceof PrerequisiteNotMetError) {
+        return errorResponse(
+          `You must complete the following courses first: ${err.missing.map((c) => c.title).join(", ")}`,
+          403,
+        );
       }
       throw err;
     }

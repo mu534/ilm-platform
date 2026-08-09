@@ -101,20 +101,21 @@ export async function requireLectureLearningAccess(args: LectureLearningArgs) {
   const lecture = await prisma.lecture.findUnique({
     where: { id: lectureId },
     select: {
-      id: true,
-      published: true,
-      authorId: true,
-      moduleId: true,
+      id:             true,
+      published:      true,
+      approvalStatus: true,
+      authorId:       true,
+      moduleId:       true,
       module: {
         select: {
           courseId: true,
           course: {
             select: {
-              id: true,
-              authorId: true,
-              published: true,
-              status: true,
-              approvalStatus: true,
+              id:                 true,
+              authorId:           true,
+              published:          true,
+              status:             true,
+              approvalStatus:     true,
               sequentialLearning: true,
             },
           },
@@ -131,6 +132,10 @@ export async function requireLectureLearningAccess(args: LectureLearningArgs) {
   if (!course) {
     const isStaff = isAdminRole(role) || lecture.authorId === userId;
     if (!lecture.published && !isStaff) throw new HttpError("Lecture not found", 404);
+    // Unapproved standalone lectures are not visible to non-staff
+    if (!isStaff && lecture.approvalStatus !== "APPROVED") {
+      throw new HttpError("Lecture not found", 404);
+    }
     return {
       lectureId: lecture.id,
       courseId: null as string | null,
@@ -144,6 +149,10 @@ export async function requireLectureLearningAccess(args: LectureLearningArgs) {
   if (!isStaff) {
     await requireEnrollment(userId, course.id);
     if (!lecture.published) {
+      throw new HttpError("This lecture is not available", 403);
+    }
+    // Enrolled students may not access lectures that have not been approved
+    if (lecture.approvalStatus !== "APPROVED") {
       throw new HttpError("This lecture is not available", 403);
     }
   }

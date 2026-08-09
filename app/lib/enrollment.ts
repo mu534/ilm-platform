@@ -9,6 +9,12 @@ export class CourseNotAvailableError extends Error {
   constructor() { super("Course is not available for enrollment"); }
 }
 
+export class PrerequisiteNotMetError extends Error {
+  constructor(public readonly missing: { id: string; title: string; slug: string }[]) {
+    super(`Prerequisite courses not completed: ${missing.map((c) => c.title).join(", ")}`);
+  }
+}
+
 /**
  * Check whether a user has satisfied all prerequisites for a course.
  * All prerequisite courses must have a COMPLETED enrollment.
@@ -93,6 +99,14 @@ export async function createEnrollment(
   // explicitly skips this check (paid-course Stripe webhook path).
   if (!opts.skipPublicCheck && !isPublicCourse(course)) {
     throw new CourseNotAvailableError();
+  }
+
+  // Prerequisites — always enforced by the service itself so no caller
+  // can bypass this by forgetting to call checkPrerequisites separately.
+  // skipPublicCheck callers (Stripe webhook) still enforce prerequisites.
+  const prereqResult = await checkPrerequisites(userId, courseId);
+  if (!prereqResult.satisfied) {
+    throw new PrerequisiteNotMetError(prereqResult.missing);
   }
 
   const allLectureIds = course.modules.flatMap((m) => m.lectures.map((l) => l.id));

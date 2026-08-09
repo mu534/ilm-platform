@@ -232,6 +232,15 @@ export function AdminCoursesTable({ courses }: { courses: Course[] }) {
                       >
                         Build
                       </Link>
+                      {course.status === "PENDING_REVIEW" && (
+                        <Link
+                          href={`/admin/courses/${course.id}/review`}
+                          className="p-1.5 text-xs text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded-lg transition-colors font-semibold"
+                          title="Review this course submission"
+                        >
+                          Review
+                        </Link>
+                      )}
                       <AdminCourseActions course={course} />
                     </div>
                   </td>

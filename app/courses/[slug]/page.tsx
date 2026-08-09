@@ -102,16 +102,23 @@ export default async function CourseDetailPage({ params }: Props) {
 
   // Pre-fetch next lecture server-side
   let nextLectureSlug: string | null = null;
-  if (enrollment && enrollment.status !== "COMPLETED" && user) {
+  // For active students: find the next uncompleted lecture.
+  // For completed students: point to the first lecture so they can review content.
+  if (enrollment && user) {
     const allLectures = course.modules.flatMap((m) => m.lectures.map((l) => ({ id: l.id, slug: l.slug })));
     if (allLectures.length > 0) {
-      const done = await prisma.lectureProgress.findMany({
-        where:  { userId: user.id, lectureId: { in: allLectures.map((l) => l.id) }, completed: true },
-        select: { lectureId: true },
-      });
-      const doneSet   = new Set(done.map((p) => p.lectureId));
-      const next      = allLectures.find((l) => !doneSet.has(l.id)) ?? allLectures[0];
-      nextLectureSlug = next?.slug ?? null;
+      if (enrollment.status === "COMPLETED") {
+        // Completed — go back to the first lecture for review
+        nextLectureSlug = allLectures[0]?.slug ?? null;
+      } else {
+        const done = await prisma.lectureProgress.findMany({
+          where:  { userId: user.id, lectureId: { in: allLectures.map((l) => l.id) }, completed: true },
+          select: { lectureId: true },
+        });
+        const doneSet   = new Set(done.map((p) => p.lectureId));
+        const next      = allLectures.find((l) => !doneSet.has(l.id)) ?? allLectures[0];
+        nextLectureSlug = next?.slug ?? null;
+      }
     }
   }
 

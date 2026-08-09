@@ -45,8 +45,13 @@ export function CourseProgress({
 
   const percent     = data?.percent ?? Math.round(enrollment.progress ?? 0);
   const isCompleted = enrollment.status === "COMPLETED" || percent >= 100;
+
+  // For completed courses: nextLectureSlug is pre-set to the first lecture (see course page).
+  // Fallback to dashboard if somehow no lecture exists — never loop back to the course page.
   const continueHref = nextLectureSlug
     ? `/lectures/${nextLectureSlug}`
+    : isCompleted
+    ? "/dashboard"
     : courseSlug
     ? `/courses/${courseSlug}`
     : "/dashboard";

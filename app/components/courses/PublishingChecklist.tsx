@@ -2,12 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { FiCheckCircle, FiXCircle, FiLoader, FiSend } from "react-icons/fi";
-
-interface CheckItem {
-  label: string;
-  met:   boolean;
-}
+import { FiCheckCircle, FiXCircle, FiLoader, FiSend, FiRefreshCw } from "react-icons/fi";
 
 interface Props {
   courseId:      string;
@@ -17,18 +12,38 @@ interface Props {
 
 async function fetchChecklist(courseId: string): Promise<{ valid: boolean; errors: string[] }> {
   const res  = await fetch(`/api/courses/${courseId}/checklist`);
-  const data = await res.json();
-  return data.success ? data.data : { valid: false, errors: ["Failed to load checklist"] };
+  const data = await res.json() as { success?: boolean; data?: { valid: boolean; errors: string[] }; error?: string };
+  if (!data.success || !data.data) {
+    return { valid: false, errors: [data.error ?? "Failed to load checklist. Are you the course owner?"] };
+  }
+  return data.data;
 }
+
+// These match the exact strings returned by checkCoursePublishable()
+const ALL_REQUIREMENTS = [
+  "Title must be at least 5 characters",
+  "Description must be at least 50 characters",
+  "A thumbnail image is required",
+  "A category must be selected",
+  "At least 2 learning objectives are required",
+  "At least one module is required",
+  "At least one published lecture is required",
+];
 
 export function PublishingChecklist({ courseId, currentStatus, isAdmin }: Props) {
   const router = useRouter();
+
   const [open,    setOpen]    = useState(false);
   const [loading, setLoading] = useState(false);
   const [check,   setCheck]   = useState<{ valid: boolean; errors: string[] } | null>(null);
   const [acting,  setActing]  = useState(false);
   const [msg,     setMsg]     = useState("");
   const [err,     setErr]     = useState("");
+
+  // Status helpers — handle all variants the API can return
+  const isDraft     = currentStatus === "DRAFT" || currentStatus === "REJECTED";
+  const isPending   = currentStatus === "PENDING" || currentStatus === "PENDING_REVIEW";
+  const isPublished = currentStatus === "PUBLISHED";
 
   const loadChecklist = async () => {
     setLoading(true);
@@ -37,7 +52,13 @@ export function PublishingChecklist({ courseId, currentStatus, isAdmin }: Props)
       const result = await fetchChecklist(courseId);
       setCheck(result);
       setOpen(true);
-    } finally { setLoading(false); }
+    } catch {
+      setErr("Could not load checklist — please try again.");
+      setOpen(true);
+      setCheck({ valid: false, errors: ["Could not load checklist — please try again."] });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const submitForReview = async () => {
@@ -48,9 +69,10 @@ export function PublishingChecklist({ courseId, currentStatus, isAdmin }: Props)
         headers: { "Content-Type": "application/json" },
         body:    JSON.stringify({ action: "submit" }),
       });
-      const data = await res.json();
+      const data = await res.json() as { success?: boolean; error?: string };
       if (data.success) {
         setMsg("Submitted for review! An admin will review your course shortly.");
+        setOpen(false);
         router.refresh();
       } else {
         setErr(data.error ?? "Submission failed");
@@ -66,9 +88,10 @@ export function PublishingChecklist({ courseId, currentStatus, isAdmin }: Props)
         headers: { "Content-Type": "application/json" },
         body:    JSON.stringify({ action: "approve" }),
       });
-      const data = await res.json();
+      const data = await res.json() as { success?: boolean; error?: string };
       if (data.success) {
         setMsg("Course approved and published!");
+        setOpen(false);
         router.refresh();
       } else {
         setErr(data.error ?? "Approval failed");
@@ -76,10 +99,7 @@ export function PublishingChecklist({ courseId, currentStatus, isAdmin }: Props)
     } finally { setActing(false); }
   };
 
-  const isDraft    = currentStatus === "DRAFT" || currentStatus === "REJECTED";
-  const isPending  = currentStatus === "PENDING" || currentStatus === "PENDING_REVIEW";
-  const isPublished = currentStatus === "PUBLISHED";
-
+  // Already live
   if (isPublished) {
     return (
       <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm font-medium">
@@ -90,15 +110,49 @@ export function PublishingChecklist({ courseId, currentStatus, isAdmin }: Props)
 
   return (
     <div className="space-y-3">
-      {/* Main action button */}
+
+      {/* Success banner */}
+      {msg && (
+        <div className="flex items-center gap-2 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm">
+          <FiCheckCircle size={14} /> {msg}
+        </div>
+      )}
+
+      {/* Pending notice for non-admin */}
+      {isPending && !isAdmin && !msg && (
+        <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 text-sm">
+          <FiLoader size={14} className="animate-spin" />
+          Pending review — an admin will approve your course shortly.
+        </div>
+      )}
+
+      {/* Main trigger button */}
       {!open && !msg && (
         <button
           onClick={loadChecklist}
           disabled={loading}
           className="btn-secondary text-sm flex items-center gap-2"
         >
-          {loading ? <FiLoader className="animate-spin" size={14} /> : <FiCheckCircle size={14} />}
-          {isPending ? "View Checklist" : "Check Before Publishing"}
+          {loading
+            ? <FiLoader className="animate-spin" size={14} />
+            : <FiCheckCircle size={14} />
+          }
+          {loading
+            ? "Loading checklist…"
+            : isPending
+            ? "View Checklist"
+            : "Check Before Publishing"
+          }
+        </button>
+      )}
+
+      {/* Re-check button when panel is open */}
+      {open && !loading && (
+        <button
+          onClick={loadChecklist}
+          className="flex items-center gap-1.5 text-xs text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors"
+        >
+          <FiRefreshCw size={11} /> Refresh checklist
         </button>
       )}
 
@@ -107,19 +161,18 @@ export function PublishingChecklist({ courseId, currentStatus, isAdmin }: Props)
         <div className="glass-card rounded-xl p-5 border border-[var(--border-strong)] space-y-4">
           <h3 className="text-sm font-semibold text-[var(--text-primary)]">
             Publishing Checklist
+            <span className={`ml-2 text-xs font-normal px-2 py-0.5 rounded-full border ${
+              check.valid
+                ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                : "bg-red-500/10 text-red-400 border-red-500/20"
+            }`}>
+              {check.valid ? "Ready to publish" : `${check.errors.length} issue${check.errors.length !== 1 ? "s" : ""}`}
+            </span>
           </h3>
 
           {/* Requirements list */}
           <div className="space-y-2">
-            {[
-              "Title must be at least 5 characters",
-              "Description must be at least 50 characters",
-              "A thumbnail image is required",
-              "A category must be selected",
-              "At least 2 learning objectives are required",
-              "At least one module is required",
-              "At least one published lecture is required",
-            ].map((req) => {
+            {ALL_REQUIREMENTS.map((req) => {
               const failed = check.errors.includes(req);
               return (
                 <div key={req} className={`flex items-start gap-2.5 text-xs ${failed ? "text-red-400" : "text-emerald-400"}`}>
@@ -131,59 +184,61 @@ export function PublishingChecklist({ courseId, currentStatus, isAdmin }: Props)
                 </div>
               );
             })}
+
+            {/* Show any unexpected error messages not in the hardcoded list */}
+            {check.errors
+              .filter((e) => !ALL_REQUIREMENTS.includes(e))
+              .map((e) => (
+                <div key={e} className="flex items-start gap-2.5 text-xs text-red-400">
+                  <FiXCircle size={13} className="flex-shrink-0 mt-0.5" />
+                  <span>{e}</span>
+                </div>
+              ))
+            }
           </div>
 
           {err && <p className="text-xs text-red-400">{err}</p>}
 
           {/* Action buttons */}
-          {check.valid ? (
-            <div className="flex gap-2 pt-1">
-              {isDraft && (
-                <button
-                  onClick={submitForReview}
-                  disabled={acting}
-                  className="btn-primary text-sm flex items-center gap-1.5"
-                >
-                  {acting ? <FiLoader className="animate-spin" size={13} /> : <FiSend size={13} />}
-                  {acting ? "Submitting…" : "Submit for Review"}
-                </button>
-              )}
-              {isPending && isAdmin && (
-                <button
-                  onClick={approve}
-                  disabled={acting}
-                  className="btn-primary text-sm flex items-center gap-1.5"
-                >
-                  {acting ? <FiLoader className="animate-spin" size={13} /> : <FiCheckCircle size={13} />}
-                  {acting ? "Approving…" : "Approve & Publish"}
-                </button>
-              )}
-              {isPending && !isAdmin && (
-                <p className="text-xs text-blue-400">
-                  ✓ Submitted — waiting for admin approval.
-                </p>
-              )}
-              <button onClick={() => setOpen(false)} className="btn-secondary text-sm">
-                Close
+          <div className="flex flex-wrap gap-2 pt-1">
+            {/* Scholar: submit for review (only for drafts that pass checklist) */}
+            {isDraft && check.valid && (
+              <button
+                onClick={submitForReview}
+                disabled={acting}
+                className="btn-primary text-sm flex items-center gap-1.5"
+              >
+                {acting ? <FiLoader className="animate-spin" size={13} /> : <FiSend size={13} />}
+                {acting ? "Submitting…" : "Submit for Review"}
               </button>
-            </div>
-          ) : (
-            <div className="flex gap-2 pt-1">
-              <p className="text-xs text-red-400 flex-1">
-                Fix {check.errors.length} issue{check.errors.length !== 1 ? "s" : ""} above before publishing.
-              </p>
-              <button onClick={() => setOpen(false)} className="btn-secondary text-sm">
-                Close
-              </button>
-            </div>
-          )}
-        </div>
-      )}
+            )}
 
-      {/* Success message */}
-      {msg && (
-        <div className="flex items-center gap-2 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm">
-          <FiCheckCircle size={14} /> {msg}
+            {/* Admin: approve pending course */}
+            {isPending && isAdmin && check.valid && (
+              <button
+                onClick={approve}
+                disabled={acting}
+                className="btn-primary text-sm flex items-center gap-1.5"
+              >
+                {acting ? <FiLoader className="animate-spin" size={13} /> : <FiCheckCircle size={13} />}
+                {acting ? "Approving…" : "Approve & Publish"}
+              </button>
+            )}
+
+            {/* Admin: checklist passes but no action needed (already published handled above) */}
+            {isPending && isAdmin && !check.valid && (
+              <p className="text-xs text-amber-400 flex items-center gap-1">
+                Fix the issues above before approving.
+              </p>
+            )}
+
+            <button
+              onClick={() => { setOpen(false); setErr(""); }}
+              className="btn-secondary text-sm"
+            >
+              Close
+            </button>
+          </div>
         </div>
       )}
     </div>

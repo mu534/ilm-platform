@@ -7,7 +7,7 @@ import {
   FiPlus, FiTrash2, FiEdit2, FiChevronUp, FiChevronDown,
   FiArrowLeft, FiSave, FiX, FiLoader, FiVideo,
   FiFileText, FiHeadphones, FiFile, FiEye, FiEyeOff,
-  FiCheckCircle,
+  FiCheckCircle, FiHelpCircle,
 } from "react-icons/fi";
 import { FileUploader } from "../../../../components/FileUploader";
 import { LectureResourceManager } from "../../../../components/lectures/LectureResourceManager";
@@ -560,7 +560,11 @@ export default function CourseBuilderPage() {
                     )}
                     <p className="text-xs text-[var(--text-muted)] mt-1">
                       {mod._count.lectures} lesson{mod._count.lectures !== 1 ? "s" : ""}
-                      {mod._count.quizzes > 0 && ` · ${mod._count.quizzes} quiz`}
+                      {mod._count.quizzes > 0 && (
+                        <span className="ml-1.5 px-1.5 py-0.5 bg-purple-500/10 text-purple-400 border border-purple-500/20 rounded-full text-[10px] font-medium">
+                          {mod._count.quizzes} quiz
+                        </span>
+                      )}
                     </p>
                   </>
                 )}
@@ -668,7 +672,7 @@ export default function CourseBuilderPage() {
               ))}
             </div>
 
-            {/* Add lecture form / button */}
+            {/* Add lesson + manage quiz — module footer */}
             <div className="px-5 py-3 border-t border-[var(--border)]">
               {addingLectureIn === mod.id ? (
                 <LectureForm
@@ -679,12 +683,28 @@ export default function CourseBuilderPage() {
                   onCancel={() => setAddingLectureIn(null)}
                 />
               ) : (
-                <button
-                  onClick={() => setAddingLectureIn(mod.id)}
-                  className="flex items-center gap-1.5 text-xs text-[var(--accent)] hover:text-[var(--accent-light)] transition-colors py-1"
-                >
-                  <FiPlus size={12} /> Add Lesson
-                </button>
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <button
+                    onClick={() => setAddingLectureIn(mod.id)}
+                    className="flex items-center gap-1.5 text-xs text-[var(--accent)] hover:text-[var(--accent-light)] transition-colors py-1"
+                  >
+                    <FiPlus size={12} /> Add Lesson
+                  </button>
+
+                  {/* Quiz button — links to the dedicated quiz builder for this module */}
+                  <Link
+                    href={`/admin/modules/${mod.id}/quiz`}
+                    className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border transition-colors ${
+                      mod._count.quizzes > 0
+                        ? "bg-purple-500/10 text-purple-400 border-purple-500/20 hover:bg-purple-500/20"
+                        : "border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--accent)] hover:border-[var(--accent)]"
+                    }`}
+                    title={mod._count.quizzes > 0 ? "Edit module quiz" : "Add a quiz to this module"}
+                  >
+                    <FiHelpCircle size={12} />
+                    {mod._count.quizzes > 0 ? `Quiz (${mod._count.quizzes})` : "Add Quiz"}
+                  </Link>
+                </div>
               )}
             </div>
           </div>

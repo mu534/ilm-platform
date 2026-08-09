@@ -2,37 +2,33 @@ import Link from "next/link";
 import { prisma } from "@/app/lib/prism";
 import { publicCourseWhere } from "@/app/lib/courseAccess";
 import { ScholarCard } from "@/app/components/scholars/ScholarCard";
-import { CourseMarquee } from "@/app/components/courses/CourseMarquee";
+import { FeaturedCourseCarousel } from "@/app/components/courses/FeaturedCourseCarousel";
 import { ContinueLearningStrip } from "@/app/components/courses/ContinueLearningStrip";
 import { CategoryExplorer } from "@/app/components/CategoryExplorer";
-import { TestimonialsSection } from "@/app/components/TestimonialsSection";
-import { NewsletterSignup } from "@/app/components/NewsletterSignup";
+import SocialProofSection from "@/app/components/SocialProofSection";
+import WhyIlmPlatform from "@/app/components/WhyIlmPlatform";
 import { EnhancedSearch } from "@/app/components/EnhancedSearch";
-import { RecentActivityFeed } from "@/app/components/RecentActivityFeed";
-import { PopularTopics } from "@/app/components/PopularTopics";
-import { QuickAccess } from "@/app/components/QuickAccess";
 import type { Scholar, SessionUser } from "@/app/types/auth.types";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/lib/auth";
 import {
   FiArrowRight, FiBookOpen, FiUsers, FiUser,
-  FiMessageCircle, FiClock,
+  FiMail,
 } from "react-icons/fi";
 import { GiMoon, GiStarFormation } from "react-icons/gi";
 
-// Cache the home page for 5 minutes — prevents 14 DB queries on every visit
+// Cache the home page for 5 minutes — prevents DB queries on every visit
 export const revalidate = 300;
 
 // ─── Data fetching ────────────────────────────────────────────────────────────
 
 async function getHomeData() {
-  // Run queries in two sequential batches to avoid overwhelming the
-  // connection pool on cold start. Batch 1 = critical above-the-fold data.
-  const [marqueeCourses, featuredScholars, categoriesRaw] = await Promise.all([
+  // Batch 1 = critical above-the-fold data.
+  const [featuredCourses, featuredScholars, categoriesRaw] = await Promise.all([
     prisma.course.findMany({
       where:   { ...publicCourseWhere },
-      take:    16,
-      orderBy: { createdAt: "desc" },          // cheaper than _count sort
+      take:    10,
+      orderBy: { createdAt: "desc" },
       include: {
         category: { select: { id: true, name: true, slug: true, icon: true, color: true } },
         author:   { select: { id: true, name: true, image: true } },
@@ -54,63 +50,27 @@ async function getHomeData() {
     }),
   ]);
 
-  // Batch 2 = stats + activity (below the fold)
-  const [counts, recentStats, popularTopics, recentActivity, testimonials] =
-    await Promise.all([
-      Promise.all([
-        prisma.course.count({ where: { ...publicCourseWhere } }),
-        prisma.scholar.count(),
-        prisma.user.count(),
-      ]),
-      Promise.all([
-        prisma.comment.count({
-          where: { createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } },
-        }),
-        prisma.course.count({
-          where: { createdAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) }, ...publicCourseWhere },
-        }),
-        prisma.user.count({
-          where: { createdAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } },
-        }),
-      ]),
-      prisma.lecture.findMany({
-        where:  { published: true },
-        select: { tags: true },
-        take:   100,
-      }),
-      Promise.all([
-        prisma.comment.findMany({
-          take:    3,
-          orderBy: { createdAt: "desc" },
-          include: {
-            author:  { select: { name: true, image: true } },
-            lecture: { select: { title: true, slug: true } },
-          },
-        }),
-        prisma.lecture.findMany({
-          where:   { published: true },
-          take:    2,
-          orderBy: { createdAt: "desc" },
-          include: {
-            author:  { select: { name: true } },
-            scholar: { include: { user: { select: { name: true } } } },
-          },
-        }),
-        prisma.scholar.findMany({
-          take:    2,
-          orderBy: { createdAt: "desc" },
-          include: { user: { select: { name: true } } },
-        }),
-      ]),
-      prisma.user.findMany({
-        where:  { bio: { not: null }, role: "USER" },
-        take:   3,
-        select: { name: true, image: true, bio: true },
-      }),
-    ]);
+  // Batch 2 = stats + reviews (below the fold)
+  const [counts, courseReviews] = await Promise.all([
+    Promise.all([
+      prisma.course.count({ where: { ...publicCourseWhere } }),
+      prisma.scholar.count(),
+      prisma.user.count(),
+    ]),
+    // Real course reviews for social proof
+    prisma.courseRating.findMany({
+      where:   { review: { not: null } },
+      take:    3,
+      orderBy: { createdAt: "desc" },
+      include: {
+        user:   { select: { name: true, image: true } },
+        course: { select: { title: true } },
+      },
+    }),
+  ]);
 
-  // Batch-fetch average ratings for marquee courses — single query, no N+1
-  const courseIds = marqueeCourses.map((c) => c.id);
+  // Batch-fetch average ratings — single query, no N+1
+  const courseIds = featuredCourses.map((c) => c.id);
   const ratings   = await prisma.courseRating.groupBy({
     by:     ["courseId"],
     where:  { courseId: { in: courseIds } },
@@ -122,10 +82,21 @@ async function getHomeData() {
     .map((c) => ({ ...c, courseCount: c._count.courses }))
     .filter((c) => c.courseCount > 0);
 
+  // Map reviews to component interface
+  const reviews = courseReviews
+    .filter((r) => r.review && r.review.length > 10)
+    .map((r) => ({
+      id:          r.id,
+      rating:      r.rating,
+      review:      r.review!,
+      userName:    r.user.name,
+      userImage:   r.user.image,
+      courseTitle:  r.course.title,
+    }));
+
   return {
-    marqueeCourses, ratingMap, featuredScholars,
-    categories,
-    counts, recentStats, popularTopics, recentActivity, testimonials,
+    featuredCourses, ratingMap, featuredScholars,
+    categories, counts, reviews,
   };
 }
 
@@ -175,9 +146,9 @@ function SectionHeader({
   eyebrow: string; title: string; href?: string; linkLabel?: string;
 }) {
   return (
-    <div className="flex items-end justify-between mb-8 gap-4">
+    <div className="flex items-end justify-between mb-10 gap-4">
       <div>
-        <p className="text-xs text-[var(--accent)] uppercase tracking-widest font-semibold mb-1.5">
+        <p className="text-xs text-[var(--accent)] uppercase tracking-widest font-semibold mb-2">
           {eyebrow}
         </p>
         <h2 className="font-display text-2xl sm:text-3xl font-semibold text-[var(--text-primary)] leading-tight">
@@ -202,14 +173,14 @@ function StatCard({ icon, count, label }: {
 }) {
   return (
     <div className="
-      flex flex-col items-center gap-2 p-4 sm:p-6 rounded-2xl text-center
+      flex flex-col items-center gap-2.5 p-6 sm:p-8 rounded-2xl text-center
       border border-[var(--border)] bg-[var(--bg-card)]
       hover:border-[var(--border-strong)] hover:bg-[var(--bg-card-hover)]
       hover:shadow-[var(--shadow-md)] hover:-translate-y-0.5
       transition-all duration-300
     ">
       <div className="text-[var(--accent)] text-xl">{icon}</div>
-      <div className="font-display text-2xl sm:text-4xl font-bold text-[var(--text-primary)] tabular-nums">
+      <div className="font-display text-3xl sm:text-4xl font-bold text-[var(--text-primary)] tabular-nums">
         {count.toLocaleString()}
       </div>
       <div className="text-xs sm:text-sm text-[var(--text-muted)]">{label}</div>
@@ -217,18 +188,20 @@ function StatCard({ icon, count, label }: {
   );
 }
 
+// ─── Newsletter CTA (client island) ──────────────────────────────────────────
+
+import { NewsletterForm } from "@/app/components/NewsletterForm";
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default async function HomePage() {
-  // ✅ session must be inside the component, not at module level
   const session = await getServerSession(authOptions);
   const user    = session?.user as SessionUser | null;
 
   const [
     {
-      marqueeCourses, ratingMap, featuredScholars,
-      categories,
-      counts, recentStats, popularTopics, recentActivity, testimonials,
+      featuredCourses, ratingMap, featuredScholars,
+      categories, counts, reviews,
     },
     continueLearning,
   ] = await Promise.all([
@@ -236,15 +209,12 @@ export default async function HomePage() {
     user ? getContinueLearning(user.id) : Promise.resolve([]),
   ]);
 
-  const [courseCount, scholarCount, userCount]            = counts;
-  const [recentComments, recentCourses, recentUsers]      = recentStats;
-  const [recentCommentsData, recentLecturesData, recentScholarsData] = recentActivity;
+  const [courseCount, scholarCount, userCount] = counts;
 
   const mappedScholars = featuredScholars.map(mapScholar);
 
-  // Enrich marquee courses with their batch-fetched average rating, then
-  // split into two rows for the opposite-direction scrolling banner.
-  const enrichedCourses = marqueeCourses.map((c) => ({
+  // Enrich courses with batch-fetched average rating + author name
+  const enrichedCourses = featuredCourses.map((c) => ({
     id:           c.id,
     slug:         c.slug,
     title:        c.title,
@@ -254,71 +224,14 @@ export default async function HomePage() {
     enrollCount:  c._count.enrollments,
     categoryName: c.category?.name ?? null,
     categoryIcon: c.category?.icon ?? null,
+    authorName:   c.scholar?.user.name ?? c.author.name,
   }));
-  const marqueeTopRow    = enrichedCourses.filter((_, i) => i % 2 === 0);
-  const marqueeBottomRow = enrichedCourses.filter((_, i) => i % 2 === 1);
-
-  // Popular topics
-  const tagCounts: Record<string, number> = {};
-  popularTopics.forEach(lecture => {
-    lecture.tags.forEach(tag => {
-      tagCounts[tag] = (tagCounts[tag] ?? 0) + 1;
-    });
-  });
-  const processedPopularTopics = Object.entries(tagCounts)
-    .sort(([, a], [, b]) => b - a)
-    .slice(0, 8)
-    .map(([name, count]) => ({ name, count }));
-
-  // Testimonials
-  const processedTestimonials = testimonials.map(u => ({
-    id:      u.name,
-    name:    u.name,
-    role:    "Student",
-    content: u.bio ?? "Great platform for Islamic learning!",
-    rating:  5,
-  }));
-
-  // Activity feed
-  const processedActivity = [
-    ...recentCommentsData.map(comment => ({
-      id:          `comment-${comment.id}`,
-      type:        "comment" as const,
-      title:       `New comment on "${comment.lecture.title}"`,
-      description: comment.body.length > 100
-        ? comment.body.substring(0, 100) + "…"
-        : comment.body,
-      user:      { name: comment.author.name, image: comment.author.image },
-      timestamp: comment.createdAt,
-      link:      `/lectures/${comment.lecture.slug}`,
-    })),
-    ...recentLecturesData.map(lecture => ({
-      id:          `lecture-${lecture.id}`,
-      type:        "lecture" as const,
-      title:       "New lecture published",
-      description: `"${lecture.title}" by ${lecture.scholar?.user.name ?? lecture.author.name}`,
-      user:      { name: lecture.author.name },
-      timestamp: lecture.createdAt,
-      link:      `/lectures/${lecture.slug}`,
-    })),
-    ...recentScholarsData.map(scholar => ({
-      id:          `scholar-${scholar.id}`,
-      type:        "scholar" as const,
-      title:       "New scholar joined",
-      description: `${scholar.user.name} joined the platform`,
-      user:      { name: scholar.user.name },
-      timestamp: scholar.createdAt,
-      link:      `/scholars/${scholar.id}`,
-    })),
-  ]
-    .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
-    .slice(0, 5);
 
   return (
     <div className="min-h-screen w-full">
 
       {/* ── Hero ── */}
-      <section className="relative overflow-hidden py-20  md: w-full animate-fadeInUp">
+      <section className="relative overflow-hidden pt-16 pb-12 sm:pt-24 sm:pb-16 w-full">
         <div className="absolute inset-0 pattern-overlay opacity-40" />
         <div className="relative w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center text-center">
           {/* Eyebrow */}
@@ -336,7 +249,7 @@ export default async function HomePage() {
           </p>
 
           {/* Headline */}
-          <h1 className="font-display text-4xl sm:text-5xl md:text-7xl font-bold leading-[1.1] tracking-tight mb-6 text-[var(--text-primary)]">
+          <h1 className="font-display text-4xl sm:text-5xl md:text-6xl font-bold leading-[1.1] tracking-tight mb-6 text-[var(--text-primary)]">
             Seek Knowledge
             <br />
             with <span className="gradient-text">Clarity</span>
@@ -367,54 +280,44 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ── Stats ── */}
-      <section className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 animate-fadeInUp delay-100">
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 sm:gap-4">
-          <StatCard icon={<FiBookOpen />}      count={courseCount}    label="Courses"        />
-          <StatCard icon={<FiUsers />}         count={scholarCount}   label="Scholars"       />
-          <StatCard icon={<FiUser />}          count={userCount}      label="Students"       />
-          <StatCard icon={<FiMessageCircle />} count={recentComments} label="Comments (24h)" />
-          <StatCard icon={<FiClock />}         count={recentCourses}  label="New This Week"  />
-        </div>
-        <div className="mt-8 text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-[var(--border-strong)] bg-[var(--accent-dim)]">
-            <div className="w-2 h-2 bg-[var(--accent)] rounded-full animate-pulse" />
-            <span className="text-[var(--accent)] text-sm font-medium">
-              {recentUsers} new students joined this month
-            </span>
-          </div>
+      {/* ── Stats — 3 core metrics ── */}
+      <section className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 sm:pb-20">
+        <div className="grid grid-cols-3 gap-3 sm:gap-5">
+          <StatCard icon={<FiBookOpen />} count={courseCount}  label="Courses"  />
+          <StatCard icon={<FiUsers />}    count={scholarCount} label="Scholars" />
+          <StatCard icon={<FiUser />}     count={userCount}    label="Students" />
         </div>
       </section>
 
-      {/* ── Continue Learning (real progress, signed-in users only) ── */}
+      {/* ── Continue Learning (signed-in users only) ── */}
       <ContinueLearningStrip courses={continueLearning} userName={user?.name} />
 
-      {/* ── Course Showcase — animated marquee, opposite-direction rows ── */}
+      {/* ── Featured Courses — premium carousel ── */}
       {enrichedCourses.length > 0 && (
-        <section className="w-full py-12 sm:py-16 border-t border-[var(--border)] animate-fadeInUp delay-200">
+        <section className="w-full py-16 sm:py-20">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
             <SectionHeader
               eyebrow="Structured Learning"
-              title="Explore Our Courses"
+              title="Featured Courses"
               href="/courses"
-              linkLabel="All Courses"
+              linkLabel="View All Courses"
             />
           </div>
-          <CourseMarquee topRow={marqueeTopRow} bottomRow={marqueeBottomRow} />
+          <div className="max-w-7xl mx-auto">
+            <FeaturedCourseCarousel courses={enrichedCourses} />
+          </div>
         </section>
       )}
 
-      {/* ── Browse by Category ── */}
+      {/* ── Browse by Category — alternating background ── */}
       <CategoryExplorer categories={categories} />
 
-      {/* ── Popular Topics ── */}
-      <PopularTopics topics={processedPopularTopics} />
-      {/* ── Quick Access ── */}
-      <QuickAccess />
+      {/* ── Why Ilm Platform — value propositions ── */}
+      <WhyIlmPlatform />
 
       {/* ── Featured Scholars ── */}
       {mappedScholars.length > 0 && (
-        <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 border-t border-[var(--border-subtle)] animate-fadeInUp delay-100">
+        <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
           <SectionHeader
             eyebrow="Learn from the best"
             title="Featured Scholars"
@@ -429,16 +332,10 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* ── Testimonials ── */}
-      <TestimonialsSection testimonials={processedTestimonials} />
+      {/* ── Social Proof — real course reviews ── */}
+      <SocialProofSection reviews={reviews} />
 
-      {/* ── Recent Activity ── */}
-      <RecentActivityFeed activities={processedActivity} />
-
-      {/* ── Newsletter ── */}
-      <NewsletterSignup />
-
-      {/* ── CTA Banner ── */}
+      {/* ── Final CTA + Newsletter ── */}
       <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
         <div className="relative rounded-3xl overflow-hidden border border-[var(--border-strong)]">
           <div className="absolute inset-0 hero-bg opacity-80" />
@@ -489,7 +386,7 @@ export default async function HomePage() {
                   Join thousands of students seeking authentic Islamic knowledge
                   from qualified scholars.
                 </p>
-                <div className="flex flex-wrap items-center justify-center gap-3">
+                <div className="flex flex-wrap items-center justify-center gap-3 mb-10">
                   <Link
                     href="/register"
                     className="inline-flex items-center gap-2 px-7 py-3.5 bg-gradient-to-r from-gold-500 to-gold-600 hover:from-gold-400 hover:to-gold-500 text-white rounded-xl font-semibold shadow-md shadow-gold-600/30 hover:shadow-gold-500/40 transition-all duration-300 hover:scale-105 active:scale-95 text-sm"
@@ -502,6 +399,15 @@ export default async function HomePage() {
                   >
                     Browse Courses
                   </Link>
+                </div>
+
+                {/* Newsletter signup — merged into CTA for unauthenticated */}
+                <div className="w-full max-w-md border-t border-[var(--border)] pt-8">
+                  <p className="text-sm text-[var(--text-secondary)] mb-4 flex items-center justify-center gap-2">
+                    <FiMail size={14} className="text-[var(--accent)]" />
+                    Get notified about new courses and scholars
+                  </p>
+                  <NewsletterForm />
                 </div>
               </>
             )}

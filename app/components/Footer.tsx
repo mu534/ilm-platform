@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { GiMoon, GiStarFormation } from "react-icons/gi";
 import { FiMail, FiGithub, FiHeart } from "react-icons/fi";
 
@@ -19,6 +22,16 @@ const accountLinks = [
 ];
 
 export function Footer() {
+  const pathname = usePathname();
+
+  if (
+    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/profile") ||
+    pathname.startsWith("/settings") ||
+    pathname.startsWith("/admin")
+  ) {
+    return null;
+  }
   return (
     <footer className="relative mt-16 border-t border-[var(--border)] overflow-hidden">
       {/* Light mode — warm gradient background */}

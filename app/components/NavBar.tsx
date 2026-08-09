@@ -15,6 +15,8 @@ import { useTheme } from "./ThemeProvider";
 import { NotificationBell } from "./NotificationBell";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 
+import { usePathname } from "next/navigation";
+
 const navLinks = [
   { href: "/",         label: "Home"     },
   { href: "/courses",  label: "Courses"  },
@@ -23,10 +25,21 @@ const navLinks = [
 ];
 
 export function Navbar() {
+  const pathname = usePathname();
   const { data: session }            = useSession();
   const [mobileOpen, setMobileOpen]  = useState(false);
   const { theme, toggleTheme, isLight } = useTheme();
   const user = session?.user as SessionUser | undefined;
+
+  // Hide public navbar on LMS app shell routes
+  if (
+    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/profile") ||
+    pathname.startsWith("/settings") ||
+    pathname.startsWith("/admin")
+  ) {
+    return null;
+  }
 
   return (
     <header className="sticky top-0 z-50 border-b border-[var(--border)]"

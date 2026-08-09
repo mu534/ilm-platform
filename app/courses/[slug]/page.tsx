@@ -430,7 +430,11 @@ export default async function CourseDetailPage({ params }: Props) {
                   id:    "reviews",
                   label: "Reviews",
                   count: totalRatings,
-                  content: <CourseRatingWidget courseId={course.id} isEnrolled={!!enrollment} />,
+                  content: <CourseRatingWidget
+                    courseId={course.id}
+                    isEnrolled={!!enrollment}
+                    isCompleted={enrollment?.status === "COMPLETED"}
+                  />,
                 },
               ]}
             />

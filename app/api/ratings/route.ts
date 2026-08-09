@@ -1,7 +1,6 @@
 import { NextRequest } from "next/server";
 import { prisma } from "../../lib/prism";
 import { requireUserFresh } from "../../lib/authorization";
-import { requireEnrollment } from "../../lib/courseAccess";
 import { successResponse, errorResponse, handleApiError } from "../../utils/api";
 import { z } from "zod";
 
@@ -11,7 +10,7 @@ const ratingSchema = z.object({
   review:   z.string().max(1000).optional(),
 });
 
-// POST /api/ratings — upsert course rating
+// POST /api/ratings — upsert course rating (only completed students)
 export async function POST(req: NextRequest) {
   try {
     const user = await requireUserFresh();
@@ -19,7 +18,18 @@ export async function POST(req: NextRequest) {
     const body = (await req.json()) as unknown;
     const { courseId, rating, review } = ratingSchema.parse(body);
 
-    await requireEnrollment(user.id, courseId);
+    // Must be enrolled AND have completed the course
+    const enrollment = await prisma.enrollment.findUnique({
+      where:  { userId_courseId: { userId: user.id, courseId } },
+      select: { status: true },
+    });
+
+    if (!enrollment) {
+      return errorResponse("You must be enrolled in this course to rate it", 403);
+    }
+    if (enrollment.status !== "COMPLETED") {
+      return errorResponse("You must complete the course before leaving a review", 403);
+    }
 
     const courseRating = await prisma.courseRating.upsert({
       where: { userId_courseId: { userId: user.id, courseId } },

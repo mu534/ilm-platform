@@ -5,7 +5,6 @@ import Link from "next/link";
 import { authOptions } from "../../../../lib/auth";
 import { prisma } from "../../../../lib/prism";
 import { isLectureLocked } from "../../../../lib/sequentialLearning";
-import { CommentSection } from "../../../../components/CommentSection";
 import { LikeButton } from "../../../../components/lectures/LikeButton";
 import { LectureResources } from "../../../../components/lectures/LectureResources";
 import { LectureVideoPlayer } from "../../../../components/lectures/LectureVideoPlayer";
@@ -338,9 +337,6 @@ export default async function ClassroomLecturePage({ params }: Props) {
               </div>
             </div>
           )}
-
-          {/* ── Comments ── */}
-          <CommentSection lectureId={lecture.id} />
 
         </article>
       </div>

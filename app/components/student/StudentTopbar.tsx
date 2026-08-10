@@ -68,14 +68,14 @@ export function StudentTopbar({
         </button>
 
         {/* Desktop Sidebar Toggle */}
-        <button
+        {/* <button
           onClick={onToggleCollapse}
           className="hidden lg:flex p-2 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-dim)] transition-all focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
           title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           aria-label="Toggle sidebar width"
         >
           <FiSidebar size={18} />
-        </button>
+        </button> */}
 
         {/* Vertical Divider */}
         <div className="hidden sm:block h-5 w-px bg-[var(--border)]" />

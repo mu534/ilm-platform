@@ -21,7 +21,7 @@ export async function GET(
       where: { id },
       select: {
         id: true, name: true, email: true, role: true,
-        image: true, bio: true, createdAt: true,
+        image: true, bio: true, country: true, certificateName: true, createdAt: true,
         scholar: {
           select: { id: true, bio: true, topics: true, photo: true, featured: true },
         },
@@ -62,7 +62,7 @@ export async function PATCH(
     const user = await prisma.user.update({
       where: { id },
       data,
-      select: { id: true, name: true, email: true, role: true, image: true, bio: true },
+      select: { id: true, name: true, email: true, role: true, image: true, bio: true, country: true, certificateName: true },
     });
 
     if (data.role === "INSTRUCTOR") {

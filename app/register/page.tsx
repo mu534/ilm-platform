@@ -22,7 +22,7 @@ function GoogleIcon() {
 export default function RegisterPage() {
   const router  = useRouter();
 
-  const [form,    setForm]    = useState({ name: "", email: "", password: "" });
+  const [form,    setForm]    = useState({ name: "", email: "", password: "", confirmPassword: "", country: "", termsAccepted: false });
   const [errors,  setErrors]  = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -257,6 +257,24 @@ export default function RegisterPage() {
                     </p>
                   )}
                 </div>
+
+                <div>
+                  <label htmlFor="confirmPassword" className="block text-xs text-[var(--text-muted)] font-semibold mb-1.5 uppercase tracking-wide">Confirm Password</label>
+                  <input id="confirmPassword" type={showPw ? "text" : "password"} required value={form.confirmPassword} onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })} className={`input-themed ${errors.confirmPassword ? "error" : ""}`} autoComplete="new-password" />
+                  {errors.confirmPassword && <p className="text-xs text-red-400 mt-1.5"><FiAlertCircle size={11} className="inline" /> {errors.confirmPassword}</p>}
+                </div>
+
+                <div>
+                  <label htmlFor="country" className="block text-xs text-[var(--text-muted)] font-semibold mb-1.5 uppercase tracking-wide">Country</label>
+                  <input id="country" required value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} className={`input-themed ${errors.country ? "error" : ""}`} autoComplete="country-name" placeholder="Your country" />
+                  {errors.country && <p className="text-xs text-red-400 mt-1.5"><FiAlertCircle size={11} className="inline" /> {errors.country}</p>}
+                </div>
+
+                <label className="flex items-start gap-2 text-xs text-[var(--text-muted)] cursor-pointer">
+                  <input type="checkbox" required checked={form.termsAccepted} onChange={(e) => setForm({ ...form, termsAccepted: e.target.checked })} className="mt-0.5 accent-[var(--accent)]" />
+                  <span>I agree to the <Link href="/terms" className="text-[var(--accent)] underline">Terms</Link> and <Link href="/privacy" className="text-[var(--accent)] underline">Privacy Policy</Link>.</span>
+                </label>
+                {errors.termsAccepted && <p className="text-xs text-red-400 -mt-2"><FiAlertCircle size={11} className="inline" /> {errors.termsAccepted}</p>}
 
                 <button
                   type="submit"

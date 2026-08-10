@@ -26,6 +26,7 @@ export async function POST(req: NextRequest) {
         name:          data.name,
         email:         data.email,
         password:      hashed,
+        country:       data.country,
         role:          "USER",
         emailVerified: false,
       },
@@ -38,6 +39,10 @@ export async function POST(req: NextRequest) {
 
     await prisma.verificationToken.create({
       data: { email: data.email, token, expiresAt: expiry },
+    });
+
+    await prisma.auditLog.create({
+      data: { userId: user.id, action: "USER_REGISTERED", entityType: "User", entityId: user.id },
     });
 
     // Send verification email (non-blocking)

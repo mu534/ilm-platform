@@ -7,34 +7,37 @@ describe("registerSchema", () => {
       name: "Amina Yusuf",
       email: "amina@example.com",
       password: "Password1",
+      confirmPassword: "Password1",
+      country: "Ethiopia",
+      termsAccepted: true,
     });
     expect(result.success).toBe(true);
   });
 
   it("rejects a password with no uppercase letter", () => {
     const result = registerSchema.safeParse({
-      name: "Amina Yusuf", email: "amina@example.com", password: "password1",
+      name: "Amina Yusuf", email: "amina@example.com", password: "password1", confirmPassword: "password1", country: "Ethiopia", termsAccepted: true,
     });
     expect(result.success).toBe(false);
   });
 
   it("rejects a password with no number", () => {
     const result = registerSchema.safeParse({
-      name: "Amina Yusuf", email: "amina@example.com", password: "Password",
+      name: "Amina Yusuf", email: "amina@example.com", password: "Password", confirmPassword: "Password", country: "Ethiopia", termsAccepted: true,
     });
     expect(result.success).toBe(false);
   });
 
   it("rejects an invalid email", () => {
     const result = registerSchema.safeParse({
-      name: "Amina Yusuf", email: "not-an-email", password: "Password1",
+      name: "Amina Yusuf", email: "not-an-email", password: "Password1", confirmPassword: "Password1", country: "Ethiopia", termsAccepted: true,
     });
     expect(result.success).toBe(false);
   });
 
   it("rejects a name under 2 characters", () => {
     const result = registerSchema.safeParse({
-      name: "A", email: "amina@example.com", password: "Password1",
+      name: "A", email: "amina@example.com", password: "Password1", confirmPassword: "Password1", country: "Ethiopia", termsAccepted: true,
     });
     expect(result.success).toBe(false);
   });

@@ -58,6 +58,17 @@ enum NotificationType {
   QUIZ_RESULT
   CERTIFICATE_ISSUED
   COURSE_ANNOUNCEMENT
+  SCHOLAR_APPLICATION_SUBMITTED
+  SCHOLAR_APPLICATION_APPROVED
+  SCHOLAR_APPLICATION_REJECTED
+}
+
+enum ScholarApplicationStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
 }
 
 enum MediaType {
@@ -131,6 +142,8 @@ model User {
   image         String?
   role          Role      @default(USER)
   bio           String?
+  country       String?
+  certificateName String?
   emailVerified Boolean   @default(false)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -139,6 +152,9 @@ model User {
   lectures Lecture[]
   comments Comment[]
   scholar  Scholar?
+  learnerProfile LearnerProfile?
+  scholarApplications ScholarApplication[] @relation("ApplicantApplications")
+  reviewedScholarApplications ScholarApplication[] @relation("ApplicationReviewer")
 
   // New relations
   enrollments       Enrollment[]
@@ -170,6 +186,51 @@ model User {
   @@map("users")
 }
 
+model LearnerProfile {
+  id                   String   @id @default(cuid())
+  userId               String   @unique
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  city                 String?
+  educationLevel       String?
+  fieldOfStudy         String?
+  occupation           String?
+  preferredLanguage    String   @default("en")
+  preferredDifficulty  DifficultyLevel?
+  accountIntention     String   @default("LEARN")
+  onboardingCompleted  Boolean  @default(false)
+  onboardingStep       Int      @default(1)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  interests            LearnerInterest[]
+  goals                LearnerGoal[]
+
+  @@map("learner_profiles")
+}
+
+model LearnerInterest {
+  id         String         @id @default(cuid())
+  profileId  String
+  profile    LearnerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  categoryId String
+  category   Category       @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  createdAt  DateTime       @default(now())
+
+  @@unique([profileId, categoryId])
+  @@index([categoryId])
+  @@map("learner_interests")
+}
+
+model LearnerGoal {
+  id        String         @id @default(cuid())
+  profileId String
+  profile   LearnerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  goal      String
+  createdAt DateTime       @default(now())
+
+  @@unique([profileId, goal])
+  @@map("learner_goals")
+}
+
 model Scholar {
   id             String   @id @default(cuid())
   userId         String   @unique
@@ -195,6 +256,36 @@ model Scholar {
   @@map("scholars")
 }
 
+model ScholarApplication {
+  id              String                   @id @default(cuid())
+  userId          String
+  user            User                     @relation("ApplicantApplications", fields: [userId], references: [id], onDelete: Cascade)
+  status          ScholarApplicationStatus @default(DRAFT)
+  bio             String?
+  city            String?
+  education       String?
+  institutions    String[]
+  qualifications  String[]
+  specializations String[]
+  teachingExperience String?
+  teachingYears   Int?
+  intendedCategories String[]
+  teachingLanguages String[]
+  documentKeys    String[]
+  submittedAt     DateTime?
+  reviewedAt      DateTime?
+  reviewedById    String?
+  reviewedBy      User?     @relation("ApplicationReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  internalNotes   String?
+  decisionReason  String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([status, submittedAt])
+  @@index([userId, status])
+  @@map("scholar_applications")
+}
+
 // ─── Category ────────────────────────────────────────────────────────────────
 
 model Category {
@@ -210,6 +301,7 @@ model Category {
 
   courses  Course[]
   lectures Lecture[]
+  learnerInterests LearnerInterest[]
 
   @@map("categories")
 }

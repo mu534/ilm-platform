@@ -7,12 +7,54 @@ export const registerSchema = z.object({
     .string()
     .min(2, "Name must be at least 2 characters")
     .max(100, "Name must be less than 100 characters"),
-  email: z.string().email("Invalid email address"),
+  email: z.string().trim().toLowerCase().email("Invalid email address"),
   password: z
     .string()
     .min(8, "Password must be at least 8 characters")
     .regex(/[A-Z]/, "Must contain at least one uppercase letter")
     .regex(/[0-9]/, "Must contain at least one number"),
+  confirmPassword: z.string(),
+  country: z.string().trim().min(2, "Country is required").max(100),
+  termsAccepted: z.literal(true, { message: "You must accept the Terms and Privacy Policy" }),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords do not match",
+  path: ["confirmPassword"],
+});
+
+export const learnerProfileSchema = z.object({
+  city: z.string().trim().max(100).optional().or(z.literal("")),
+  educationLevel: z.string().trim().max(100).optional().or(z.literal("")),
+  fieldOfStudy: z.string().trim().max(150).optional().or(z.literal("")),
+  occupation: z.string().trim().max(150).optional().or(z.literal("")),
+  preferredLanguage: z.string().min(2).max(10).default("en"),
+  preferredDifficulty: z.enum(["BEGINNER", "INTERMEDIATE", "ADVANCED"]).optional().nullable(),
+  accountIntention: z.enum(["LEARN", "TEACH"]).default("LEARN"),
+  categoryIds: z.array(z.string().min(1)).max(12).default([]),
+  goals: z.array(z.string().trim().min(2).max(160)).max(8).default([]),
+  onboardingCompleted: z.boolean().optional(),
+  onboardingStep: z.number().int().min(1).max(3).optional(),
+});
+
+export const scholarApplicationSchema = z.object({
+  bio: z.string().trim().min(30).max(3000),
+  city: z.string().trim().max(100).optional().or(z.literal("")),
+  education: z.string().trim().max(2000).optional().or(z.literal("")),
+  institutions: z.array(z.string().trim().min(2).max(200)).max(12).default([]),
+  qualifications: z.array(z.string().trim().min(2).max(300)).max(20).default([]),
+  specializations: z.array(z.string().trim().min(2).max(120)).min(1).max(12),
+  teachingExperience: z.string().trim().max(2000).optional().or(z.literal("")),
+  teachingYears: z.number().int().min(0).max(80).optional().nullable(),
+  intendedCategories: z.array(z.string().min(1)).min(1).max(12),
+  teachingLanguages: z.array(z.string().trim().min(2).max(20)).min(1).max(10),
+  documentKeys: z.array(z.string().regex(/^[A-Za-z0-9/_-]+$/, "Invalid private document key")).max(10).default([]),
+});
+
+export const scholarApplicationReviewSchema = z.object({
+  action: z.enum(["UNDER_REVIEW", "APPROVE", "REJECT"]),
+  internalNotes: z.string().trim().max(3000).optional().or(z.literal("")),
+  decisionReason: z.string().trim().max(1500).optional().or(z.literal("")),
+}).superRefine((data, ctx) => {
+  if (data.action === "REJECT" && !data.decisionReason) ctx.addIssue({ code: "custom", path: ["decisionReason"], message: "A rejection reason is required" });
 });
 
 export const loginSchema = z.object({
@@ -144,6 +186,8 @@ export const updateUserSchema = z.object({
   role: z.enum(["ADMIN", "INSTRUCTOR", "USER"]).optional(),
   image: z.string().url("Invalid image URL").optional().or(z.literal("")),
   preferredLanguage: z.enum(["en", "ar", "om"]).optional(),
+  country: z.string().trim().min(2).max(100).optional(),
+  certificateName: z.string().trim().min(2).max(100).optional().or(z.literal("")),
 });
 
 // ─── Quiz ─────────────────────────────────────────────────────────────────────
@@ -200,6 +244,8 @@ export const forumVoteSchema = z.object({
 // ─── Inferred types ──────────────────────────────────────────────────────────
 
 export type RegisterInput       = z.infer<typeof registerSchema>;
+export type LearnerProfileInput = z.infer<typeof learnerProfileSchema>;
+export type ScholarApplicationInput = z.infer<typeof scholarApplicationSchema>;
 export type LoginInput          = z.infer<typeof loginSchema>;
 export type LectureInput        = z.infer<typeof lectureSchema>;
 export type CourseInput         = z.infer<typeof courseSchema>;

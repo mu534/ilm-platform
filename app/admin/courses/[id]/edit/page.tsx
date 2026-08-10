@@ -22,6 +22,7 @@ interface FormState {
   title:             string;
   subtitle:          string;
   description:       string;
+  shortDescription:  string;
   thumbnailUrl:      string;
   bannerUrl:         string;
   // Curriculum metadata
@@ -46,7 +47,7 @@ interface FormState {
 }
 
 const EMPTY_FORM: FormState = {
-  title: "", subtitle: "", description: "", thumbnailUrl: "", bannerUrl: "",
+  title: "", subtitle: "", description: "", shortDescription: "", thumbnailUrl: "", bannerUrl: "",
   difficulty: "BEGINNER", language: "en", estimatedDuration: 0, categoryId: "",
   objectives: [""], prerequisites: [""], tags: "",
   published: false, featured: false,
@@ -149,6 +150,7 @@ export default function EditCoursePage() {
             title:             c.title           ?? "",
             subtitle:          c.subtitle         ?? "",
             description:       c.description      ?? "",
+            shortDescription:  c.shortDescription ?? "",
             thumbnailUrl:      c.thumbnailUrl      ?? "",
             bannerUrl:         c.bannerUrl         ?? "",
             difficulty:        c.difficulty        ?? "BEGINNER",
@@ -189,6 +191,7 @@ export default function EditCoursePage() {
         tags:          form.tags.split(",").map((t) => t.trim()).filter(Boolean),
         categoryId:    form.categoryId || undefined,
         subtitle:      form.subtitle || undefined,
+        shortDescription: form.shortDescription || undefined,
         seoTitle:      form.seoTitle || undefined,
         seoDescription: form.seoDescription || undefined,
       };
@@ -297,8 +300,28 @@ export default function EditCoursePage() {
             </div>
 
             <div>
-              <label className="block text-xs text-[var(--text-muted)] font-medium mb-1.5">Description *</label>
-              <textarea value={form.description} onChange={(e) => set("description", e.target.value)} className={ic(errors.description)} rows={5} required placeholder="Describe what students will learn…" />
+              <label className="block text-xs text-[var(--text-muted)] font-medium mb-1.5">
+                Short Description <span className="text-[var(--text-muted)] font-normal">(shown on course cards)</span>
+              </label>
+              <textarea
+                value={form.shortDescription}
+                onChange={(e) => set("shortDescription", e.target.value)}
+                className={ic(errors.shortDescription)}
+                rows={2}
+                maxLength={300}
+                placeholder="A brief 1–3 line summary students see on course cards…"
+              />
+              <div className="flex justify-between mt-1">
+                {errors.shortDescription && <p className="text-xs text-red-400">{errors.shortDescription}</p>}
+                <p className={`text-xs ml-auto ${form.shortDescription.length > 260 ? "text-yellow-400" : "text-[var(--text-muted)]"}`}>
+                  {form.shortDescription.length}/300
+                </p>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs text-[var(--text-muted)] font-medium mb-1.5">Full Description *</label>
+              <textarea value={form.description} onChange={(e) => set("description", e.target.value)} className={ic(errors.description)} rows={5} required placeholder="Detailed information shown on the course detail page…" />
               {errors.description && <p className="text-xs text-red-400 mt-1">{errors.description}</p>}
               <p className="text-xs text-[var(--text-muted)] mt-1">{form.description.length}/5000</p>
             </div>

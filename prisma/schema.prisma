@@ -222,6 +222,7 @@ model Course {
   subtitle          String?      // short tagline shown below the title
   slug              String       @unique
   description       String
+  shortDescription  String?      // brief summary shown on course cards (fallback: excerpt from description)
   thumbnailUrl      String?
   bannerUrl         String?
   objectives        String[]
@@ -494,6 +495,7 @@ model QuizAnswer {
   isCorrect  Boolean      @default(false)
   createdAt  DateTime     @default(now())
 
+  @@unique([attemptId, questionId])
   @@index([attemptId])
   @@map("quiz_answers")
 }
@@ -504,8 +506,8 @@ model Certificate {
   id             String   @id @default(cuid())
   userId         String
   user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  courseId       String?
-  course         Course?  @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  courseId       String
+  course         Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
   title          String
   issuedAt       DateTime @default(now())
   certificateUrl String?  // generated PDF URL on Cloudinary

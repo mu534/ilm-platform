@@ -142,6 +142,33 @@ describe("courseSchema", () => {
     const result = courseSchema.safeParse({ ...base, seoTitle: "x".repeat(71) });
     expect(result.success).toBe(false);
   });
+
+  it("accepts a shortDescription within the 300 character limit", () => {
+    const result = courseSchema.safeParse({
+      ...base,
+      shortDescription: "A concise summary of the course for course cards.",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects a shortDescription over 300 characters", () => {
+    const result = courseSchema.safeParse({
+      ...base,
+      shortDescription: "x".repeat(301),
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts an empty string for shortDescription", () => {
+    const result = courseSchema.safeParse({ ...base, shortDescription: "" });
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts a course without a shortDescription", () => {
+    const result = courseSchema.safeParse(base);
+    expect(result.success).toBe(true);
+    expect(result.data?.shortDescription).toBeUndefined();
+  });
 });
 
 describe("moduleSchema", () => {

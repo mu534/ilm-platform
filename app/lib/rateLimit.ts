@@ -15,14 +15,16 @@
 
 import { Redis } from "@upstash/redis";
 
-interface RateLimitOptions {
+export interface RateLimitOptions {
   /** Max requests in the window */
   limit:  number;
   /** Window size in seconds */
   window: number;
+  /** When true, failures in Redis will not fail open (useful for auth endpoints) */
+  failClosed?: boolean;
 }
 
-interface RateLimitResult {
+export interface RateLimitResult {
   success:   boolean;
   limit:     number;
   remaining: number;
@@ -133,11 +135,19 @@ export async function checkRateLimit(
     try {
       return await checkRateLimitRedis(identifier, options);
     } catch (err) {
-      // Redis unreachable — fail open on the request rather than 500ing
-      // every API call, but still log so it doesn't go unnoticed.
       // eslint-disable-next-line no-console
-      console.error("[rateLimit] Redis error, failing open:", err);
-      return { success: true, limit: options.limit, remaining: options.limit, resetAt: Date.now() + options.window * 1000 };
+      console.error("[rateLimit] Redis error during rate limit check:", err);
+      // Fallback to in-memory store before giving up
+      const memResult = checkRateLimitMemory(identifier, options);
+      if (!memResult.success || options.failClosed) {
+        return {
+          success: false,
+          limit: options.limit,
+          remaining: 0,
+          resetAt: Date.now() + options.window * 1000,
+        };
+      }
+      return memResult;
     }
   }
   return checkRateLimitMemory(identifier, options);

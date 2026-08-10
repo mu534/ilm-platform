@@ -15,6 +15,7 @@ const courseDetailSelect = {
   subtitle: true,
   slug: true,
   description: true,
+  shortDescription: true,
   thumbnailUrl: true,
   bannerUrl: true,
   objectives: true,

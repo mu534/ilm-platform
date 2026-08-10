@@ -49,9 +49,10 @@ async function getCoursesData(params: SearchParams) {
     ...(categoryId      ? { categoryId }                  : {}),
     ...(search ? {
       OR: [
-        { title:       { contains: search, mode: "insensitive" as const } },
-        { description: { contains: search, mode: "insensitive" as const } },
-        { tags:        { hasSome: [search] } },
+        { title:            { contains: search, mode: "insensitive" as const } },
+        { description:      { contains: search, mode: "insensitive" as const } },
+        { shortDescription: { contains: search, mode: "insensitive" as const } },
+        { tags:             { hasSome: [search] } },
       ],
     } : {}),
   };

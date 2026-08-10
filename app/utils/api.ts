@@ -25,11 +25,22 @@ export function handleApiError(error: unknown) {
   if (error instanceof ZodError) {
     return errorResponse("Validation failed", 422, error.flatten().fieldErrors);
   }
+
+  // eslint-disable-next-line no-console
   console.error("[API Error]", error);
-  if (error instanceof Error) {
-    return errorResponse(error.message, 500);
+
+  // Mask Prisma/internal errors to avoid exposing database schema or internal paths
+  if (
+    error &&
+    typeof error === "object" &&
+    "code" in error &&
+    typeof (error as { code: unknown }).code === "string" &&
+    ((error as { code: string }).code.startsWith("P") || (error as { name?: string }).name?.includes("Prisma"))
+  ) {
+    return errorResponse("Database error occurred", 500);
   }
-  return errorResponse("Internal server error", 500);
+
+  return errorResponse("An unexpected internal error occurred", 500);
 }
 
 export function slugify(text: string): string {

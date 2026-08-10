@@ -18,6 +18,7 @@ export interface FeaturedCourse {
   slug: string;
   title: string;
   description: string | null;
+  shortDescription: string | null;
   subtitle: string | null;
   thumbnailUrl: string | null;
   difficulty: string;
@@ -130,6 +131,11 @@ function CourseCard({ course }: { course: FeaturedCourse }) {
         <h3 className="text-sm font-semibold text-[var(--text-primary)] leading-snug line-clamp-2 group-hover:text-[var(--accent)] transition-colors duration-200 min-h-[2.5rem]">
           {course.title}
         </h3>
+
+        {/* Short description — 1–3 lines, clamped */}
+        <p className="text-[12px] text-[var(--text-secondary)] leading-relaxed line-clamp-3 min-h-[3.75rem]">
+          {course.shortDescription?.trim() || course.description || ""}
+        </p>
 
         {/* Instructor */}
         {course.authorName && (

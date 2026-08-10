@@ -263,6 +263,7 @@ export default async function HomePage() {
     slug:              c.slug,
     title:             c.title,
     description:       c.description,
+    shortDescription:  c.shortDescription ?? null,
     subtitle:          c.subtitle ?? null,
     thumbnailUrl:      c.thumbnailUrl,
     difficulty:        c.difficulty,

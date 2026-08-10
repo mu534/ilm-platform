@@ -9,6 +9,7 @@ interface CourseCardProps {
     subtitle?:         string | null;
     slug:              string;
     description:       string;
+    shortDescription?: string | null;
     thumbnailUrl:      string | null;
     difficulty:        string;
     estimatedDuration: number;
@@ -38,11 +39,26 @@ function formatDuration(min: number): string {
   return m ? `${h}h ${m}m` : `${h}h`;
 }
 
+/**
+ * Generate a safe fallback excerpt from the full description when a
+ * deliberately-written short description is not available. Truncates at a
+ * sentence/word boundary so the text never reads as cut off mid-word.
+ */
+function excerpt(description: string, max = 160): string {
+  const clean = description.replace(/\s+/g, " ").trim();
+  if (clean.length <= max) return clean;
+  const cut = clean.slice(0, max);
+  const lastSpace = cut.lastIndexOf(" ");
+  const trimmed = lastSpace > 0 ? cut.slice(0, lastSpace) : cut;
+  return `${trimmed}…`;
+}
+
 export function CourseCard({ course }: CourseCardProps) {
   const instructor  = course.scholar?.user.name ?? course.author.name;
   const designation = course.scholar?.professionalDesignation ?? null;
   const diff        = difficultyConfig[course.difficulty];
   const skills      = (course.tags ?? []).slice(0, 3);
+  const summary     = course.shortDescription?.trim() || excerpt(course.description);
 
   return (
     <Link
@@ -99,6 +115,11 @@ export function CourseCard({ course }: CourseCardProps) {
             {course.title}
           </h3>
 
+          {/* Short description — 1–3 lines, clamped, consistent height */}
+          <p className="text-[12px] text-[var(--text-secondary)] leading-relaxed line-clamp-3 min-h-[3.75rem]">
+            {summary}
+          </p>
+
           {/* Skills you'll gain — Udacity "skill chip" row */}
           {skills.length > 0 && (
             <div className="flex flex-wrap gap-1.5">
@@ -154,7 +175,7 @@ export function CourseCard({ course }: CourseCardProps) {
           aria-hidden="true"
         >
           <p className="text-[12px] text-[var(--text-secondary)] leading-relaxed line-clamp-3 mb-3">
-            {course.subtitle ?? course.description}
+            {course.subtitle ?? summary}
           </p>
           <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[var(--accent)]">
             <FiBookOpen size={12} />

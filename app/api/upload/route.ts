@@ -7,6 +7,8 @@ import {
   handleApiError,
 } from "../../utils/api";
 
+import { UploadService } from "../../lib/services/uploadService";
+
 type ResourceType = "image" | "video" | "raw" | "auto";
 
 const MAX_FILE_SIZE = 100 * 1024 * 1024;
@@ -36,9 +38,7 @@ export async function POST(req: NextRequest) {
       return errorResponse("No file provided", 400);
     }
 
-    if (file.size > MAX_FILE_SIZE) {
-      return errorResponse("File size exceeds 100MB limit", 400);
-    }
+    UploadService.validateFileMetadata(file.name, file.type, file.size, MAX_FILE_SIZE);
 
     const resolvedFolder =
       typeof folder === "string" && folder ? folder : "ilm-platform";

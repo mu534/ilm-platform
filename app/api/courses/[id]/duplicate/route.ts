@@ -57,6 +57,7 @@ export async function POST(
           title:             `${source.title} (Copy)`,
           slug,
           description:       source.description,
+          shortDescription:  source.shortDescription,
           thumbnailUrl:      source.thumbnailUrl,
           bannerUrl:         source.bannerUrl,
           objectives:        source.objectives,
@@ -75,17 +76,17 @@ export async function POST(
       });
 
       // 2. Copy modules and lectures
-      for (const module of source.modules) {
+      for (const mod of source.modules) {
         const newModule = await tx.module.create({
           data: {
-            title:       module.title,
-            description: module.description,
-            order:       module.order,
+            title:       mod.title,
+            description: mod.description,
+            order:       mod.order,
             courseId:    newCourse.id,
           },
         });
 
-        for (const lecture of module.lectures) {
+        for (const lecture of mod.lectures) {
           await tx.lecture.create({
             data: {
               title:         lecture.title,

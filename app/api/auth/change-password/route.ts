@@ -4,6 +4,7 @@ import { prisma } from "../../../lib/prism";
 import { requireUserFresh } from "../../../lib/authorization";
 import { successResponse, errorResponse, handleApiError } from "../../../utils/api";
 import { z } from "zod";
+import { checkRateLimit } from "../../../lib/rateLimit";
 
 const schema = z.object({
   currentPassword: z.string().min(1, "Current password is required"),
@@ -17,6 +18,8 @@ const schema = z.object({
 export async function POST(req: NextRequest) {
   try {
     const sessionUser = await requireUserFresh();
+    const rl = await checkRateLimit(`change-pwd:${sessionUser.id}`, { limit: 5, window: 900, failClosed: true });
+    if (!rl.success) return errorResponse("Too many attempts. Please try again later.", 429);
 
     const body = (await req.json()) as unknown;
     const { currentPassword, newPassword } = schema.parse(body);

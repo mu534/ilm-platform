@@ -168,7 +168,7 @@ export default function ScholarProfileEditPage() {
         <section className="glass-card rounded-2xl p-6">
           <h2 className="text-sm font-semibold text-[var(--text-primary)] mb-1">Professional Designation</h2>
           <p className="text-xs text-[var(--text-muted)] mb-3">
-            Optional title (e.g. Islamic Scholar, Qur'an Teacher, Arabic Instructor, Islamic History Educator, Researcher)
+            Optional title (e.g. Islamic Scholar, Qur&apos;an Teacher, Arabic Instructor, Islamic History Educator, Researcher)
           </p>
           <input
             type="text"

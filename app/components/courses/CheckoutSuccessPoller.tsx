@@ -87,7 +87,7 @@ export function CheckoutSuccessPoller({ courseId, courseSlug, courseTitle }: Pro
         <p className="text-sm text-[var(--text-muted)] mb-8">
           We&apos;re still finishing setting up your enrollment in{" "}
           <span className="text-[var(--text-secondary)] font-medium">{courseTitle}</span>.
-          This is usually instant — if it's been a minute, try refreshing.
+          This is usually instant — if it&apos;s been a minute, try refreshing.
         </p>
         <button onClick={retry} className="btn-secondary inline-flex">
           <FiRefreshCw size={13} /> Check Again

@@ -7,9 +7,9 @@ import { checkRateLimit, getClientIp } from "../../../lib/rateLimit";
 import { generateToken, sendEmail, verificationEmailHtml } from "../../../lib/email";
 
 export async function POST(req: NextRequest) {
-  // Rate-limit: 5 registrations per IP per 15 min
+  // Rate-limit: 5 registrations per IP per 15 min (failClosed for auth security)
   const ip = getClientIp(req);
-  const rl = await checkRateLimit(`register:${ip}`, { limit: 5, window: 900 });
+  const rl = await checkRateLimit(`register:${ip}`, { limit: 5, window: 900, failClosed: true });
   if (!rl.success) return errorResponse("Too many attempts. Please try again later.", 429);
 
   try {

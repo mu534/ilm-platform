@@ -174,9 +174,9 @@ export default async function CourseDetailPage({ params }: Props) {
               </p>
             )}
 
-            {/* Description */}
+            {/* Short description — brief summary, full description in About section */}
             <p className="text-sm text-[var(--text-muted)] leading-relaxed mb-6 line-clamp-3">
-              {course.description}
+              {course.shortDescription?.trim() || course.description}
             </p>
 
             {/* Meta chips */}
@@ -274,6 +274,16 @@ export default async function CourseDetailPage({ params }: Props) {
                   label: "Overview",
                   content: (
                     <div>
+                      {/* About This Course */}
+                      <section className="mb-10" aria-labelledby="about-heading">
+                        <h2 id="about-heading" className="text-lg font-semibold text-[var(--text-primary)] mb-4">
+                          About This Course
+                        </h2>
+                        <p className="text-sm text-[var(--text-secondary)] leading-relaxed whitespace-pre-line">
+                          {course.description}
+                        </p>
+                      </section>
+
                       {/* Skills you'll gain */}
                       {course.tags.length > 0 && (
                         <section className="mb-10" aria-labelledby="skills-heading">

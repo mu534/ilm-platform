@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "../../../lib/prism";
 import { successResponse, errorResponse, handleApiError } from "../../../utils/api";
+import { checkRateLimit, getClientIp } from "../../../lib/rateLimit";
 import { z } from "zod";
 
 const schema = z.object({
@@ -14,6 +15,9 @@ const schema = z.object({
 
 // POST /api/auth/reset-password
 export async function POST(req: NextRequest) {
+  const ip = getClientIp(req);
+  const rl = await checkRateLimit(`reset-pwd:${ip}`, { limit: 5, window: 900, failClosed: true });
+  if (!rl.success) return errorResponse("Too many attempts. Please try again later.", 429);
   try {
     const body = (await req.json()) as unknown;
     const { token, password } = schema.parse(body);

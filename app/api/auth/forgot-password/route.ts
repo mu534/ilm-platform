@@ -9,9 +9,9 @@ const schema = z.object({ email: z.string().email() });
 
 // POST /api/auth/forgot-password
 export async function POST(req: NextRequest) {
-  // Rate-limit: 3 requests per email per 15 min
+  // Rate-limit: 3 requests per IP per 15 min (failClosed for auth security)
   const ip = getClientIp(req);
-  const rl = await checkRateLimit(`forgot:${ip}`, { limit: 3, window: 900 });
+  const rl = await checkRateLimit(`forgot:${ip}`, { limit: 3, window: 900, failClosed: true });
   if (!rl.success) {
     // Still return 200 to not leak info
     return successResponse({ message: "If this email exists, a reset link has been sent." });

@@ -65,6 +65,11 @@ export const courseSchema = z.object({
     .string()
     .min(20, "Description must be at least 20 characters")
     .max(5000, "Description must be less than 5000 characters"),
+  shortDescription: z
+    .string()
+    .max(300, "Short description must be less than 300 characters")
+    .optional()
+    .or(z.literal("")),
   thumbnailUrl: z
     .string()
     .url("Invalid thumbnail URL")
@@ -161,14 +166,48 @@ export const quizQuestionSchema = z.object({
   points: z.number().int().min(1).default(1),
 });
 
+export const quizSubmissionSchema = z.object({
+  timeTaken: z.number().int().min(0).optional(),
+  answers: z.array(
+    z.object({
+      questionId: z.string().min(1),
+      answer: z.string(),
+    })
+  ).min(1, "At least one answer is required"),
+});
+
+export const createReportSchema = z.object({
+  reason: z.enum(["SPAM", "INAPPROPRIATE", "INCORRECT_CONTENT", "ABUSE", "OTHER"]),
+  description: z.string().max(1000).optional(),
+  commentId: z.string().optional(),
+  forumQuestionId: z.string().optional(),
+  forumReplyId: z.string().optional(),
+  courseId: z.string().optional(),
+}).refine(
+  (data) => Boolean(data.commentId || data.forumQuestionId || data.forumReplyId || data.courseId),
+  { message: "At least one target (commentId, forumQuestionId, forumReplyId, or courseId) must be specified" }
+);
+
+export const forumVoteSchema = z.object({
+  value: z.number().int().refine((val) => val === 1 || val === -1, { message: "Value must be 1 or -1" }),
+  questionId: z.string().optional(),
+  replyId: z.string().optional(),
+}).refine(
+  (data) => Boolean(data.questionId) !== Boolean(data.replyId),
+  { message: "Exactly one target (questionId XOR replyId) must be specified" }
+);
+
 // ─── Inferred types ──────────────────────────────────────────────────────────
 
-export type RegisterInput   = z.infer<typeof registerSchema>;
-export type LoginInput      = z.infer<typeof loginSchema>;
-export type LectureInput    = z.infer<typeof lectureSchema>;
-export type CourseInput     = z.infer<typeof courseSchema>;
-export type ModuleInput     = z.infer<typeof moduleSchema>;
-export type ScholarInput    = z.infer<typeof scholarSchema>;
-export type CommentInput    = z.infer<typeof commentSchema>;
-export type UpdateUserInput = z.infer<typeof updateUserSchema>;
-export type QuizInput       = z.infer<typeof quizSchema>;
+export type RegisterInput       = z.infer<typeof registerSchema>;
+export type LoginInput          = z.infer<typeof loginSchema>;
+export type LectureInput        = z.infer<typeof lectureSchema>;
+export type CourseInput         = z.infer<typeof courseSchema>;
+export type ModuleInput         = z.infer<typeof moduleSchema>;
+export type ScholarInput        = z.infer<typeof scholarSchema>;
+export type CommentInput        = z.infer<typeof commentSchema>;
+export type UpdateUserInput     = z.infer<typeof updateUserSchema>;
+export type QuizInput           = z.infer<typeof quizSchema>;
+export type QuizSubmissionInput = z.infer<typeof quizSubmissionSchema>;
+export type CreateReportInput   = z.infer<typeof createReportSchema>;
+export type ForumVoteInput      = z.infer<typeof forumVoteSchema>;

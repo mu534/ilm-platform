@@ -15,6 +15,7 @@ interface FormData {
   title:             string;
   subtitle:          string;
   description:       string;
+  shortDescription:  string;
   thumbnailUrl:      string;
   bannerUrl:         string;
   difficulty:        "BEGINNER" | "INTERMEDIATE" | "ADVANCED";
@@ -32,7 +33,7 @@ export default function NewCoursePage() {
   const router = useRouter();
   const [categories, setCategories] = useState<Category[]>([]);
   const [form, setForm]   = useState<FormData>({
-    title: "", subtitle: "", description: "", thumbnailUrl: "", bannerUrl: "",
+    title: "", subtitle: "", description: "", shortDescription: "", thumbnailUrl: "", bannerUrl: "",
     difficulty: "BEGINNER", language: "en", estimatedDuration: 0, categoryId: "",
     objectives: [""], prerequisites: [""],
     tags: "",
@@ -72,6 +73,7 @@ export default function NewCoursePage() {
         tags:          form.tags.split(",").map((t) => t.trim()).filter(Boolean),
         categoryId:    form.categoryId || undefined,
         subtitle:      form.subtitle || undefined,
+        shortDescription: form.shortDescription || undefined,
       };
       const res  = await fetch("/api/courses", {
         method:  "POST",
@@ -138,11 +140,31 @@ export default function NewCoursePage() {
           />
         </div>
 
-        {/* Description */}
+        {/* Short Description */}
         <div>
-          <label className="block text-xs text-[var(--text-muted)] font-medium mb-1.5">Description *</label>
-          <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className={inputClass("description")} rows={4} placeholder="What students will learn in this course..." required />
+          <label className="block text-xs text-[var(--text-muted)] font-medium mb-1.5">
+            Short Description <span className="text-[var(--text-muted)] font-normal">(shown on course cards)</span>
+          </label>
+          <textarea
+            value={form.shortDescription}
+            onChange={(e) => setForm({ ...form, shortDescription: e.target.value })}
+            className={inputClass("shortDescription")}
+            rows={2}
+            maxLength={300}
+            placeholder="A brief 1–3 line summary students see on course cards…"
+          />
+          {errors.shortDescription && <p className="text-xs text-red-400 mt-1">{errors.shortDescription}</p>}
+          <p className={`text-xs mt-1 ${form.shortDescription.length > 260 ? "text-yellow-400" : "text-[var(--text-muted)]"}`}>
+            {form.shortDescription.length}/300
+          </p>
+        </div>
+
+        {/* Full Description */}
+        <div>
+          <label className="block text-xs text-[var(--text-muted)] font-medium mb-1.5">Full Description *</label>
+          <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className={inputClass("description")} rows={4} placeholder="Detailed information shown on the course detail page..." required />
           {errors.description && <p className="text-xs text-red-400 mt-1">{errors.description}</p>}
+          <p className="text-xs text-[var(--text-muted)] mt-1">{form.description.length}/5000</p>
         </div>
 
         {/* Category + Difficulty + Duration */}

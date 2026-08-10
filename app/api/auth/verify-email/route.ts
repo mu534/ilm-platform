@@ -31,6 +31,11 @@ export async function GET(req: NextRequest) {
 // POST /api/auth/verify-email — resend verification email
 export async function POST(req: NextRequest) {
   try {
+    const { checkRateLimit, getClientIp } = await import("../../../lib/rateLimit");
+    const ip = getClientIp(req);
+    const rl = await checkRateLimit(`resend-verify:${ip}`, { limit: 3, window: 900, failClosed: true });
+    if (!rl.success) return errorResponse("Too many attempts. Please try again later.", 429);
+
     const { email } = (await req.json()) as { email: string };
     if (!email) return errorResponse("Email is required", 400);
 

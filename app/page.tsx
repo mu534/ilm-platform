@@ -32,7 +32,15 @@ async function getHomeData() {
       include: {
         category: { select: { id: true, name: true, slug: true, icon: true, color: true } },
         author:   { select: { id: true, name: true, image: true } },
-        scholar:  { select: { id: true, photo: true, verified: true, user: { select: { name: true } } } },
+        scholar:  {
+          select: {
+            id: true,
+            photo: true,
+            verified: true,
+            professionalDesignation: true,
+            user: { select: { name: true } },
+          },
+        },
         _count:   { select: { modules: true, enrollments: true, ratings: true } },
       },
     }),
@@ -141,12 +149,16 @@ function mapScholar(s: PrismaScholar): Scholar {
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 function SectionHeader({
-  eyebrow, title, href, linkLabel,
+  eyebrow, title, subtitle, href, linkLabel,
 }: {
-  eyebrow: string; title: string; href?: string; linkLabel?: string;
+  eyebrow: string;
+  title: string;
+  subtitle?: string;
+  href?: string;
+  linkLabel?: string;
 }) {
   return (
-    <div className="flex items-end justify-between mb-10 gap-4">
+    <div className="flex items-start justify-between mb-10 gap-4">
       <div>
         <p className="text-xs text-[var(--accent)] uppercase tracking-widest font-semibold mb-2">
           {eyebrow}
@@ -154,11 +166,14 @@ function SectionHeader({
         <h2 className="font-display text-2xl sm:text-3xl font-semibold text-[var(--text-primary)] leading-tight">
           {title}
         </h2>
+        {subtitle && (
+          <p className="section-subtitle mt-2">{subtitle}</p>
+        )}
       </div>
       {href && linkLabel && (
         <Link
           href={href}
-          className="flex-shrink-0 flex items-center gap-1.5 text-sm text-[var(--accent)] hover:text-[var(--accent-light)] transition-colors group"
+          className="flex-shrink-0 flex items-center gap-1.5 text-sm text-[var(--accent)] hover:text-[var(--accent-light)] transition-colors group mt-1"
         >
           {linkLabel}
           <FiArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
@@ -168,22 +183,51 @@ function SectionHeader({
   );
 }
 
-function StatCard({ icon, count, label }: {
-  icon: React.ReactNode; count: number; label: string;
+/** Refined editorial statistics strip — replaces the three heavy StatCard boxes */
+function StatStrip({
+  courseCount,
+  scholarCount,
+  userCount,
+}: {
+  courseCount: number;
+  scholarCount: number;
+  userCount: number;
 }) {
+  const stats = [
+    { icon: <FiBookOpen size={13} />, count: courseCount, label: "Courses" },
+    { icon: <FiUsers    size={13} />, count: scholarCount, label: "Scholars" },
+    { icon: <FiUser     size={13} />, count: userCount,    label: "Students" },
+  ];
+
+  function fmt(n: number) {
+    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+    if (n >= 1_000)     return `${(n / 1_000).toFixed(n >= 10_000 ? 0 : 1)}k`;
+    return n.toLocaleString();
+  }
+
   return (
-    <div className="
-      flex flex-col items-center gap-2.5 p-6 sm:p-8 rounded-2xl text-center
-      border border-[var(--border)] bg-[var(--bg-card)]
-      hover:border-[var(--border-strong)] hover:bg-[var(--bg-card-hover)]
-      hover:shadow-[var(--shadow-md)] hover:-translate-y-0.5
-      transition-all duration-300
-    ">
-      <div className="text-[var(--accent)] text-xl">{icon}</div>
-      <div className="font-display text-3xl sm:text-4xl font-bold text-[var(--text-primary)] tabular-nums">
-        {count.toLocaleString()}
+    <div
+      className="w-full max-w-2xl mx-auto rounded-2xl border border-[var(--border)] bg-[var(--bg-card)]/70 backdrop-blur-sm overflow-hidden"
+      role="list"
+      aria-label="Platform statistics"
+    >
+      <div className="stat-strip divide-x divide-[var(--border)]">
+        {stats.map((s, i) => (
+          <div
+            key={i}
+            className="stat-strip__item flex-1"
+            role="listitem"
+          >
+            <div className="flex items-center gap-1.5 mb-1 text-[var(--text-muted)]">
+              {s.icon}
+            </div>
+            <div className="stat-strip__number">
+              {fmt(s.count)}
+            </div>
+            <div className="stat-strip__label">{s.label}</div>
+          </div>
+        ))}
       </div>
-      <div className="text-xs sm:text-sm text-[var(--text-muted)]">{label}</div>
     </div>
   );
 }
@@ -213,43 +257,75 @@ export default async function HomePage() {
 
   const mappedScholars = featuredScholars.map(mapScholar);
 
-  // Enrich courses with batch-fetched average rating + author name
+  // Enrich courses with batch-fetched average rating + all metadata for the carousel
   const enrichedCourses = featuredCourses.map((c) => ({
-    id:           c.id,
-    slug:         c.slug,
-    title:        c.title,
-    thumbnailUrl: c.thumbnailUrl,
-    difficulty:   c.difficulty,
-    avgRating:    ratingMap.get(c.id) ?? 0,
-    enrollCount:  c._count.enrollments,
-    categoryName: c.category?.name ?? null,
-    categoryIcon: c.category?.icon ?? null,
-    authorName:   c.scholar?.user.name ?? c.author.name,
+    id:                c.id,
+    slug:              c.slug,
+    title:             c.title,
+    description:       c.description,
+    subtitle:          c.subtitle ?? null,
+    thumbnailUrl:      c.thumbnailUrl,
+    difficulty:        c.difficulty,
+    estimatedDuration: c.estimatedDuration,
+    enrollmentType:    c.enrollmentType,
+    price:             c.price ?? null,
+    currency:          c.currency ?? null,
+    featured:          c.featured,
+    avgRating:         ratingMap.get(c.id) ?? 0,
+    enrollCount:       c._count.enrollments,
+    moduleCount:       c._count.modules,
+    categoryName:      c.category?.name ?? null,
+    categoryIcon:      c.category?.icon ?? null,
+    authorName:        c.scholar?.user.name ?? c.author.name,
+    authorDesignation: c.scholar?.professionalDesignation ?? null,
   }));
 
   return (
     <div className="min-h-screen w-full">
 
       {/* ── Hero ── */}
-      <section className="relative overflow-hidden pt-16 pb-12 sm:pt-24 sm:pb-16 w-full">
-        <div className="absolute inset-0 pattern-overlay opacity-40" />
-        <div className="relative w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center text-center">
-          {/* Eyebrow */}
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-[var(--border-strong)] bg-[var(--accent-dim)] mb-8">
-            <GiStarFormation className="text-[var(--accent)] text-xs" />
+      <section
+        className="relative overflow-hidden pt-16 pb-14 sm:pt-24 sm:pb-20 w-full"
+        aria-labelledby="hero-heading"
+      >
+        {/* Subtle geometric background pattern */}
+        <div className="absolute inset-0 pattern-overlay opacity-30" aria-hidden="true" />
+
+        {/* Warm radial bloom */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background:
+              "radial-gradient(ellipse 80% 55% at 50% -5%, var(--accent-dim), transparent 70%)",
+          }}
+          aria-hidden="true"
+        />
+
+        <div className="relative w-full max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center text-center">
+
+          {/* Eyebrow pill */}
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-[var(--border-strong)] bg-[var(--bg-card)]/70 backdrop-blur-sm mb-8">
+            <GiStarFormation className="text-[var(--accent)] text-xs" aria-hidden="true" />
             <span className="text-xs tracking-widest text-[var(--accent)] uppercase font-semibold">
               Knowledge is Light
             </span>
-            <GiStarFormation className="text-[var(--accent)] text-xs" />
+            <GiStarFormation className="text-[var(--accent)] text-xs" aria-hidden="true" />
           </div>
 
           {/* Arabic */}
-          <p className="arabic-bismillah text-2xl sm:text-3xl mb-6">
+          <p
+            className="arabic-bismillah text-2xl sm:text-3xl mb-7"
+            lang="ar"
+            aria-label="Bismillah ir-Rahman ir-Raheem"
+          >
             بِسْمِ اللّٰهِ الرَّحْمَنِ الرَّحِيْمِ
           </p>
 
           {/* Headline */}
-          <h1 className="font-display text-4xl sm:text-5xl md:text-6xl font-bold leading-[1.1] tracking-tight mb-6 text-[var(--text-primary)]">
+          <h1
+            id="hero-heading"
+            className="font-display text-4xl sm:text-5xl md:text-6xl font-bold leading-[1.08] tracking-tight mb-6 text-[var(--text-primary)]"
+          >
             Seek Knowledge
             <br />
             with <span className="gradient-text">Clarity</span>
@@ -260,10 +336,11 @@ export default async function HomePage() {
             and deepen your understanding of the Deen.
           </p>
 
+          {/* Search */}
           <EnhancedSearch />
 
           {/* CTAs */}
-          <div className="flex flex-wrap items-center justify-center gap-3 mt-8">
+          <div className="flex flex-wrap items-center justify-center gap-3">
             <Link
               href="/courses"
               className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-gold-500 to-gold-600 hover:from-gold-400 hover:to-gold-500 text-white rounded-xl font-semibold shadow-md shadow-gold-600/30 hover:shadow-gold-500/40 transition-all duration-300 hover:scale-105 active:scale-95 text-sm"
@@ -280,13 +357,16 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ── Stats — 3 core metrics ── */}
-      <section className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 sm:pb-20">
-        <div className="grid grid-cols-3 gap-3 sm:gap-5">
-          <StatCard icon={<FiBookOpen />} count={courseCount}  label="Courses"  />
-          <StatCard icon={<FiUsers />}    count={scholarCount} label="Scholars" />
-          <StatCard icon={<FiUser />}     count={userCount}    label="Students" />
-        </div>
+      {/* ── Stats — editorial strip ── */}
+      <section
+        className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 sm:pb-20"
+        aria-label="Platform statistics"
+      >
+        <StatStrip
+          courseCount={courseCount}
+          scholarCount={scholarCount}
+          userCount={userCount}
+        />
       </section>
 
       {/* ── Continue Learning (signed-in users only) ── */}
@@ -299,6 +379,7 @@ export default async function HomePage() {
             <SectionHeader
               eyebrow="Structured Learning"
               title="Featured Courses"
+              subtitle="A curated selection of courses to help you build meaningful Islamic knowledge."
               href="/courses"
               linkLabel="View All Courses"
             />
@@ -309,18 +390,22 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* ── Browse by Category — alternating background ── */}
+      {/* ── Browse by Category ── */}
       <CategoryExplorer categories={categories} />
 
-      {/* ── Why Ilm Platform — value propositions ── */}
+      {/* ── Why Ilm Platform ── */}
       <WhyIlmPlatform />
 
       {/* ── Featured Scholars ── */}
       {mappedScholars.length > 0 && (
-        <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
+        <section
+          className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20"
+          aria-labelledby="scholars-heading"
+        >
           <SectionHeader
             eyebrow="Learn from the best"
             title="Featured Scholars"
+            subtitle="Our featured scholars bring deep expertise and authentic scholarship to every course."
             href="/scholars"
             linkLabel="All Scholars"
           />
@@ -336,27 +421,34 @@ export default async function HomePage() {
       <SocialProofSection reviews={reviews} />
 
       {/* ── Final CTA + Newsletter ── */}
-      <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+      <section
+        className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16"
+        aria-labelledby="cta-heading"
+      >
         <div className="relative rounded-3xl overflow-hidden border border-[var(--border-strong)]">
-          <div className="absolute inset-0 hero-bg opacity-80" />
-          <div className="absolute inset-0 pattern-overlay opacity-20" />
+          <div className="absolute inset-0 hero-bg opacity-80" aria-hidden="true" />
+          <div className="absolute inset-0 pattern-overlay opacity-20" aria-hidden="true" />
           <div
             className="absolute inset-0 pointer-events-none"
             style={{
               background:
                 "radial-gradient(ellipse 70% 80% at 50% 100%, var(--accent-dim), transparent)",
             }}
+            aria-hidden="true"
           />
-          <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-transparent via-gold-400 to-transparent opacity-60" />
+          <div className="absolute inset-x-0 top-0 hero-line" aria-hidden="true" />
 
           <div className="relative px-6 py-14 sm:py-20 flex flex-col items-center text-center">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[var(--accent-dim)] border border-[var(--border-strong)] animate-pulse-accent mb-6">
-              <GiMoon className="text-[var(--accent)] text-2xl" />
+              <GiMoon className="text-[var(--accent)] text-2xl" aria-hidden="true" />
             </div>
 
             {user ? (
               <>
-                <h2 className="font-display text-3xl sm:text-4xl font-bold text-[var(--text-primary)] mb-4 leading-tight">
+                <h2
+                  id="cta-heading"
+                  className="font-display text-3xl sm:text-4xl font-bold text-[var(--text-primary)] mb-4 leading-tight"
+                >
                   Welcome back, {user.name?.split(" ")[0]} 👋
                 </h2>
                 <p className="text-[var(--text-secondary)] mb-8 max-w-sm text-sm sm:text-base leading-relaxed">
@@ -379,12 +471,14 @@ export default async function HomePage() {
               </>
             ) : (
               <>
-                <h2 className="font-display text-3xl sm:text-4xl font-bold text-[var(--text-primary)] mb-4 leading-tight">
+                <h2
+                  id="cta-heading"
+                  className="font-display text-3xl sm:text-4xl font-bold text-[var(--text-primary)] mb-4 leading-tight"
+                >
                   Start Your Journey Today
                 </h2>
                 <p className="text-[var(--text-secondary)] mb-8 max-w-sm text-sm sm:text-base leading-relaxed">
-                  Join thousands of students seeking authentic Islamic knowledge
-                  from qualified scholars.
+                  Join students seeking authentic Islamic knowledge from qualified scholars.
                 </p>
                 <div className="flex flex-wrap items-center justify-center gap-3 mb-10">
                   <Link
@@ -404,7 +498,7 @@ export default async function HomePage() {
                 {/* Newsletter signup — merged into CTA for unauthenticated */}
                 <div className="w-full max-w-md border-t border-[var(--border)] pt-8">
                   <p className="text-sm text-[var(--text-secondary)] mb-4 flex items-center justify-center gap-2">
-                    <FiMail size={14} className="text-[var(--accent)]" />
+                    <FiMail size={14} className="text-[var(--accent)]" aria-hidden="true" />
                     Get notified about new courses and scholars
                   </p>
                   <NewsletterForm />

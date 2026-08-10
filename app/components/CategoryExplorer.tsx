@@ -17,17 +17,27 @@ interface CategoryExplorerProps {
 export function CategoryExplorer({ categories }: CategoryExplorerProps) {
   if (categories.length === 0) return null;
 
+  // Split into two columns for desktop layout
+  const mid  = Math.ceil(categories.length / 2);
+  const col1 = categories.slice(0, mid);
+  const col2 = categories.slice(mid);
+
   return (
-    <section className="w-full bg-[var(--bg-secondary)]">
+    <section className="w-full bg-[var(--bg-secondary)]" aria-labelledby="categories-heading">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
+
+        {/* Section header */}
         <div className="flex items-end justify-between mb-10 gap-4">
           <div>
             <p className="text-xs text-[var(--accent)] uppercase tracking-widest font-semibold mb-2">
               Browse by subject
             </p>
-            <h2 className="font-display text-2xl sm:text-3xl font-semibold text-[var(--text-primary)]">
+            <h2 id="categories-heading" className="font-display text-2xl sm:text-3xl font-semibold text-[var(--text-primary)]">
               Explore Categories
             </h2>
+            <p className="section-subtitle mt-2">
+              Find courses across the key disciplines of Islamic knowledge.
+            </p>
           </div>
           <Link
             href="/courses"
@@ -38,36 +48,53 @@ export function CategoryExplorer({ categories }: CategoryExplorerProps) {
           </Link>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-          {categories.map((cat) => (
-            <Link
-              key={cat.id}
-              href={`/courses?categoryId=${cat.id}`}
-              className="group relative flex items-center gap-3 p-4 rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] hover:border-[var(--border-strong)] hover:bg-[var(--bg-card-hover)] hover:shadow-[var(--shadow-md)] hover:-translate-y-0.5 transition-all duration-250"
-            >
-              <div
-                className="flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center text-xl border border-[var(--border-subtle)]"
-                style={{ background: cat.color ? `${cat.color}1a` : "var(--accent-dim)" }}
-              >
-                {cat.icon ?? "📖"}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-[var(--text-primary)] truncate group-hover:text-[var(--accent)] transition-colors">
-                  {cat.name}
-                </p>
-                <p className="text-[11px] text-[var(--text-muted)] tabular-nums">
-                  {cat.courseCount} course{cat.courseCount !== 1 ? "s" : ""}
-                </p>
-              </div>
-              <FiArrowRight
-                size={14}
-                className="flex-shrink-0 text-[var(--text-muted)] opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all duration-200"
-              />
-            </Link>
-          ))}
+        {/* Directory rows — 2 col on lg+, single col otherwise */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-16">
+          {/* Column 1 */}
+          <div>
+            {col1.map((cat) => (
+              <CategoryRow key={cat.id} cat={cat} />
+            ))}
+          </div>
+          {/* Column 2 */}
+          <div>
+            {col2.map((cat) => (
+              <CategoryRow key={cat.id} cat={cat} />
+            ))}
+          </div>
         </div>
+
       </div>
     </section>
   );
 }
 
+function CategoryRow({ cat }: { cat: CategoryItem }) {
+  return (
+    <Link
+      href={`/courses?categoryId=${cat.id}`}
+      className="category-row group"
+      aria-label={`Browse ${cat.name} — ${cat.courseCount} course${cat.courseCount !== 1 ? "s" : ""}`}
+    >
+      {/* Icon */}
+      <div
+        className="category-row__icon"
+        style={{ background: cat.color ? `${cat.color}18` : "var(--accent-dim)" }}
+        aria-hidden="true"
+      >
+        {cat.icon ?? "📖"}
+      </div>
+
+      {/* Name */}
+      <span className="category-row__name">{cat.name}</span>
+
+      {/* Course count */}
+      <span className="category-row__count">
+        {cat.courseCount} course{cat.courseCount !== 1 ? "s" : ""}
+      </span>
+
+      {/* Arrow */}
+      <FiArrowRight size={14} className="category-row__arrow" aria-hidden="true" />
+    </Link>
+  );
+}

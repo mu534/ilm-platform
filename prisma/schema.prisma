@@ -11,7 +11,7 @@ datasource db {
 
 enum Role {
   ADMIN
-  SCHOLAR
+  INSTRUCTOR
   USER
 }
 
@@ -176,6 +176,7 @@ model Scholar {
   user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   bio            String
   photo          String?
+  professionalDesignation String?
   topics         String[]
   qualifications String[]
   featured       Boolean  @default(false)

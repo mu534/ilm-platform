@@ -134,7 +134,7 @@ export default async function CourseDetailPage({ params }: Props) {
   const totalModules  = course.modules.length;
   const instructor    = course.scholar?.user.name ?? course.author.name;
   const instructorImg = course.scholar?.user.image ?? course.author.image;
-  const canAccess     = !!enrollment || user?.role === "ADMIN" || user?.role === "SCHOLAR";
+  const canAccess     = !!enrollment || user?.role === "ADMIN" || user?.role === "INSTRUCTOR";
 
   return (
     <div className="min-h-screen bg-[var(--bg-primary)]">

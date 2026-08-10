@@ -6,7 +6,7 @@ import { successResponse, errorResponse, handleApiError } from "../../utils/api"
 /**
  * GET /api/enrollments
  * - Admin: all enrollments with search/filter/pagination
- * - Scholar: enrollments in their courses only
+ * - Instructor: enrollments in their courses only
  * - Student: own enrollments (use /api/progress instead for student use)
  */
 export async function GET(req: NextRequest) {
@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
     type WhereClause = {
       courseId?: string;
       status?:  "ACTIVE" | "COMPLETED" | "DROPPED";
-      course?:  { scholarId: string };
+      course?:  { authorId: string };
       OR?:      Array<{
         user?: { OR?: Array<{ name?: { contains: string; mode: "insensitive" }; email?: { contains: string; mode: "insensitive" } }> };
         course?: { title?: { contains: string; mode: "insensitive" } };
@@ -34,11 +34,9 @@ export async function GET(req: NextRequest) {
     const where: WhereClause = {};
 
     // Role gates
-    if (user.role === "SCHOLAR") {
-      // Scholar can only see enrollments in their own courses
-      const scholar = await prisma.scholar.findUnique({ where: { userId: user.id } });
-      if (!scholar) return errorResponse("Scholar profile not found", 404);
-      where.course = { scholarId: scholar.id };
+    if (user.role === "INSTRUCTOR") {
+      // Instructor can see enrollments in their own courses
+      where.course = { authorId: user.id };
     } else if (user.role !== "ADMIN") {
       return errorResponse("Forbidden", 403);
     }

@@ -113,6 +113,7 @@ export const scholarSchema = z.object({
     .string()
     .min(20, "Bio must be at least 20 characters")
     .max(3000, "Bio must be less than 3000 characters"),
+  professionalDesignation: z.string().max(100).optional().or(z.literal("")),
   topics: z.array(z.string()).min(1, "At least one topic required").max(20),
   qualifications: z.array(z.string()).max(20).default([]),
   featured: z.boolean().default(false),
@@ -135,7 +136,7 @@ export const commentSchema = z.object({
 export const updateUserSchema = z.object({
   name: z.string().min(2).max(100).optional(),
   bio: z.string().max(500).optional(),
-  role: z.enum(["ADMIN", "SCHOLAR", "USER"]).optional(),
+  role: z.enum(["ADMIN", "INSTRUCTOR", "USER"]).optional(),
   image: z.string().url("Invalid image URL").optional().or(z.literal("")),
   preferredLanguage: z.enum(["en", "ar", "om"]).optional(),
 });

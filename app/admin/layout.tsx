@@ -14,7 +14,7 @@ const adminNav = [
   { href: "/admin/categories",   icon: <FiTag />,       label: "Categories",  adminOnly: true  },
   { href: "/admin/enrollments",  icon: <FiList />,      label: "Enrollments", adminOnly: true  },
   { href: "/admin/users",        icon: <FiUsers />,     label: "Users",       adminOnly: true  },
-  { href: "/admin/scholars",     icon: <FiStar />,      label: "Scholars",    adminOnly: true  },
+  { href: "/admin/instructors", icon: <FiStar />, label: "Instructors", adminOnly: true },
   { href: "/admin/reports",      icon: <FiFlag />,      label: "Reports",     adminOnly: true  },
   { href: "/admin/cms",          icon: <FiFileText />,  label: "CMS",         adminOnly: true  },
   { href: "/admin/audit-log",    icon: <FiShield />,    label: "Audit Log",   adminOnly: true  },
@@ -29,7 +29,7 @@ export default async function AdminLayout({
   const session = await getServerSession(authOptions);
   const user = session?.user as SessionUser | null;
 
-  if (!session || !["ADMIN", "SCHOLAR"].includes(user?.role ?? "")) {
+  if (!session || !["ADMIN", "INSTRUCTOR"].includes(user?.role ?? "")) {
     redirect("/login?callbackUrl=/admin");
   }
 
@@ -48,7 +48,7 @@ export default async function AdminLayout({
               <GiMoon className="text-[var(--accent)]" size={14} />
             </div>
             <span className="font-display text-sm font-semibold text-[var(--text-primary)]">
-              {isAdmin ? "Admin Panel" : "Scholar Panel"}
+              {isAdmin ? "Admin Panel" : "Instructor Panel"}
             </span>
           </div>
         </div>
@@ -77,10 +77,10 @@ export default async function AdminLayout({
         <div className="p-4 border-t border-[var(--border)] space-y-2">
           {!isAdmin && (
             <Link
-              href="/dashboard/scholar"
+              href="/dashboard/instructor"
               className="block text-xs text-[var(--accent)] hover:text-[var(--accent-light)] transition-colors"
             >
-              ↗ Scholar Dashboard
+              ↗ Instructor Dashboard
             </Link>
           )}
           <Link

@@ -76,10 +76,11 @@ import { Role } from "../../../generated/prisma/enums";
 
 const roleVariant: Record<Role, BadgeVariant> = {
   ADMIN: "danger",
-  SCHOLAR: "gold",
+  INSTRUCTOR: "gold",
   USER: "info",
 };
 
 export function RoleBadge({ role }: { role: Role }) {
-  return <Badge variant={roleVariant[role]}>{role}</Badge>;
+  const label = role === "INSTRUCTOR" ? "Instructor" : role;
+  return <Badge variant={roleVariant[role]}>{label}</Badge>;
 }

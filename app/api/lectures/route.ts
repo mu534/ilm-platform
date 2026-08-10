@@ -115,8 +115,8 @@ export async function POST(req: NextRequest) {
   try {
     const user = await requireUserFresh();
 
-    if (!["ADMIN", "SCHOLAR"].includes(user.role)) {
-      return errorResponse("Forbidden: Only Admins and Scholars can create lectures", 403);
+    if (!["ADMIN", "INSTRUCTOR"].includes(user.role)) {
+      return errorResponse("Forbidden: Only Admins and Instructors can create lectures", 403);
     }
 
     const body = (await req.json()) as unknown;

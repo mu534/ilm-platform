@@ -1,7 +1,7 @@
 import { DefaultSession } from "next-auth";
 import { DefaultJWT } from "next-auth/jwt";
 
-type UserRole = "ADMIN" | "SCHOLAR" | "USER";
+type UserRole = "ADMIN" | "INSTRUCTOR" | "USER";
 export interface SessionUser {
   id: string;
   role: UserRole;

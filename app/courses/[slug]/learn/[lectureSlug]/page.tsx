@@ -148,8 +148,8 @@ export default async function ClassroomLecturePage({ params }: Props) {
   // ── Sequential learning enforcement ──────────────────────────────────────
   // The sidebar only *displays* locked lessons — this is what actually stops
   // a student from skipping ahead by pasting in a later lesson's URL.
-  // Staff (admin/scholar) previewing their own course bypass this.
-  const isStaff = user?.role === "ADMIN" || user?.role === "SCHOLAR";
+  // Staff (admin/instructor) previewing their own course bypass this.
+  const isStaff = user?.role === "ADMIN" || user?.role === "INSTRUCTOR";
   if (course.sequentialLearning && !isStaff) {
     const orderedLectures  = course.modules.flatMap((m) => m.lectures);
     const orderedLectureIds = orderedLectures.map((l) => l.id);

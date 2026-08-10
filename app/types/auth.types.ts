@@ -1,4 +1,4 @@
-export type UserRole      = "ADMIN" | "SCHOLAR" | "USER";
+export type UserRole      = "ADMIN" | "INSTRUCTOR" | "USER";
 export type LectureType   = "TEXT" | "VIDEO" | "AUDIO" | "PDF";
 export type DifficultyLevel = "BEGINNER" | "INTERMEDIATE" | "ADVANCED";
 

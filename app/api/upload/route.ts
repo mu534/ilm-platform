@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
   try {
     const user = await requireUserFresh();
 
-    if (!["ADMIN", "SCHOLAR"].includes(user.role)) {
+    if (!["ADMIN", "INSTRUCTOR"].includes(user.role)) {
       return errorResponse("Forbidden", 403);
     }
 

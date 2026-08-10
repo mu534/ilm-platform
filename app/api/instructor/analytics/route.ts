@@ -1,13 +1,12 @@
 import { NextRequest } from "next/server";
-import { prisma } from "../../../lib/prism";
-import { requireUserFresh } from "../../../lib/authorization";
-import { successResponse, errorResponse, handleApiError } from "../../../utils/api";
+import { prisma } from "@/app/lib/prism";
+import { requireUserFresh } from "@/app/lib/authorization";
+import { successResponse, errorResponse, handleApiError } from "@/app/utils/api";
 
 /**
- * GET /api/scholar/analytics
+ * GET /api/instructor/analytics
  *
- * Returns analytics for the authenticated scholar's own courses only.
- * Never exposes data from other scholars.
+ * Returns analytics for the authenticated instructor's own courses only.
  */
 export async function GET(_req: NextRequest) {
   try {
@@ -17,8 +16,6 @@ export async function GET(_req: NextRequest) {
       return errorResponse("Instructor access required", 403);
     }
 
-    // For admin viewing all — use /api/admin/analytics instead.
-    // This endpoint is scholar-scoped: always filtered to the authenticated user's courses.
     const authorId = user.id;
 
     const courses = await prisma.course.findMany({
@@ -63,7 +60,6 @@ export async function GET(_req: NextRequest) {
         },
         _avg: { score: true },
       }),
-      // Per-course breakdown
       prisma.course.findMany({
         where:  { authorId },
         select: {

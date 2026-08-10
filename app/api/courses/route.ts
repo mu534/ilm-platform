@@ -152,12 +152,12 @@ export async function POST(req: NextRequest) {
     const body = (await req.json()) as unknown;
     const data = courseSchema.parse(body);
 
-    // Scholars must go through the approval workflow — never auto-publish
+    // Instructors must go through the approval workflow — never auto-publish
     const isAdmin = user.role === "ADMIN";
     const status         = isAdmin ? CourseStatus.PUBLISHED : CourseStatus.DRAFT;
     const approvalStatus = isAdmin ? "APPROVED"             : "DRAFT";
 
-    // Force published=false for scholars; featured is admin-only
+    // Force published=false for instructors; featured is admin-only
     const publishedValue = isAdmin ? (data.published ?? false) : false;
     if (!isAdmin) {
       delete (data as Record<string, unknown>).featured;

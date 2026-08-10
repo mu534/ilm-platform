@@ -193,19 +193,19 @@ npx prisma studio
 | Role | Description | Capabilities |
 |------|-------------|-------------|
 | **USER** | Default for all new registrations | Browse content, enroll in courses, comment, bookmark, rate |
-| **SCHOLAR** | Promoted by Admin | Everything USER can do + create courses/lectures/quizzes, view analytics |
+| **INSTRUCTOR** | Promoted by Admin | Everything USER can do + create courses/lectures/quizzes, view analytics |
 | **ADMIN** | Platform administrator | Full access to everything |
 
-### Promoting a user to Scholar or Admin
+### Promoting a user to Instructor or Admin
 
 **Via Admin Panel:**
 1. Go to `/admin/users`
 2. Find the user
-3. Click the `⋮` menu → **Change Role** → select **SCHOLAR** or **ADMIN**
+3. Click the `⋮` menu → **Change Role** → select **INSTRUCTOR** or **ADMIN**
 
 **Via SQL (bootstrap only):**
 ```sql
-UPDATE users SET role = 'SCHOLAR' WHERE email = 'scholar@example.com';
+UPDATE users SET role = 'INSTRUCTOR' WHERE email = 'instructor@example.com';
 ```
 
 

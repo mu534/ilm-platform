@@ -264,8 +264,8 @@ export default function ProfilePage() {
         {/* ── Change Password ── */}
         <ChangePasswordSection />
 
-        {/* ── Scholar / Admin tools ── */}
-        {(user?.role === "ADMIN" || user?.role === "SCHOLAR") && (
+        {/* ── Instructor / Admin tools ── */}
+        {(user?.role === "ADMIN" || user?.role === "INSTRUCTOR") && (
           <div className="mt-6 pt-6 border-t border-[var(--border)]">
             <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold mb-4">
               Content Tools
@@ -283,12 +283,12 @@ export default function ProfilePage() {
               >
                 Manage Courses &amp; Lessons
               </Link>
-              {user?.role === "SCHOLAR" && (
+              {user?.role === "INSTRUCTOR" && (
                 <Link
-                  href="/dashboard/scholar"
+                  href="/dashboard/instructor"
                   className="px-4 py-2 bg-[var(--accent-dim)] border border-[var(--border-strong)] text-[var(--accent)] text-sm rounded-xl transition-colors hover:bg-[var(--accent)] hover:text-white"
                 >
-                  Scholar Dashboard
+                  Instructor Dashboard
                 </Link>
               )}
               {user?.role === "ADMIN" && (

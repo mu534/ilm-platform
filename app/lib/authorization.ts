@@ -42,18 +42,26 @@ export async function requireAdmin(): Promise<SessionUser> {
   return user;
 }
 
-export async function requireScholar(): Promise<SessionUser> {
+export async function requireInstructor(): Promise<SessionUser> {
   const user = await requireUserFresh();
-  if (user.role !== "SCHOLAR") throw new HttpError("Scholar access required", 403);
+  if (user.role !== "INSTRUCTOR") throw new HttpError("Instructor access required", 403);
+  return user;
+}
+
+export async function requireScholar(): Promise<SessionUser> {
+  return requireInstructor();
+}
+
+export async function requireAdminOrInstructor(): Promise<SessionUser> {
+  const user = await requireUserFresh();
+  if (user.role !== "ADMIN" && user.role !== "INSTRUCTOR") {
+    throw new HttpError("Instructor access required", 403);
+  }
   return user;
 }
 
 export async function requireAdminOrScholar(): Promise<SessionUser> {
-  const user = await requireUserFresh();
-  if (user.role !== "ADMIN" && user.role !== "SCHOLAR") {
-    throw new HttpError("Instructor access required", 403);
-  }
-  return user;
+  return requireAdminOrInstructor();
 }
 
 /**

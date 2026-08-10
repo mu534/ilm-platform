@@ -148,7 +148,7 @@ export default function AdminUsersPage() {
         >
           <option value="">All Roles</option>
           <option value="ADMIN">Admin</option>
-          <option value="SCHOLAR">Scholar</option>
+          <option value="INSTRUCTOR">Instructor</option>
           <option value="USER">User</option>
         </select>
       </div>
@@ -232,7 +232,7 @@ export default function AdminUsersPage() {
                           <p className="px-3 py-1 text-xs text-[var(--text-muted)] font-medium">
                             Change Role
                           </p>
-                          {(["ADMIN", "SCHOLAR", "USER"] as const).map((role) => (
+                          {(["ADMIN", "INSTRUCTOR", "USER"] as const).map((role) => (
                             <DropdownMenu.Item
                               key={role}
                               className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg cursor-pointer outline-none transition-colors ${

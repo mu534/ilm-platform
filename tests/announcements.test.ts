@@ -5,7 +5,7 @@
 
 import { describe, it, expect } from "vitest";
 
-type Role = "ADMIN" | "SCHOLAR" | "USER";
+type Role = "ADMIN" | "INSTRUCTOR" | "USER";
 
 interface Course { id: string; authorId: string }
 interface User   { id: string; role: Role }
@@ -13,7 +13,7 @@ interface User   { id: string; role: Role }
 function canManageAnnouncement(user: User | null, course: Course): boolean {
   if (!user) return false;
   if (user.role === "ADMIN") return true;
-  if (user.role === "SCHOLAR" && course.authorId === user.id) return true;
+  if (user.role === "INSTRUCTOR" && course.authorId === user.id) return true;
   return false;
 }
 
@@ -24,7 +24,7 @@ function canViewAnnouncements(
 ): boolean {
   if (!user) return false;
   if (user.role === "ADMIN") return true;
-  if (user.role === "SCHOLAR" && course.authorId === user.id) return true;
+  if (user.role === "INSTRUCTOR" && course.authorId === user.id) return true;
   return isEnrolled;
 }
 
@@ -34,11 +34,11 @@ function canViewUnpublishedAnnouncement(user: User | null, course: Course): bool
 }
 
 describe("course announcement — creation access", () => {
-  const course    = { id: "course-1", authorId: "scholar-1" };
-  const owner     = { id: "scholar-1", role: "SCHOLAR" as Role };
-  const otherScholar = { id: "scholar-2", role: "SCHOLAR" as Role };
-  const admin     = { id: "admin-1", role: "ADMIN" as Role };
-  const student   = { id: "student-1", role: "USER" as Role };
+  const course         = { id: "course-1", authorId: "instructor-1" };
+  const owner          = { id: "instructor-1", role: "INSTRUCTOR" as Role };
+  const otherInstructor = { id: "instructor-2", role: "INSTRUCTOR" as Role };
+  const admin          = { id: "admin-1", role: "ADMIN" as Role };
+  const student        = { id: "student-1", role: "USER" as Role };
 
   it("allows course owner to create announcement", () => {
     expect(canManageAnnouncement(owner, course)).toBe(true);
@@ -48,8 +48,8 @@ describe("course announcement — creation access", () => {
     expect(canManageAnnouncement(admin, course)).toBe(true);
   });
 
-  it("prevents other scholars from creating announcements", () => {
-    expect(canManageAnnouncement(otherScholar, course)).toBe(false);
+  it("prevents other instructors from creating announcements", () => {
+    expect(canManageAnnouncement(otherInstructor, course)).toBe(false);
   });
 
   it("prevents students from creating announcements", () => {
@@ -62,8 +62,8 @@ describe("course announcement — creation access", () => {
 });
 
 describe("course announcement — viewing access", () => {
-  const course         = { id: "course-1", authorId: "scholar-1" };
-  const owner          = { id: "scholar-1", role: "SCHOLAR" as Role };
+  const course         = { id: "course-1", authorId: "instructor-1" };
+  const owner          = { id: "instructor-1", role: "INSTRUCTOR" as Role };
   const admin          = { id: "admin-1", role: "ADMIN" as Role };
   const enrolledStudent   = { id: "student-1", role: "USER" as Role };
   const unenrolledStudent = { id: "student-2", role: "USER" as Role };
@@ -90,8 +90,8 @@ describe("course announcement — viewing access", () => {
 });
 
 describe("course announcement — unpublished visibility", () => {
-  const course  = { id: "course-1", authorId: "scholar-1" };
-  const owner   = { id: "scholar-1", role: "SCHOLAR" as Role };
+  const course  = { id: "course-1", authorId: "instructor-1" };
+  const owner   = { id: "instructor-1", role: "INSTRUCTOR" as Role };
   const admin   = { id: "admin-1", role: "ADMIN" as Role };
   const student = { id: "student-1", role: "USER" as Role };
 

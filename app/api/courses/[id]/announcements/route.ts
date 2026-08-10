@@ -72,7 +72,7 @@ export async function POST(
     const user = await requireUserFresh();
     const { id: courseId } = await params;
 
-    if (user.role !== "ADMIN" && user.role !== "SCHOLAR") {
+    if (user.role !== "ADMIN" && user.role !== "INSTRUCTOR") {
       return errorResponse("Forbidden", 403);
     }
 

@@ -4,7 +4,7 @@ import GoogleProvider from "next-auth/providers/google";
 import bcrypt from "bcryptjs";
 import { prisma } from "../lib/prism";
 
-type UserRole = "ADMIN" | "SCHOLAR" | "USER";
+type UserRole = "ADMIN" | "INSTRUCTOR" | "USER";
 
 /** Re-sync role from DB at most every 60s so demotions/promotions take effect without full re-login. */
 const ROLE_SYNC_INTERVAL_MS = 60_000;

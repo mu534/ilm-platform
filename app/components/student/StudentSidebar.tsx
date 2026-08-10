@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
@@ -13,10 +15,9 @@ import {
   FiUser,
   FiSettings,
   FiLogOut,
-  FiChevronLeft,
-  FiChevronRight,
   FiShield,
 } from "react-icons/fi";
+import { LuPanelLeftClose, LuPanelLeftOpen } from "react-icons/lu";
 import { GiMoon } from "react-icons/gi";
 import type { SessionUser } from "@/app/types/auth.types";
 
@@ -57,6 +58,7 @@ export function StudentSidebar({
   onCloseMobile,
 }: StudentSidebarProps) {
   const pathname = usePathname();
+  const [isHeaderHovered, setIsHeaderHovered] = useState(false);
 
   const isLinkActive = (item: NavItem) => {
     if (item.href === "/dashboard") {
@@ -71,7 +73,7 @@ export function StudentSidebar({
     }
   };
 
-  const isStaff = ["ADMIN", "SCHOLAR"].includes(user?.role ?? "");
+  const isStaff = ["ADMIN", "INSTRUCTOR"].includes(user?.role ?? "");
 
   return (
     <aside
@@ -80,7 +82,11 @@ export function StudentSidebar({
       }`}
     >
       {/* ── Brand Logo ── */}
-      <div className="h-16 flex items-center justify-between px-4 border-b border-[var(--border)] flex-shrink-0">
+      <div 
+        className="h-16 flex items-center justify-between px-4 border-b border-[var(--border)] flex-shrink-0"
+        onMouseEnter={() => setIsHeaderHovered(true)}
+        onMouseLeave={() => setIsHeaderHovered(false)}
+      >
         <Link
           href="/"
           onClick={handleLinkClick}
@@ -102,15 +108,25 @@ export function StudentSidebar({
           )}
         </Link>
 
-        {/* Desktop Collapse Toggle */}
+        {/* Desktop Collapse Toggle — fades in on header hover or button focus */}
         {!isMobile && (
           <button
             onClick={onToggleCollapse}
-            className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-dim)] transition-all focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
-            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            className={`
+              flex-shrink-0 p-1.5 rounded-lg
+              text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-dim)]
+              motion-safe:transition-opacity motion-safe:duration-200
+              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]
+              focus-visible:opacity-100
+              ${collapsed || isHeaderHovered
+                ? "opacity-100 pointer-events-auto"
+                : "opacity-0 pointer-events-none"
+              }
+            `}
           >
-            {collapsed ? <FiChevronRight size={18} /> : <FiChevronLeft size={18} />}
+            {collapsed ? <LuPanelLeftOpen size={18} /> : <LuPanelLeftClose size={18} />}
           </button>
         )}
       </div>
@@ -200,9 +216,9 @@ export function StudentSidebar({
             {/* Staff Link if Admin or Scholar */}
             {isStaff && (
               <Link
-                href={user?.role === "ADMIN" ? "/admin" : "/dashboard/scholar"}
+                href={user?.role === "ADMIN" ? "/admin" : "/dashboard/instructor"}
                 onClick={handleLinkClick}
-                title={collapsed && !isMobile ? (user?.role === "ADMIN" ? "Admin Panel" : "Scholar Dashboard") : undefined}
+                title={collapsed && !isMobile ? (user?.role === "ADMIN" ? "Admin Panel" : "Instructor Portal") : undefined}
                 className={`flex items-center gap-3.5 px-3 py-2.5 rounded-xl text-sm font-medium text-[var(--accent)] hover:bg-[var(--accent-dim)] transition-all duration-200 ${
                   collapsed && !isMobile ? "justify-center px-0" : ""
                 }`}
@@ -212,7 +228,7 @@ export function StudentSidebar({
                 </span>
                 {(!collapsed || isMobile) && (
                   <span className="truncate flex-1">
-                    {user?.role === "ADMIN" ? "Admin Panel" : "Scholar Portal"}
+                    {user?.role === "ADMIN" ? "Admin Panel" : "Instructor Portal"}
                   </span>
                 )}
               </Link>

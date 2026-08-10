@@ -11,7 +11,7 @@ import { isPublicCourse } from "../app/lib/courseAccess";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-type Role = "ADMIN" | "SCHOLAR" | "USER";
+type Role = "ADMIN" | "INSTRUCTOR" | "USER";
 
 interface User  { id: string; role: Role }
 interface Course { id: string; authorId: string; published: boolean; status: string; approvalStatus: string }
@@ -27,9 +27,9 @@ function canPerformAdminAction(actor: User): boolean {
   return actor.role === "ADMIN";
 }
 
-/** Mirrors scholar analytics scoping */
-function canViewScholarAnalytics(actor: User, scholarUserId: string): boolean {
-  return actor.role === "ADMIN" || actor.id === scholarUserId;
+/** Mirrors instructor analytics scoping */
+function canViewInstructorAnalytics(actor: User, instructorUserId: string): boolean {
+  return actor.role === "ADMIN" || actor.id === instructorUserId;
 }
 
 /** Mirrors announcement management check */
@@ -92,44 +92,44 @@ describe("student cannot access another student's private data", () => {
 
 // ─── Scholar isolation tests ──────────────────────────────────────────────────
 
-describe("scholar cannot modify another scholar's course", () => {
-  const scholarA = { id: "scholar-a", role: "SCHOLAR" as Role };
-  const scholarB = { id: "scholar-b", role: "SCHOLAR" as Role };
+describe("instructor cannot modify another instructor's course", () => {
+  const instructorA = { id: "instructor-a", role: "INSTRUCTOR" as Role };
+  const instructorB = { id: "instructor-b", role: "INSTRUCTOR" as Role };
   const courseOwnedByB = {
-    id: "course-1", authorId: "scholar-b",
+    id: "course-1", authorId: "instructor-b",
     published: true, status: "PUBLISHED", approvalStatus: "APPROVED",
   };
 
-  it("scholar A cannot manage scholar B's course", () => {
-    expect(canManageCourse(scholarA, courseOwnedByB)).toBe(false);
+  it("instructor A cannot manage instructor B's course", () => {
+    expect(canManageCourse(instructorA, courseOwnedByB)).toBe(false);
   });
 
-  it("scholar B can manage their own course", () => {
-    expect(canManageCourse(scholarB, courseOwnedByB)).toBe(true);
+  it("instructor B can manage their own course", () => {
+    expect(canManageCourse(instructorB, courseOwnedByB)).toBe(true);
   });
 
-  it("scholar A cannot manage announcements on scholar B's course", () => {
-    expect(canManageAnnouncement(scholarA, courseOwnedByB.authorId)).toBe(false);
+  it("instructor A cannot manage announcements on instructor B's course", () => {
+    expect(canManageAnnouncement(instructorA, courseOwnedByB.authorId)).toBe(false);
   });
 
-  it("scholar B can manage announcements on their own course", () => {
-    expect(canManageAnnouncement(scholarB, courseOwnedByB.authorId)).toBe(true);
+  it("instructor B can manage announcements on their own course", () => {
+    expect(canManageAnnouncement(instructorB, courseOwnedByB.authorId)).toBe(true);
   });
 
-  it("scholar A cannot manage prerequisites on scholar B's course", () => {
-    expect(canManagePrerequisites(scholarA, courseOwnedByB.authorId)).toBe(false);
+  it("instructor A cannot manage prerequisites on instructor B's course", () => {
+    expect(canManagePrerequisites(instructorA, courseOwnedByB.authorId)).toBe(false);
   });
 
-  it("scholar A cannot view scholar B's private analytics", () => {
-    expect(canViewScholarAnalytics(scholarA, scholarB.id)).toBe(false);
+  it("instructor A cannot view instructor B's private analytics", () => {
+    expect(canViewInstructorAnalytics(instructorA, instructorB.id)).toBe(false);
   });
 
-  it("scholar A can view their own analytics", () => {
-    expect(canViewScholarAnalytics(scholarA, scholarA.id)).toBe(true);
+  it("instructor A can view their own analytics", () => {
+    expect(canViewInstructorAnalytics(instructorA, instructorA.id)).toBe(true);
   });
 
-  it("scholar cannot perform admin moderation actions", () => {
-    expect(canPerformAdminAction(scholarA)).toBe(false);
+  it("instructor cannot perform admin moderation actions", () => {
+    expect(canPerformAdminAction(instructorA)).toBe(false);
   });
 });
 
@@ -138,7 +138,7 @@ describe("scholar cannot modify another scholar's course", () => {
 describe("admin can perform authorized management operations", () => {
   const admin = { id: "admin-1", role: "ADMIN" as Role };
   const anyCourse = {
-    id: "course-x", authorId: "scholar-z",
+    id: "course-x", authorId: "instructor-z",
     published: true, status: "PUBLISHED", approvalStatus: "APPROVED",
   };
 
@@ -147,15 +147,15 @@ describe("admin can perform authorized management operations", () => {
   });
 
   it("admin can manage any announcement", () => {
-    expect(canManageAnnouncement(admin, "scholar-z")).toBe(true);
+    expect(canManageAnnouncement(admin, "instructor-z")).toBe(true);
   });
 
   it("admin can resolve reports", () => {
     expect(canPerformAdminAction(admin)).toBe(true);
   });
 
-  it("admin can view any scholar's analytics", () => {
-    expect(canViewScholarAnalytics(admin, "scholar-z")).toBe(true);
+  it("admin can view any instructor's analytics", () => {
+    expect(canViewInstructorAnalytics(admin, "instructor-z")).toBe(true);
   });
 
   it("admin can access any certificate", () => {

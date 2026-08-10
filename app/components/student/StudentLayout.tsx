@@ -39,7 +39,7 @@ export function StudentLayout({ children }: StudentLayoutProps) {
   };
 
   return (
-    <div className="min-h-screen w-full bg-[var(--bg-primary)] text-[var(--text-primary)] flex overflow-x-hidden">
+    <div className="min-h-screen w-full bg-[var(--bg-primary)] text-[var(--text-primary)] flex">
       {/* ── Desktop Sidebar ── */}
       <div
         className={`hidden lg:block flex-shrink-0 transition-all duration-300 sticky top-0 h-screen z-40 ${

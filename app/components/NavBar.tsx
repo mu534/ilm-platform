@@ -157,7 +157,7 @@ export function Navbar() {
                         <FiActivity size={14} className="text-[var(--accent)]" /> My Learning
                       </Link>
                     </DropdownMenu.Item>
-                    {["ADMIN", "SCHOLAR"].includes(user?.role ?? "") && (
+                    {["ADMIN", "INSTRUCTOR"].includes(user?.role ?? "") && (
                       <DropdownMenu.Item asChild>
                         <Link href="/admin/courses" className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-dim)] rounded-xl cursor-pointer transition-colors">
                           <FiBookOpen size={14} className="text-[var(--accent)]" /> Manage Courses

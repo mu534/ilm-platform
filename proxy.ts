@@ -50,9 +50,9 @@ export default withAuth(
       authorized: ({ token, req }) => {
         const pathname = req.nextUrl.pathname;
 
-        // /admin requires ADMIN or SCHOLAR role
+        // /admin requires ADMIN or INSTRUCTOR role
         if (pathname.startsWith("/admin")) {
-          return token?.role === "ADMIN" || token?.role === "SCHOLAR";
+          return token?.role === "ADMIN" || token?.role === "INSTRUCTOR";
         }
 
         // /dashboard and /profile require any authenticated user

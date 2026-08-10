@@ -12,10 +12,11 @@ import {
 import type { SessionUser } from "../../../types/auth.types";
 
 interface FormState {
-  bio:            string;
-  topics:         string[];
-  qualifications: string[];
-  photo:          string;
+  bio:                     string;
+  professionalDesignation: string;
+  topics:                  string[];
+  qualifications:          string[];
+  photo:                   string;
 }
 
 export default function ScholarProfileEditPage() {
@@ -30,7 +31,7 @@ export default function ScholarProfileEditPage() {
   const [error,   setError]     = useState("");
   const [scholarId, setScholarId] = useState("");
   const [form, setForm] = useState<FormState>({
-    bio: "", topics: [""], qualifications: [""], photo: "",
+    bio: "", professionalDesignation: "", topics: [""], qualifications: [""], photo: "",
   });
 
   useEffect(() => {
@@ -52,10 +53,11 @@ export default function ScholarProfileEditPage() {
 
         setScholarId(s.id);
         setForm({
-          bio:            s.bio            ?? "",
-          topics:         s.topics?.length ? s.topics         : [""],
-          qualifications: s.qualifications?.length ? s.qualifications : [""],
-          photo:          s.photo          ?? "",
+          bio:                     s.bio                     ?? "",
+          professionalDesignation: s.professionalDesignation ?? "",
+          topics:                  s.topics?.length ? s.topics         : [""],
+          qualifications:          s.qualifications?.length ? s.qualifications : [""],
+          photo:                   s.photo                   ?? "",
         });
       })
       .catch(() => router.push("/scholars"))
@@ -76,10 +78,11 @@ export default function ScholarProfileEditPage() {
     setError(""); setSuccess(false); setSaving(true);
 
     const payload = {
-      bio:            form.bio,
-      topics:         form.topics.filter(Boolean),
-      qualifications: form.qualifications.filter(Boolean),
-      photo:          form.photo || undefined,
+      bio:                     form.bio,
+      professionalDesignation: form.professionalDesignation || undefined,
+      topics:                  form.topics.filter(Boolean),
+      qualifications:          form.qualifications.filter(Boolean),
+      photo:                   form.photo || undefined,
     };
 
     try {
@@ -158,6 +161,21 @@ export default function ScholarProfileEditPage() {
             label="Upload photo"
             onUpload={(url) => setForm({ ...form, photo: url })}
             currentUrl={form.photo}
+          />
+        </section>
+
+        {/* Professional Designation */}
+        <section className="glass-card rounded-2xl p-6">
+          <h2 className="text-sm font-semibold text-[var(--text-primary)] mb-1">Professional Designation</h2>
+          <p className="text-xs text-[var(--text-muted)] mb-3">
+            Optional title (e.g. Islamic Scholar, Qur'an Teacher, Arabic Instructor, Islamic History Educator, Researcher)
+          </p>
+          <input
+            type="text"
+            value={form.professionalDesignation}
+            onChange={(e) => setForm({ ...form, professionalDesignation: e.target.value })}
+            className={inputClass}
+            placeholder="e.g. Islamic Scholar, Arabic Language Instructor, Researcher…"
           />
         </section>
 

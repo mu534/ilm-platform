@@ -65,7 +65,7 @@ export async function PATCH(
       select: { id: true, name: true, email: true, role: true, image: true, bio: true },
     });
 
-    if (data.role === "SCHOLAR") {
+    if (data.role === "INSTRUCTOR") {
       const existing = await prisma.scholar.findUnique({ where: { userId: id } });
       if (!existing) {
         await prisma.scholar.create({

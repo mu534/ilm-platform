@@ -70,7 +70,7 @@ export async function POST(
 ) {
   try {
     const user = await requireUserFresh();
-    if (!["ADMIN", "SCHOLAR"].includes(user.role)) {
+    if (!["ADMIN", "INSTRUCTOR"].includes(user.role)) {
       return errorResponse("Forbidden", 403);
     }
 

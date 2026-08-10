@@ -20,7 +20,7 @@ interface CourseCardProps {
     currency?:         string;
     category?:  { id: string; name: string; icon?: string | null; color?: string | null } | null;
     author:     { id: string; name: string; image?: string | null };
-    scholar?:   { id: string; photo?: string | null; verified: boolean; user: { name: string } } | null;
+    scholar?:   { id: string; photo?: string | null; verified: boolean; professionalDesignation?: string | null; user: { name: string } } | null;
     _count:     { modules: number; enrollments: number; ratings: number };
     avgRating?: number;
   };
@@ -39,9 +39,10 @@ function formatDuration(min: number): string {
 }
 
 export function CourseCard({ course }: CourseCardProps) {
-  const instructor = course.scholar?.user.name ?? course.author.name;
-  const diff       = difficultyConfig[course.difficulty];
-  const skills     = (course.tags ?? []).slice(0, 3);
+  const instructor  = course.scholar?.user.name ?? course.author.name;
+  const designation = course.scholar?.professionalDesignation ?? null;
+  const diff        = difficultyConfig[course.difficulty];
+  const skills      = (course.tags ?? []).slice(0, 3);
 
   return (
     <Link
@@ -113,11 +114,16 @@ export function CourseCard({ course }: CourseCardProps) {
           )}
 
           {/* Instructor */}
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 flex-wrap">
             {course.scholar?.verified && (
               <span className="text-emerald-400 text-[10px]">✓</span>
             )}
             <span className="text-[12px] text-[var(--text-muted)] truncate">{instructor}</span>
+            {designation && (
+              <span className="text-[10px] text-[var(--accent)] font-medium">
+                · {designation}
+              </span>
+            )}
           </div>
 
           {/* ── Stats footer ── */}

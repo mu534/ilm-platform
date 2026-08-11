@@ -19,6 +19,7 @@ import {
 } from "react-icons/fi";
 import { GiStarFormation } from "react-icons/gi";
 import type { SessionUser } from "../types/auth.types";
+import { getProfileCompletion } from "../lib/profileCompletion";
 
 export const metadata = { title: "Student Dashboard | Ilm Platform" };
 
@@ -29,6 +30,8 @@ async function getDashboardData(userId: string) {
     bookmarksCount,
     certificates,
     quizAttempts,
+    profile,
+    scholarApplication,
   ] = await Promise.all([
     prisma.enrollment.findMany({
       where: { userId },
@@ -102,6 +105,8 @@ async function getDashboardData(userId: string) {
         quiz: { select: { id: true, title: true, passingScore: true } },
       },
     }),
+    prisma.user.findUnique({ where: { id: userId }, select: { image: true, country: true, bio: true, learnerProfile: { select: { city: true, occupation: true, preferredLanguage: true, interests: { select: { id: true } }, goals: { select: { id: true } } } } } }),
+    prisma.scholarApplication.findFirst({ where: { userId }, orderBy: { updatedAt: "desc" }, select: { status: true, updatedAt: true } }),
   ]);
 
   const active = enrollments.filter((e) => e.status === "ACTIVE");
@@ -146,6 +151,8 @@ async function getDashboardData(userId: string) {
     quizAttempts,
     totalWatchedSeconds: totalTime._sum.watchedSeconds ?? 0,
     nextLectureMap,
+    profileCompletion: profile ? getProfileCompletion(profile) : { percentage: 0, missing: ["Profile details"] },
+    scholarApplication,
   };
 }
 
@@ -484,6 +491,12 @@ export default async function DashboardPage() {
 
         {/* Right Column (1 Col): Quizzes, Certificates, Shortcuts */}
         <div className="space-y-6">
+          <section className="glass-card rounded-2xl p-5 border border-[var(--border)] space-y-3">
+            <div className="flex justify-between text-sm font-semibold"><span>Profile Completion</span><span className="text-[var(--accent)]">{data.profileCompletion.percentage}%</span></div>
+            <div className="h-2 rounded-full bg-[var(--bg-secondary)] overflow-hidden"><div className="h-full bg-[var(--accent)]" style={{ width: `${data.profileCompletion.percentage}%` }} /></div>
+            {data.profileCompletion.missing.length > 0 ? <><p className="text-xs text-[var(--text-muted)]">Missing: {data.profileCompletion.missing.slice(0, 3).join(", ")}</p><Link href="/settings" className="text-xs text-[var(--accent)] font-semibold">Complete profile →</Link></> : <p className="text-xs text-emerald-400">Your profile is complete.</p>}
+          </section>
+          {data.scholarApplication && <section className="glass-card rounded-2xl p-5 border border-[var(--border)]"><h3 className="font-semibold text-sm">Scholar Application</h3><p className="text-sm text-[var(--accent)] mt-2">{data.scholarApplication.status.replaceAll("_", " ")}</p><Link href="/scholar-application" className="text-xs text-[var(--accent)]">View application →</Link></section>}
           {/* Quick Actions Card */}
           <section className="glass-card rounded-2xl p-5 border border-[var(--border)] space-y-3">
             <h3 className="font-semibold text-sm text-[var(--text-primary)] flex items-center gap-2">

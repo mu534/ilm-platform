@@ -134,6 +134,15 @@ export class CourseService {
       _count: { rating: true },
     });
     const ratingMap = new Map(ratings.map((r) => [r.courseId, r]));
+    const enrollmentMap = new Map<string, { status: "ACTIVE" | "COMPLETED" | "DROPPED"; progress: number; certificateId?: string }>();
+    if (user?.id && courseIds.length) {
+      const [enrollments, certificates] = await Promise.all([
+        prisma.enrollment.findMany({ where: { userId: user.id, courseId: { in: courseIds } }, select: { courseId: true, status: true, progress: true } }),
+        prisma.certificate.findMany({ where: { userId: user.id, courseId: { in: courseIds } }, select: { id: true, courseId: true } }),
+      ]);
+      const certificateByCourse = new Map(certificates.map((certificate) => [certificate.courseId, certificate.id]));
+      enrollments.filter((enrollment) => enrollment.status !== "DROPPED").forEach((enrollment) => enrollmentMap.set(enrollment.courseId, { status: enrollment.status, progress: enrollment.progress, certificateId: certificateByCourse.get(enrollment.courseId) }));
+    }
 
     const enriched = items.map((course) => {
       const r = ratingMap.get(course.id);
@@ -141,6 +150,7 @@ export class CourseService {
         ...course,
         avgRating: r?._avg.rating ?? 0,
         totalRatings: r?._count.rating ?? 0,
+        enrollment: enrollmentMap.get(course.id),
       };
     });
 

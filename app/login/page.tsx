@@ -34,7 +34,8 @@ export default function LoginPage() {
 function LoginForm() {
   const router       = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl  = searchParams?.get("callbackUrl") ?? "/";
+  const requestedCallbackUrl = searchParams?.get("callbackUrl");
+  const callbackUrl  = requestedCallbackUrl && requestedCallbackUrl.startsWith("/") ? requestedCallbackUrl : "/onboarding";
   const urlError     = searchParams?.get("error");
 
   const [form,         setForm]         = useState({ email: "", password: "" });

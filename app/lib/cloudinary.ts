@@ -36,3 +36,16 @@ export async function uploadToCloudinary(
 export async function deleteFromCloudinary(publicId: string): Promise<void> {
   await cloudinary.uploader.destroy(publicId);
 }
+
+export async function uploadPrivateDocument(fileBuffer: Buffer, folder: string): Promise<{ publicId: string }> {
+  return new Promise((resolve, reject) => {
+    cloudinary.uploader.upload_stream({ folder, resource_type: "raw", type: "authenticated", access_mode: "authenticated" }, (error, result) => {
+      if (error || !result) reject(error || new Error("Upload failed"));
+      else resolve({ publicId: result.public_id });
+    }).end(fileBuffer);
+  });
+}
+
+export function privateDocumentUrl(publicId: string): string {
+  return cloudinary.url(publicId, { resource_type: "raw", type: "authenticated", sign_url: true, expires_at: Math.floor(Date.now() / 1000) + 300, secure: true });
+}

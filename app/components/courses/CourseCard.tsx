@@ -24,6 +24,7 @@ interface CourseCardProps {
     scholar?:   { id: string; photo?: string | null; verified: boolean; professionalDesignation?: string | null; user: { name: string } } | null;
     _count:     { modules: number; enrollments: number; ratings: number };
     avgRating?: number;
+    enrollment?: { status: "ACTIVE" | "COMPLETED" | "DROPPED"; progress: number; certificateId?: string };
   };
 }
 
@@ -59,6 +60,8 @@ export function CourseCard({ course }: CourseCardProps) {
   const diff        = difficultyConfig[course.difficulty];
   const skills      = (course.tags ?? []).slice(0, 3);
   const summary     = course.shortDescription?.trim() || excerpt(course.description);
+  const enrollment = course.enrollment;
+  const action = !enrollment ? "View Course" : enrollment.certificateId ? "View Certificate" : enrollment.status === "COMPLETED" ? "View Course" : enrollment.progress > 0 ? "Continue Learning" : "Start Learning";
 
   return (
     <Link
@@ -167,6 +170,7 @@ export function CourseCard({ course }: CourseCardProps) {
               <span className="sr-only">students</span>
             </span>
           </div>
+          {enrollment && <div className="text-[11px] font-semibold text-[var(--accent)]">{enrollment.status === "COMPLETED" ? "✓ Completed" : `${Math.round(enrollment.progress)}% Complete`}</div>}
         </div>
 
         {/* ── Hover reveal panel — Udacity's signature "expand on hover" CTA ── */}
@@ -179,7 +183,7 @@ export function CourseCard({ course }: CourseCardProps) {
           </p>
           <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[var(--accent)]">
             <FiBookOpen size={12} />
-            View Course
+            {action}
             <FiArrowRight size={12} className="transition-transform group-hover:translate-x-0.5" />
           </span>
         </div>

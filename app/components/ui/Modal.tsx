@@ -5,7 +5,7 @@ import { FiX } from "react-icons/fi";
 import { cn } from "../../utils/cn";
 
 interface ModalProps {
-  open: boolean;
+  open?: boolean;
   onClose: () => void;
   title?: string;
   description?: string;
@@ -21,7 +21,7 @@ const sizes = {
 };
 
 export function Modal({
-  open,
+  open = true,
   onClose,
   title,
   description,

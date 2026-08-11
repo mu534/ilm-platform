@@ -3,6 +3,7 @@ import { prisma } from "../../../lib/prism";
 import { requireUserFresh } from "../../../lib/authorization";
 import { successResponse, errorResponse, handleApiError } from "../../../utils/api";
 import { z } from "zod";
+import { getProfileCompletion } from "../../../lib/profileCompletion";
 
 const preferencesSchema = z.object({
   notifyNewContent:  z.boolean().optional(),
@@ -16,11 +17,11 @@ export async function GET() {
 
     const prefs = await prisma.user.findUnique({
       where:  { id: user.id },
-      select: { notifyNewContent: true, notifyComments: true, preferredLanguage: true },
+      select: { notifyNewContent: true, notifyComments: true, preferredLanguage: true, image: true, country: true, bio: true, learnerProfile: { select: { city: true, occupation: true, preferredLanguage: true, interests: { select: { id: true } }, goals: { select: { id: true } } } } },
     });
     if (!prefs) return errorResponse("User not found", 404);
 
-    return successResponse(prefs);
+    return successResponse({ notifyNewContent: prefs.notifyNewContent, notifyComments: prefs.notifyComments, preferredLanguage: prefs.preferredLanguage, profileCompletion: getProfileCompletion(prefs) });
   } catch (error) {
     return handleApiError(error);
   }

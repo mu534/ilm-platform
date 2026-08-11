@@ -16,6 +16,7 @@ export const registerSchema = z.object({
   confirmPassword: z.string(),
   country: z.string().trim().min(2, "Country is required").max(100),
   termsAccepted: z.literal(true, { message: "You must accept the Terms and Privacy Policy" }),
+  privacyAccepted: z.literal(true, { message: "You must accept the Privacy Policy" }),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords do not match",
   path: ["confirmPassword"],
@@ -44,9 +45,8 @@ export const scholarApplicationSchema = z.object({
   specializations: z.array(z.string().trim().min(2).max(120)).min(1).max(12),
   teachingExperience: z.string().trim().max(2000).optional().or(z.literal("")),
   teachingYears: z.number().int().min(0).max(80).optional().nullable(),
-  intendedCategories: z.array(z.string().min(1)).min(1).max(12),
+  categoryIds: z.array(z.string().min(1)).min(1).max(12).refine((ids) => new Set(ids).size === ids.length, "Categories must be unique"),
   teachingLanguages: z.array(z.string().trim().min(2).max(20)).min(1).max(10),
-  documentKeys: z.array(z.string().regex(/^[A-Za-z0-9/_-]+$/, "Invalid private document key")).max(10).default([]),
 });
 
 export const scholarApplicationReviewSchema = z.object({

@@ -22,7 +22,7 @@ function GoogleIcon() {
 export default function RegisterPage() {
   const router  = useRouter();
 
-  const [form,    setForm]    = useState({ name: "", email: "", password: "", confirmPassword: "", country: "", termsAccepted: false });
+  const [form,    setForm]    = useState({ name: "", email: "", password: "", confirmPassword: "", country: "", termsAccepted: false, privacyAccepted: false });
   const [errors,  setErrors]  = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -32,7 +32,7 @@ export default function RegisterPage() {
   // ── Google sign-up ───────────────────────────────────────────────────────────
   const handleGoogle = async () => {
     setGoogleLoading(true);
-    await signIn("google", { callbackUrl: "/" });
+    await signIn("google", { callbackUrl: "/onboarding" });
     // Google redirects — loading stays true
   };
 
@@ -272,9 +272,14 @@ export default function RegisterPage() {
 
                 <label className="flex items-start gap-2 text-xs text-[var(--text-muted)] cursor-pointer">
                   <input type="checkbox" required checked={form.termsAccepted} onChange={(e) => setForm({ ...form, termsAccepted: e.target.checked })} className="mt-0.5 accent-[var(--accent)]" />
-                  <span>I agree to the <Link href="/terms" className="text-[var(--accent)] underline">Terms</Link> and <Link href="/privacy" className="text-[var(--accent)] underline">Privacy Policy</Link>.</span>
+                  <span>I agree to the <Link href="/terms" className="text-[var(--accent)] underline">Terms of Service</Link>.</span>
                 </label>
                 {errors.termsAccepted && <p className="text-xs text-red-400 -mt-2"><FiAlertCircle size={11} className="inline" /> {errors.termsAccepted}</p>}
+                <label className="flex items-start gap-2 text-xs text-[var(--text-muted)] cursor-pointer">
+                  <input type="checkbox" required checked={form.privacyAccepted} onChange={(e) => setForm({ ...form, privacyAccepted: e.target.checked })} className="mt-0.5 accent-[var(--accent)]" />
+                  <span>I agree to the <Link href="/privacy" className="text-[var(--accent)] underline">Privacy Policy</Link>.</span>
+                </label>
+                {errors.privacyAccepted && <p className="text-xs text-red-400 -mt-2"><FiAlertCircle size={11} className="inline" /> {errors.privacyAccepted}</p>}
 
                 <button
                   type="submit"

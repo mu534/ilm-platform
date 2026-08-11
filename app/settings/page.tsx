@@ -12,6 +12,7 @@ interface Preferences {
   notifyNewContent:  boolean;
   notifyComments:    boolean;
   preferredLanguage: string;
+  profileCompletion?: { percentage: number; missing: string[] };
 }
 
 const LANGUAGES = [
@@ -190,6 +191,9 @@ export default function SettingsPage() {
         </p>
         <h1 className="font-display text-2xl font-bold text-[var(--text-primary)]">Settings</h1>
       </div>
+
+      {/* Notifications */}
+      {prefs.profileCompletion && <SettingsSection icon={<FiCheck size={16} />} title="Profile completion" description="Complete your details to improve recommendations"><div className="flex justify-between text-sm"><span>{prefs.profileCompletion.percentage}% complete</span><span className="text-[var(--accent)]">{prefs.profileCompletion.missing.length ? `Missing: ${prefs.profileCompletion.missing.slice(0, 3).join(", ")}` : "Complete"}</span></div><div className="h-2 mt-3 rounded-full bg-[var(--bg-secondary)] overflow-hidden"><div className="h-full bg-[var(--accent)]" style={{ width: `${prefs.profileCompletion.percentage}%` }} /></div></SettingsSection>}
 
       {/* Notifications */}
       <SettingsSection icon={<FiBell size={16} />} title="Notifications" description="Control which in-app notifications you receive">

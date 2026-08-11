@@ -144,6 +144,10 @@ model User {
   bio           String?
   country       String?
   certificateName String?
+  termsAcceptedAt DateTime?
+  privacyAcceptedAt DateTime?
+  termsVersion String?
+  privacyVersion String?
   emailVerified Boolean   @default(false)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -155,6 +159,7 @@ model User {
   learnerProfile LearnerProfile?
   scholarApplications ScholarApplication[] @relation("ApplicantApplications")
   reviewedScholarApplications ScholarApplication[] @relation("ApplicationReviewer")
+  scholarApplicationReviews ScholarApplicationReview[]
 
   // New relations
   enrollments       Enrollment[]
@@ -169,6 +174,7 @@ model User {
   sentReports       Report[]          @relation("ReportedBy")
   resolvedReports   Report[]          @relation("ResolvedReports")
   auditLogs         AuditLog[]
+  consentRecords    ConsentRecord[]
   forumQuestions    ForumQuestion[]
   forumReplies      ForumReply[]
   forumVotes        ForumVote[]
@@ -269,21 +275,77 @@ model ScholarApplication {
   specializations String[]
   teachingExperience String?
   teachingYears   Int?
-  intendedCategories String[]
   teachingLanguages String[]
-  documentKeys    String[]
   submittedAt     DateTime?
   reviewedAt      DateTime?
   reviewedById    String?
   reviewedBy      User?     @relation("ApplicationReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
   internalNotes   String?
   decisionReason  String?
+  categories      ScholarApplicationCategory[]
+  documents       ScholarApplicationDocument[]
+  reviewHistory   ScholarApplicationReview[]
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
   @@index([status, submittedAt])
   @@index([userId, status])
   @@map("scholar_applications")
+}
+
+model ConsentRecord {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  version   String
+  acceptedAt DateTime @default(now())
+
+  @@unique([userId, type, version])
+  @@index([userId, acceptedAt])
+  @@map("consent_records")
+}
+
+model ScholarApplicationCategory {
+  applicationId String
+  categoryId    String
+  application   ScholarApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  category      Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  createdAt     DateTime @default(now())
+
+  @@id([applicationId, categoryId])
+  @@index([categoryId])
+  @@map("scholar_application_categories")
+}
+
+model ScholarApplicationDocument {
+  id            String   @id @default(cuid())
+  applicationId String
+  application   ScholarApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  storageKey    String   @unique
+  originalName  String
+  mimeType      String
+  size          Int
+  kind          String
+  createdAt     DateTime @default(now())
+
+  @@index([applicationId])
+  @@map("scholar_application_documents")
+}
+
+model ScholarApplicationReview {
+  id            String   @id @default(cuid())
+  applicationId String
+  application   ScholarApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  reviewerId    String
+  reviewer      User     @relation(fields: [reviewerId], references: [id], onDelete: Restrict)
+  status        ScholarApplicationStatus
+  internalNotes String?
+  decisionReason String?
+  createdAt     DateTime @default(now())
+
+  @@index([applicationId, createdAt])
+  @@map("scholar_application_reviews")
 }
 
 // ─── Category ────────────────────────────────────────────────────────────────
@@ -302,6 +364,7 @@ model Category {
   courses  Course[]
   lectures Lecture[]
   learnerInterests LearnerInterest[]
+  scholarApplicationCategories ScholarApplicationCategory[]
 
   @@map("categories")
 }

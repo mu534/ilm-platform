@@ -2,6 +2,7 @@ import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import bcrypt from "bcryptjs";
+import type { JWT } from "next-auth/jwt";
 import { prisma } from "../lib/prism";
 
 type UserRole = "ADMIN" | "INSTRUCTOR" | "USER";
@@ -9,18 +10,47 @@ type UserRole = "ADMIN" | "INSTRUCTOR" | "USER";
 /** Re-sync role from DB at most every 60s so demotions/promotions take effect without full re-login. */
 const ROLE_SYNC_INTERVAL_MS = 60_000;
 
+const userTokenSelect = {
+  id: true,
+  role: true,
+  name: true,
+  email: true,
+  image: true,
+  learnerProfile: { select: { onboardingCompleted: true } },
+} as const;
+
+type DbTokenUser = {
+  id: string;
+  role: string;
+  name: string | null;
+  email: string | null;
+  image: string | null;
+  learnerProfile: { onboardingCompleted: boolean } | null;
+};
+
 async function loadDbUserById(id: string) {
-  return prisma.user.findUnique({
-    where: { id },
-    select: { id: true, role: true, name: true, email: true, image: true },
-  });
+  return prisma.user.findUnique({ where: { id }, select: userTokenSelect });
 }
 
 async function loadDbUserByEmail(email: string) {
-  return prisma.user.findUnique({
-    where: { email },
-    select: { id: true, role: true, name: true, email: true, image: true },
-  });
+  return prisma.user.findUnique({ where: { email }, select: userTokenSelect });
+}
+
+/**
+ * Copy the authoritative database state onto the JWT. Onboarding status lives
+ * in the database (LearnerProfile) — never in client storage — and admins and
+ * instructors are not learners, so they are never gated by onboarding.
+ */
+function applyDbUserToToken(token: JWT, dbUser: DbTokenUser) {
+  token.id = dbUser.id;
+  token.role = dbUser.role as UserRole;
+  token.name = dbUser.name;
+  token.email = dbUser.email;
+  token.picture = dbUser.image;
+  token.onboardingCompleted =
+    dbUser.role === "USER" ? Boolean(dbUser.learnerProfile?.onboardingCompleted) : true;
+  token.roleSyncedAt = Date.now();
+  return token;
 }
 
 export const authOptions: NextAuthOptions = {
@@ -83,13 +113,19 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async signIn({ user, account }) {
       if (account?.provider === "google") {
+        if (!user.email) return false;
         try {
-          const existing = await prisma.user.findUnique({ where: { email: user.email! } });
+          const existing = await prisma.user.findUnique({
+            where: { email: user.email },
+            select: { id: true, image: true },
+          });
 
           if (!existing) {
+            // Roles are never taken from the provider — a new Google account is
+            // always a plain USER and must complete onboarding.
             await prisma.user.create({
               data: {
-                email: user.email!,
+                email: user.email,
                 name: user.name ?? "Google User",
                 image: user.image ?? null,
                 password: null,
@@ -104,45 +140,46 @@ export const authOptions: NextAuthOptions = {
             });
           }
         } catch {
-          // Log but don't block sign-in — user may already exist
+          // Concurrent first sign-in may have created the row already; only
+          // allow sign-in when the account genuinely exists.
+          const created = await prisma.user
+            .findUnique({ where: { email: user.email }, select: { id: true } })
+            .catch(() => null);
+          if (!created) return false;
         }
         return true;
       }
       return true;
     },
 
-    async jwt({ token, user, account }) {
-      // Fresh sign-in
+    async jwt({ token, user, account, trigger }) {
+      // Fresh sign-in — bind the JWT to the Prisma user (never Google's sub)
       if (user) {
-        if (account?.provider === "google" && user.email) {
-          // Always bind JWT to the Prisma user id + authoritative role (not Google's sub)
-          try {
-            const dbUser = await loadDbUserByEmail(user.email);
-            if (dbUser) {
-              token.id = dbUser.id;
-              token.role = dbUser.role as UserRole;
-              token.name = dbUser.name;
-              token.email = dbUser.email;
-              token.picture = dbUser.image;
-              token.roleSyncedAt = Date.now();
-              return token;
-            }
-          } catch {
-            // Fall through to best-effort token population
-          }
+        try {
+          const dbUser =
+            account?.provider === "google" && user.email
+              ? await loadDbUserByEmail(user.email)
+              : await loadDbUserById(user.id);
+          if (dbUser) return applyDbUserToToken(token, dbUser);
+        } catch {
+          // Fall through to best-effort token population
         }
 
         token.id = user.id;
         token.role = (user.role as UserRole) ?? "USER";
+        token.onboardingCompleted = token.role !== "USER";
         token.roleSyncedAt = Date.now();
         return token;
       }
 
-      // Subsequent requests — refresh role from DB on an interval so demotions apply
+      // Subsequent requests — refresh from DB on an interval so demotions and a
+      // finished onboarding apply. `session.update()` forces an immediate sync.
       const syncedAt = typeof token.roleSyncedAt === "number" ? token.roleSyncedAt : 0;
       const needsSync =
+        trigger === "update" ||
         !token.role ||
         !token.id ||
+        typeof token.onboardingCompleted !== "boolean" ||
         Date.now() - syncedAt >= ROLE_SYNC_INTERVAL_MS;
 
       if (needsSync && (token.id || token.email)) {
@@ -153,14 +190,7 @@ export const authOptions: NextAuthOptions = {
               ? await loadDbUserByEmail(token.email as string)
               : null;
 
-          if (dbUser) {
-            token.id = dbUser.id;
-            token.role = dbUser.role as UserRole;
-            token.name = dbUser.name;
-            token.email = dbUser.email;
-            token.picture = dbUser.image;
-            token.roleSyncedAt = Date.now();
-          }
+          if (dbUser) applyDbUserToToken(token, dbUser);
         } catch {
           // DB unavailable — keep existing token values
         }
@@ -172,6 +202,7 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       session.user.id = token.id as string;
       session.user.role = token.role;
+      session.user.onboardingCompleted = token.onboardingCompleted ?? false;
       session.user.name = token.name as string | null;
       session.user.email = token.email as string | null;
       if (token.picture) session.user.image = token.picture as string;

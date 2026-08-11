@@ -170,7 +170,25 @@ export function CourseCard({ course }: CourseCardProps) {
               <span className="sr-only">students</span>
             </span>
           </div>
-          {enrollment && <div className="text-[11px] font-semibold text-[var(--accent)]">{enrollment.status === "COMPLETED" ? "✓ Completed" : `${Math.round(enrollment.progress)}% Complete`}</div>}
+          {enrollment && (
+            <div className="space-y-1">
+              <div className="text-[11px] font-semibold text-[var(--accent)]">
+                {enrollment.status === "COMPLETED" ? "✓ Completed" : `${Math.round(enrollment.progress)}% Complete`}
+              </div>
+              {enrollment.status !== "COMPLETED" && (
+                <div
+                  className="h-1 w-full rounded-full bg-[var(--bg-secondary)] overflow-hidden"
+                  role="progressbar"
+                  aria-valuenow={Math.round(enrollment.progress)}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-label={`${course.title} progress`}
+                >
+                  <div className="h-full bg-[var(--accent)]" style={{ width: `${Math.min(100, Math.max(0, enrollment.progress))}%` }} />
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* ── Hover reveal panel — Udacity's signature "expand on hover" CTA ── */}

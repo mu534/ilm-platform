@@ -1,7 +1,12 @@
 import { NextRequest } from "next/server";
 import { prisma } from "../../lib/prism";
 import { lectureSchema } from "../../lib/validations";
-import { requireUserFresh, getOptionalUser } from "../../lib/authorization";
+import {
+  requireUserFresh,
+  getOptionalUser,
+  requireModuleOwner,
+  requireScholarAttribution,
+} from "../../lib/authorization";
 import {
   successResponse,
   errorResponse,
@@ -121,6 +126,15 @@ export async function POST(req: NextRequest) {
 
     const body = (await req.json()) as unknown;
     const data = lectureSchema.parse(body);
+
+    // Ownership of the target module and scholar attribution are verified
+    // server-side — a crafted moduleId/scholarId cannot reach another author's course.
+    if (data.moduleId) await requireModuleOwner(data.moduleId, user);
+    if (data.scholarId) await requireScholarAttribution(data.scholarId, user);
+    if (user.role !== "ADMIN") {
+      delete (data as Record<string, unknown>).featured;
+    }
+
     const slug = slugify(data.title);
 
     const lecture = await prisma.lecture.create({

@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { prisma } from "../../../lib/prism";
 import { requireUserFresh, requireAdmin } from "../../../lib/authorization";
-import { scholarSchema } from "../../../lib/validations";
+import { scholarSchema, pickProvided } from "../../../lib/validations";
 import {
   successResponse,
   errorResponse,
@@ -62,7 +62,9 @@ export async function PATCH(
     if (!isAdmin && !isOwner) return errorResponse("Forbidden", 403);
 
     const body = (await req.json()) as unknown;
-    const data = scholarSchema.partial().parse(body);
+    const data = pickProvided(body, scholarSchema.partial().parse(body));
+    // Featuring a scholar is an editorial decision — scholars cannot feature themselves.
+    if (!isAdmin) delete (data as Record<string, unknown>).featured;
 
     const updated = await prisma.scholar.update({
       where: { id },

@@ -1,10 +1,14 @@
 import { NextRequest } from "next/server";
 import { prisma } from "../../../lib/prism";
-import { courseSchema } from "../../../lib/validations";
+import { courseSchema, pickProvided } from "../../../lib/validations";
 import { successResponse, errorResponse, handleApiError } from "../../../utils/api";
 import { getClientIp } from "../../../lib/rateLimit";
 import { isPublicCourse } from "../../../lib/courseAccess";
-import { requireUserFresh, getOptionalUser } from "../../../lib/authorization";
+import {
+  requireUserFresh,
+  getOptionalUser,
+  requireScholarAttribution,
+} from "../../../lib/authorization";
 import { z } from "zod";
 
 // ── Shared select ─────────────────────────────────────────────────────────────
@@ -67,6 +71,11 @@ const courseDetailSelect = {
 const adminUpdateSchema = z.object({
   featured:       z.boolean().optional(),
 });
+
+// Publication and feature flags are omitted rather than stripped after parsing:
+// zod's `.partial()` keeps `.default(false)`, so an absent `published`/`featured`
+// would otherwise be re-injected as `false` and silently unpublish the course.
+const courseEditSchema = courseSchema.omit({ published: true, featured: true }).partial();
 
 // ── GET /api/courses/[id] ─────────────────────────────────────────────────────
 
@@ -145,8 +154,10 @@ export async function PATCH(
       return errorResponse("Course moderation and publication changes must use the review workflow", 409);
     }
 
-    // Course fields validated through courseSchema
-    const courseData = courseSchema.partial().parse(raw);
+    const courseData = pickProvided(raw, courseEditSchema.parse(raw));
+    if (courseData.scholarId && courseData.scholarId !== course.scholarId) {
+      await requireScholarAttribution(courseData.scholarId, user);
+    }
 
     // Admin-only fields validated separately through strict schema — no injection possible
     const adminData  = isAdmin ? adminUpdateSchema.parse(raw) : {};
@@ -161,12 +172,6 @@ export async function PATCH(
     const reReviewFields = needsRereview
       ? { approvalStatus: "PENDING" as const, status: "PENDING_REVIEW" as const, published: false }
       : {};
-
-    // Scholars can never directly publish — strip published/featured for non-admins
-    if (!isAdmin) {
-      delete (courseData as Record<string, unknown>).published;
-      delete (courseData as Record<string, unknown>).featured;
-    }
 
     // Stripe Price objects are immutable — if the price or currency changed,
     // drop the cached stripePriceId so /checkout creates a fresh one instead

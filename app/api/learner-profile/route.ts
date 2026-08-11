@@ -14,6 +14,9 @@ export async function PUT(req: NextRequest) {
     const categoryCount = await prisma.category.count({ where: { id: { in: data.categoryIds } } });
     if (categoryCount !== new Set(data.categoryIds).size) return errorResponse("INVALID_CATEGORY", 422);
     const previous = await prisma.learnerProfile.findUnique({ where: { userId: user.id }, select: { onboardingStep: true, onboardingCompleted: true } });
+    // Onboarding completion is monotonic — a later profile save can never send a
+    // finished learner back through onboarding.
+    if (previous?.onboardingCompleted) data.onboardingCompleted = true;
     const profile = await prisma.$transaction(async (tx) => {
       const saved = await tx.learnerProfile.upsert({ where: { userId: user.id }, create: { userId: user.id, city: data.city || null, educationLevel: data.educationLevel || null, fieldOfStudy: data.fieldOfStudy || null, occupation: data.occupation || null, preferredLanguage: data.preferredLanguage, preferredDifficulty: data.preferredDifficulty || null, accountIntention: data.accountIntention, onboardingCompleted: data.onboardingCompleted ?? false, onboardingStep: data.onboardingStep ?? 1 }, update: { city: data.city || null, educationLevel: data.educationLevel || null, fieldOfStudy: data.fieldOfStudy || null, occupation: data.occupation || null, preferredLanguage: data.preferredLanguage, preferredDifficulty: data.preferredDifficulty || null, accountIntention: data.accountIntention, onboardingCompleted: data.onboardingCompleted, onboardingStep: data.onboardingStep } });
       await tx.learnerInterest.deleteMany({ where: { profileId: saved.id } }); await tx.learnerGoal.deleteMany({ where: { profileId: saved.id } });

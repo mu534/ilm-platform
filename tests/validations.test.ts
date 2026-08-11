@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { registerSchema, lectureSchema, courseSchema, moduleSchema } from "../app/lib/validations";
+import { registerSchema, lectureSchema, courseSchema, moduleSchema, pickProvided } from "../app/lib/validations";
 
 describe("registerSchema", () => {
   it("accepts a valid registration", () => {
@@ -10,6 +10,7 @@ describe("registerSchema", () => {
       confirmPassword: "Password1",
       country: "Ethiopia",
       termsAccepted: true,
+      privacyAccepted: true,
     });
     expect(result.success).toBe(true);
   });
@@ -171,6 +172,34 @@ describe("courseSchema", () => {
     const result = courseSchema.safeParse(base);
     expect(result.success).toBe(true);
     expect(result.data?.shortDescription).toBeUndefined();
+  });
+});
+
+describe("pickProvided", () => {
+  const base = {
+    title: "Foundations of Fiqh",
+    description: "A comprehensive introduction to Islamic jurisprudence, covering the core principles that guide daily practice.",
+  };
+
+  it("drops defaulted fields the client never sent", () => {
+    const raw = { ...base, subtitle: "Updated subtitle" };
+    const parsed = courseSchema.partial().parse(raw);
+
+    expect(parsed.published).toBe(false); // zod re-injects the default
+    expect(pickProvided(raw, parsed)).not.toHaveProperty("published");
+    expect(pickProvided(raw, parsed)).not.toHaveProperty("featured");
+    expect(pickProvided(raw, parsed).subtitle).toBe("Updated subtitle");
+  });
+
+  it("keeps fields the client explicitly sent", () => {
+    const raw = { ...base, published: true };
+    const parsed = courseSchema.partial().parse(raw);
+    expect(pickProvided(raw, parsed).published).toBe(true);
+  });
+
+  it("returns an empty object for a non-object body", () => {
+    expect(pickProvided(null, { a: 1 })).toEqual({});
+    expect(pickProvided("nope", { a: 1 })).toEqual({});
   });
 });
 

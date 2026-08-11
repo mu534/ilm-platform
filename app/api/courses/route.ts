@@ -2,7 +2,11 @@ import { NextRequest } from "next/server";
 import { courseSchema } from "../../lib/validations";
 import { successResponse, errorResponse, handleApiError } from "../../utils/api";
 import { checkRateLimit, getClientIp } from "../../lib/rateLimit";
-import { requireAdminOrScholar, getOptionalUser } from "../../lib/authorization";
+import {
+  requireAdminOrScholar,
+  getOptionalUser,
+  requireScholarAttribution,
+} from "../../lib/authorization";
 import { CourseService } from "../../lib/services/courseService";
 
 // ── GET /api/courses ──────────────────────────────────────────────────────────
@@ -44,6 +48,7 @@ export async function POST(req: NextRequest) {
     const user = await requireAdminOrScholar();
     const body = (await req.json()) as unknown;
     const data = courseSchema.parse(body);
+    if (data.scholarId) await requireScholarAttribution(data.scholarId, user);
 
     const course = await CourseService.createCourse(user, data);
     return successResponse(course, 201);

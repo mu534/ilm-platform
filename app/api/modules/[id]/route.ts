@@ -82,6 +82,9 @@ export async function PATCH(
 
     const body = (await req.json()) as unknown;
     const data = moduleSchema.partial().parse(body);
+    // A module cannot be reassigned to another course, which would move content
+    // into a course the actor may not own.
+    delete (data as Record<string, unknown>).courseId;
 
     const updated = await prisma.module.update({
       where: { id },

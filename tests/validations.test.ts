@@ -10,6 +10,7 @@ describe("registerSchema", () => {
       confirmPassword: "Password1",
       country: "Ethiopia",
       termsAccepted: true,
+      privacyAccepted: true,
     });
     expect(result.success).toBe(true);
   });

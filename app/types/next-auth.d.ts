@@ -15,6 +15,8 @@ declare module "next-auth" {
     user: {
       id: string;
       role: UserRole;
+      /** Mirrors LearnerProfile.onboardingCompleted in the database. */
+      onboardingCompleted: boolean;
     } & DefaultSession["user"];
   }
 
@@ -30,5 +32,7 @@ declare module "next-auth/jwt" {
     role: UserRole;
     /** Epoch ms of last DB role sync — used to refresh stale JWT roles. */
     roleSyncedAt?: number;
+    /** Mirrors LearnerProfile.onboardingCompleted in the database. */
+    onboardingCompleted?: boolean;
   }
 }

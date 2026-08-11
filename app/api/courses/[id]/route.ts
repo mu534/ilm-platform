@@ -4,7 +4,11 @@ import { courseSchema } from "../../../lib/validations";
 import { successResponse, errorResponse, handleApiError } from "../../../utils/api";
 import { getClientIp } from "../../../lib/rateLimit";
 import { isPublicCourse } from "../../../lib/courseAccess";
-import { requireUserFresh, getOptionalUser } from "../../../lib/authorization";
+import {
+  requireUserFresh,
+  getOptionalUser,
+  requireScholarAttribution,
+} from "../../../lib/authorization";
 import { z } from "zod";
 
 // ── Shared select ─────────────────────────────────────────────────────────────
@@ -147,6 +151,9 @@ export async function PATCH(
 
     // Course fields validated through courseSchema
     const courseData = courseSchema.partial().parse(raw);
+    if (courseData.scholarId && courseData.scholarId !== course.scholarId) {
+      await requireScholarAttribution(courseData.scholarId, user);
+    }
 
     // Admin-only fields validated separately through strict schema — no injection possible
     const adminData  = isAdmin ? adminUpdateSchema.parse(raw) : {};

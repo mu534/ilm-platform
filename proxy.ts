@@ -6,9 +6,11 @@ import type { NextRequest } from "next/server";
  * Next.js middleware — runs on the Edge before every matched request.
  *
  * Responsibilities:
- *  1. Protect /admin, /dashboard, /profile routes (require auth)
+ *  1. Protect /admin, /dashboard, /profile, /onboarding routes (require auth)
  *  2. Restrict /admin (except /admin/courses) to ADMIN or SCHOLAR roles
- *  3. Add security headers on every response
+ *  3. Send learners who have not finished onboarding to /onboarding, and send
+ *     learners who already finished it away from /onboarding
+ *  4. Add security headers on every response
  *
  * Lectures are managed exclusively inside the Course Builder
  * (/admin/courses/[id]/builder) — there is no separate top-level Lecture
@@ -16,8 +18,22 @@ import type { NextRequest } from "next/server";
  */
 export default withAuth(
   function middleware(req: NextRequest) {
-    const token    = (req as NextRequest & { nextauth?: { token?: { role?: string } } }).nextauth?.token;
+    const token    = (req as NextRequest & { nextauth?: { token?: { role?: string; onboardingCompleted?: boolean } } }).nextauth?.token;
     const pathname = req.nextUrl.pathname;
+
+    // Onboarding gate — the flag is copied onto the JWT from the database
+    // (LearnerProfile.onboardingCompleted) and never from client storage.
+    // Admins and instructors are not learners and are never gated.
+    const isLearner = !token?.role || token.role === "USER";
+    const onboardingCompleted = token?.onboardingCompleted === true;
+
+    if (pathname.startsWith("/onboarding")) {
+      if (onboardingCompleted) {
+        return NextResponse.redirect(new URL("/dashboard", req.url));
+      }
+    } else if (token && isLearner && !onboardingCompleted) {
+      return NextResponse.redirect(new URL("/onboarding", req.url));
+    }
 
     // Block non-admin/scholar from admin-only pages
     const adminOnlyPaths = [
@@ -55,10 +71,12 @@ export default withAuth(
           return token?.role === "ADMIN" || token?.role === "INSTRUCTOR";
         }
 
-        // /dashboard and /profile require any authenticated user
+        // /dashboard, /profile and /onboarding require any authenticated user
         if (
           pathname.startsWith("/dashboard") ||
-          pathname.startsWith("/profile")
+          pathname.startsWith("/profile") ||
+          pathname.startsWith("/onboarding") ||
+          pathname.startsWith("/scholar-application")
         ) {
           return !!token;
         }
@@ -77,5 +95,9 @@ export const config = {
     "/admin/:path*",
     "/dashboard/:path*",
     "/profile/:path*",
+    "/onboarding/:path*",
+    "/onboarding",
+    "/scholar-application/:path*",
+    "/scholar-application",
   ],
 };

@@ -63,6 +63,8 @@ export async function PATCH(
 
     const body = (await req.json()) as unknown;
     const data = scholarSchema.partial().parse(body);
+    // Featuring a scholar is an editorial decision — scholars cannot feature themselves.
+    if (!isAdmin) delete (data as Record<string, unknown>).featured;
 
     const updated = await prisma.scholar.update({
       where: { id },

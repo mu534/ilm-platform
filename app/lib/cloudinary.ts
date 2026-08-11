@@ -46,6 +46,14 @@ export async function uploadPrivateDocument(fileBuffer: Buffer, folder: string):
   });
 }
 
+/**
+ * Short-lived signed URL for an `authenticated` (private) asset. Never returned
+ * to a client — the backend fetches the bytes itself and streams them.
+ */
 export function privateDocumentUrl(publicId: string): string {
   return cloudinary.url(publicId, { resource_type: "raw", type: "authenticated", sign_url: true, expires_at: Math.floor(Date.now() / 1000) + 300, secure: true });
+}
+
+export async function deletePrivateDocument(publicId: string): Promise<void> {
+  await cloudinary.uploader.destroy(publicId, { resource_type: "raw", type: "authenticated", invalidate: true });
 }

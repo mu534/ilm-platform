@@ -254,6 +254,24 @@ export const forumVoteSchema = z.object({
   { message: "Exactly one target (questionId XOR replyId) must be specified" }
 );
 
+// ─── Partial update helper ───────────────────────────────────────────────────
+
+/**
+ * Keep only the fields the client actually sent.
+ *
+ * `schema.partial()` does not remove `.default(...)`, so a field the client
+ * omitted still comes back from `parse()` with its default — which would
+ * silently reset values such as `published`, `featured`, or `order` on a
+ * partial update.
+ */
+export function pickProvided<T extends object>(raw: unknown, parsed: T): Partial<T> {
+  if (typeof raw !== "object" || raw === null) return {};
+  const provided = new Set(Object.keys(raw));
+  return Object.fromEntries(
+    Object.entries(parsed).filter(([key]) => provided.has(key)),
+  ) as Partial<T>;
+}
+
 // ─── Inferred types ──────────────────────────────────────────────────────────
 
 export type RegisterInput       = z.infer<typeof registerSchema>;

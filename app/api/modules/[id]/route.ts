@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { prisma } from "../../../lib/prism";
-import { moduleSchema } from "../../../lib/validations";
+import { moduleSchema, pickProvided } from "../../../lib/validations";
 import { successResponse, errorResponse, handleApiError } from "../../../utils/api";
 import { isPublicCourse } from "../../../lib/courseAccess";
 import { requireUserFresh, getOptionalUser } from "../../../lib/authorization";
@@ -81,7 +81,7 @@ export async function PATCH(
     if (!isAdmin && !isOwner) return errorResponse("Forbidden", 403);
 
     const body = (await req.json()) as unknown;
-    const data = moduleSchema.partial().parse(body);
+    const data = pickProvided(body, moduleSchema.partial().parse(body));
     // A module cannot be reassigned to another course, which would move content
     // into a course the actor may not own.
     delete (data as Record<string, unknown>).courseId;

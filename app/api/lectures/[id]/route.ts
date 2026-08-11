@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { prisma } from "../../../lib/prism";
-import { lectureSchema } from "../../../lib/validations";
+import { lectureSchema, pickProvided } from "../../../lib/validations";
 import {
   requireUserFresh,
   requireModuleOwner,
@@ -177,7 +177,7 @@ export async function PATCH(
     if (!isAdmin && !isOwner) return errorResponse("Forbidden", 403);
 
     const body = (await req.json()) as unknown;
-    const data = lectureSchema.partial().parse(body);
+    const data = pickProvided(body, lectureSchema.partial().parse(body));
 
     // Featured is admin-only
     if (!isAdmin) {

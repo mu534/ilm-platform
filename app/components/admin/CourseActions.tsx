@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import {
-  FiMoreVertical, FiEye, FiEyeOff, FiStar, FiCopy,
-  FiTrash2, FiLoader, FiCheckCircle, FiXCircle,
+  FiMoreVertical, FiStar, FiCopy,
+  FiTrash2, FiLoader,
 } from "react-icons/fi";
 
 interface Course {
@@ -56,9 +56,6 @@ export function AdminCourseActions({ course }: { course: Course }) {
     }
   };
 
-  const approve = async () => patch({ approvalStatus: "APPROVED", status: "PUBLISHED", published: true });
-  const reject  = async () => patch({ approvalStatus: "REJECTED", status: "REJECTED" });
-
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>
@@ -80,17 +77,6 @@ export function AdminCourseActions({ course }: { course: Course }) {
           sideOffset={4}
           align="end"
         >
-          {/* Publish / Unpublish */}
-          <DropdownMenu.Item
-            className="flex items-center gap-2 px-3 py-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-dim)] rounded-lg cursor-pointer transition-colors outline-none"
-            onClick={() => void patch({ published: !course.published })}
-          >
-            {course.published
-              ? <><FiEyeOff size={13} /> Unpublish</>
-              : <><FiEye    size={13} /> Publish</>
-            }
-          </DropdownMenu.Item>
-
           {/* Feature / Unfeature */}
           <DropdownMenu.Item
             className="flex items-center gap-2 px-3 py-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-dim)] rounded-lg cursor-pointer transition-colors outline-none"
@@ -99,24 +85,6 @@ export function AdminCourseActions({ course }: { course: Course }) {
             <FiStar size={13} className={course.featured ? "text-[var(--accent)]" : ""} />
             {course.featured ? "Unfeature" : "Feature"}
           </DropdownMenu.Item>
-
-          {/* Approve (only if pending review) */}
-          {course.status === "PENDING_REVIEW" && (
-            <>
-              <DropdownMenu.Item
-                className="flex items-center gap-2 px-3 py-2 text-sm text-emerald-400 hover:bg-emerald-500/10 rounded-lg cursor-pointer transition-colors outline-none"
-                onClick={() => void approve()}
-              >
-                <FiCheckCircle size={13} /> Approve
-              </DropdownMenu.Item>
-              <DropdownMenu.Item
-                className="flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 rounded-lg cursor-pointer transition-colors outline-none"
-                onClick={() => void reject()}
-              >
-                <FiXCircle size={13} /> Reject
-              </DropdownMenu.Item>
-            </>
-          )}
 
           {/* Duplicate */}
           <DropdownMenu.Item

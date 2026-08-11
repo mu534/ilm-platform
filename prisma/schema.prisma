@@ -160,6 +160,7 @@ model User {
   scholarApplications ScholarApplication[] @relation("ApplicantApplications")
   reviewedScholarApplications ScholarApplication[] @relation("ApplicationReviewer")
   scholarApplicationReviews ScholarApplicationReview[]
+  courseReviews CourseReview[]
 
   // New relations
   enrollments       Enrollment[]
@@ -414,6 +415,7 @@ model Course {
   approvalStatus    ContentApprovalStatus @default(DRAFT)
   approvalNote      String?
   reviewedAt        DateTime?
+  reviews           CourseReview[]
   createdAt         DateTime     @default(now())
   updatedAt         DateTime     @updatedAt
 
@@ -432,6 +434,21 @@ model Course {
   @@index([categoryId])
   @@index([scholarId])
   @@map("courses")
+}
+
+model CourseReview {
+  id            String   @id @default(cuid())
+  courseId      String
+  course        Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  reviewerId    String
+  reviewer      User     @relation(fields: [reviewerId], references: [id], onDelete: Restrict)
+  status        ContentApprovalStatus
+  applicantNote String?
+  internalNotes String?
+  createdAt     DateTime @default(now())
+
+  @@index([courseId, createdAt])
+  @@map("course_reviews")
 }
 
 model Module {

@@ -61,11 +61,10 @@ const courseDetailSelect = {
   _count: { select: { modules: true, enrollments: true, ratings: true } },
 } as const;
 
-// Admin-only writable fields — validated separately so no arbitrary injection
+// Admin-only presentation fields. Moderation state is intentionally handled only
+// by /api/courses/[id]/review so review validation, notifications, and audit
+// history cannot be bypassed through a generic edit request.
 const adminUpdateSchema = z.object({
-  approvalStatus: z.enum(["DRAFT", "PENDING", "APPROVED", "REJECTED"]).optional(),
-  approvalNote:   z.string().max(1000).optional(),
-  status:         z.enum(["DRAFT", "PENDING_REVIEW", "PUBLISHED", "REJECTED", "ARCHIVED"]).optional(),
   featured:       z.boolean().optional(),
 });
 
@@ -142,6 +141,10 @@ export async function PATCH(
 
     const raw  = (await req.json()) as unknown;
 
+    if (typeof raw === "object" && raw !== null && ("approvalStatus" in raw || "approvalNote" in raw || "status" in raw || "published" in raw)) {
+      return errorResponse("Course moderation and publication changes must use the review workflow", 409);
+    }
+
     // Course fields validated through courseSchema
     const courseData = courseSchema.partial().parse(raw);
 
@@ -180,14 +183,14 @@ export async function PATCH(
     });
 
     // Log admin actions
-    if (isAdmin && adminData.status) {
+    if (isAdmin && Object.keys(adminData).length > 0) {
       await prisma.auditLog.create({
         data: {
           userId:     user.id,
-          action:     "UPDATE_COURSE_STATUS",
+          action:     "COURSE_UPDATED",
           entityType: "Course",
           entityId:   id,
-          metadata:   JSON.stringify({ status: adminData.status }),
+          metadata:   JSON.stringify({ adminFields: Object.keys(adminData) }),
           ipAddress:  getClientIp(req),
         },
       }).catch(() => {});

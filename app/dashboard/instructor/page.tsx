@@ -23,6 +23,7 @@ async function getInstructorStats(userId: string) {
     totalLecturesCount,
     totalCoursesCount,
     scholarProfile,
+    courseStatusCounts,
   ] = await Promise.all([
     prisma.lecture.aggregate({
       where: { authorId: userId },
@@ -61,8 +62,10 @@ async function getInstructorStats(userId: string) {
     prisma.lecture.count({ where: { authorId: userId } }),
     prisma.course.count({ where: { authorId: userId } }),
     prisma.scholar.findUnique({ where: { userId } }),
+    prisma.course.groupBy({ by: ["status"], where: { authorId: userId }, _count: { _all: true } }),
   ]);
 
+  const countByStatus = new Map(courseStatusCounts.map((item) => [item.status, item._count._all]));
   return {
     scholarProfile,
     totalLectures: totalLecturesCount,
@@ -73,6 +76,9 @@ async function getInstructorStats(userId: string) {
     recentLectures,
     recentCourses,
     avgRating: avgRating._avg.rating ?? 0,
+    publishedCourses: countByStatus.get("PUBLISHED") ?? 0,
+    draftCourses: countByStatus.get("DRAFT") ?? 0,
+    underReviewCourses: countByStatus.get("PENDING_REVIEW") ?? 0,
   };
 }
 
@@ -88,9 +94,10 @@ export default async function InstructorDashboardPage() {
   const designation = stats.scholarProfile?.professionalDesignation ?? null;
 
   const statCards = [
-    { icon: <FiBookOpen />,     label: "Lectures",    value: stats.totalLectures,    color: "text-[var(--accent)]" },
     { icon: <FiTrendingUp />,   label: "Courses",     value: stats.totalCourses,     color: "text-blue-400" },
-    { icon: <FiEye />,          label: "Total Views",  value: stats.totalViews,       color: "text-emerald-400" },
+    { icon: <FiBookOpen />,     label: "Published",   value: stats.publishedCourses, color: "text-emerald-400" },
+    { icon: <FiBookOpen />,     label: "Drafts",      value: stats.draftCourses,     color: "text-[var(--accent)]" },
+    { icon: <FiEye />,          label: "Under Review", value: stats.underReviewCourses, color: "text-orange-400" },
     { icon: <FiUsers />,        label: "Students",     value: stats.totalEnrollments, color: "text-purple-400" },
     { icon: <FiMessageCircle />,label: "Comments",     value: stats.totalComments,    color: "text-orange-400" },
     { icon: <FiStar />,         label: "Avg Rating",   value: stats.avgRating.toFixed(1), color: "text-[var(--accent)]", isString: true },

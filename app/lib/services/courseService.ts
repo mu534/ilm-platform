@@ -269,6 +269,10 @@ export class CourseService {
       select: this.listSelect,
     });
 
+    await prisma.auditLog.create({
+      data: { userId: user.id, action: "COURSE_CREATED", entityType: "Course", entityId: course.id },
+    });
+
     return course;
   }
 }

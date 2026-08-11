@@ -49,6 +49,19 @@ export const scholarApplicationSchema = z.object({
   teachingLanguages: z.array(z.string().trim().min(2).max(20)).min(1).max(10),
 });
 
+export const scholarApplicationDraftSchema = z.object({
+  bio: z.string().trim().max(3000).optional(),
+  city: z.string().trim().max(100).optional().or(z.literal("")),
+  education: z.string().trim().max(2000).optional().or(z.literal("")),
+  institutions: z.array(z.string().trim().min(2).max(200)).max(12).optional(),
+  qualifications: z.array(z.string().trim().min(2).max(300)).max(20).optional(),
+  specializations: z.array(z.string().trim().min(2).max(120)).max(12).optional(),
+  teachingExperience: z.string().trim().max(2000).optional().or(z.literal("")),
+  teachingYears: z.number().int().min(0).max(80).optional().nullable(),
+  categoryIds: z.array(z.string().min(1)).max(12).optional(),
+  teachingLanguages: z.array(z.string().trim().min(2).max(20)).max(10).optional(),
+});
+
 export const scholarApplicationReviewSchema = z.object({
   action: z.enum(["UNDER_REVIEW", "APPROVE", "REJECT"]),
   internalNotes: z.string().trim().max(3000).optional().or(z.literal("")),
@@ -246,6 +259,7 @@ export const forumVoteSchema = z.object({
 export type RegisterInput       = z.infer<typeof registerSchema>;
 export type LearnerProfileInput = z.infer<typeof learnerProfileSchema>;
 export type ScholarApplicationInput = z.infer<typeof scholarApplicationSchema>;
+export type ScholarApplicationDraftInput = z.infer<typeof scholarApplicationDraftSchema>;
 export type LoginInput          = z.infer<typeof loginSchema>;
 export type LectureInput        = z.infer<typeof lectureSchema>;
 export type CourseInput         = z.infer<typeof courseSchema>;

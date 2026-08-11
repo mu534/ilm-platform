@@ -1,11 +1,18 @@
 import { prisma } from "../prism";
 import { HttpError } from "../httpError";
 import { notify } from "../notifications";
-import type { ScholarApplicationInput } from "../validations";
+import type { ScholarApplicationInput, ScholarApplicationDraftInput } from "../validations";
 
 const editable = ["DRAFT", "REJECTED"] as const;
 
 export class ScholarApplicationService {
+  static async savePartialDraft(userId: string, input: ScholarApplicationDraftInput) {
+    const existing = await prisma.scholarApplication.findFirst({ where: { userId, status: { in: [...editable] } }, orderBy: { updatedAt: "desc" } });
+    const scalarData = { ...(input.bio !== undefined ? { bio: input.bio || null } : {}), ...(input.city !== undefined ? { city: input.city || null } : {}), ...(input.education !== undefined ? { education: input.education || null } : {}), ...(input.institutions !== undefined ? { institutions: input.institutions } : {}), ...(input.qualifications !== undefined ? { qualifications: input.qualifications } : {}), ...(input.specializations !== undefined ? { specializations: input.specializations } : {}), ...(input.teachingExperience !== undefined ? { teachingExperience: input.teachingExperience || null } : {}), ...(input.teachingYears !== undefined ? { teachingYears: input.teachingYears } : {}), ...(input.teachingLanguages !== undefined ? { teachingLanguages: input.teachingLanguages } : {}) };
+    const categoryData = input.categoryIds === undefined ? {} : { categories: { deleteMany: {}, create: input.categoryIds.map((categoryId) => ({ categoryId })) } };
+    if (existing) return prisma.scholarApplication.update({ where: { id: existing.id }, data: { ...scalarData, ...categoryData, status: "DRAFT", decisionReason: null, reviewedAt: null, reviewedById: null } });
+    return prisma.scholarApplication.create({ data: { userId, bio: input.bio || null, city: input.city || null, education: input.education || null, institutions: input.institutions ?? [], qualifications: input.qualifications ?? [], specializations: input.specializations ?? [], teachingExperience: input.teachingExperience || null, teachingYears: input.teachingYears ?? null, teachingLanguages: input.teachingLanguages ?? [], ...(input.categoryIds ? { categories: { create: input.categoryIds.map((categoryId) => ({ categoryId })) } } : {}) } });
+  }
   static async saveDraft(userId: string, input: ScholarApplicationInput) {
     const existing = await prisma.scholarApplication.findFirst({
       where: { userId, status: { in: [...editable] } }, orderBy: { updatedAt: "desc" },

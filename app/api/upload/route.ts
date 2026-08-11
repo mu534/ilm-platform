@@ -26,10 +26,6 @@ export async function POST(req: NextRequest) {
   try {
     const user = await requireUserFresh();
 
-    if (!["ADMIN", "INSTRUCTOR"].includes(user.role)) {
-      return errorResponse("Forbidden", 403);
-    }
-
     const formData = await req.formData();
     const file   = formData.get("file");
     const folder = formData.get("folder");
@@ -42,6 +38,14 @@ export async function POST(req: NextRequest) {
 
     const resolvedFolder =
       typeof folder === "string" && folder ? folder : "ilm-platform";
+
+    const isAvatarUpload = resolvedFolder === "ilm-platform/avatars";
+    if (!isAvatarUpload && !["ADMIN", "INSTRUCTOR"].includes(user.role)) {
+      return errorResponse("Forbidden", 403);
+    }
+    if (isAvatarUpload && !file.type.startsWith("image/")) {
+      return errorResponse("Profile photos must be images", 422);
+    }
     const resourceType = getResourceType(file.type);
 
     if (resourceType === null) {

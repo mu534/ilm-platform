@@ -3,6 +3,7 @@ import { prisma } from "../../lib/prism";
 import { requireUserFresh } from "../../lib/authorization";
 import { learnerProfileSchema } from "../../lib/validations";
 import { successResponse, errorResponse, handleApiError } from "../../utils/api";
+import { z } from "zod";
 
 export async function GET() {
   try { const user = await requireUserFresh(); const profile = await prisma.learnerProfile.findUnique({ where: { userId: user.id }, include: { interests: { select: { categoryId: true } }, goals: { select: { goal: true } } } }); return successResponse(profile); } catch (error) { return handleApiError(error); }
@@ -25,5 +26,15 @@ export async function PUT(req: NextRequest) {
     else if (data.onboardingStep && data.onboardingStep !== previous?.onboardingStep) auditEvents.push({ userId: user.id, action: "ONBOARDING_STEP_COMPLETED", entityType: "LearnerProfile", entityId: profile.id, metadata: JSON.stringify({ step: data.onboardingStep }) });
     else auditEvents.push({ userId: user.id, action: "PROFILE_UPDATED", entityType: "LearnerProfile", entityId: profile.id });
     await prisma.auditLog.createMany({ data: auditEvents }); return successResponse(profile);
+  } catch (error) { return handleApiError(error); }
+}
+
+export async function PATCH(req: NextRequest) {
+  try {
+    const user = await requireUserFresh();
+    const { city, occupation } = z.object({ city: z.string().trim().max(100).optional().or(z.literal("")), occupation: z.string().trim().max(150).optional().or(z.literal("")) }).parse(await req.json());
+    const profile = await prisma.learnerProfile.upsert({ where: { userId: user.id }, create: { userId: user.id, city: city || null, occupation: occupation || null }, update: { city: city || null, occupation: occupation || null } });
+    await prisma.auditLog.create({ data: { userId: user.id, action: "PROFILE_UPDATED", entityType: "LearnerProfile", entityId: profile.id, metadata: JSON.stringify({ fields: ["city", "occupation"] }) } });
+    return successResponse(profile);
   } catch (error) { return handleApiError(error); }
 }

@@ -20,6 +20,8 @@ interface FormState {
   name:  string;
   bio:   string;
   image: string;
+  city: string;
+  occupation: string;
 }
 
 interface ApiResponse {
@@ -37,15 +39,13 @@ export default function ProfilePage() {
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const [error,      setError]      = useState("");
   const [form,       setForm]       = useState<FormState>({
-    name:  user?.name  ?? "",
-    bio:   "",
-    image: user?.image ?? "",
+    name: user?.name ?? "", bio: "", image: user?.image ?? "", city: "", occupation: "",
   });
 
   // Sync form when session loads
   useEffect(() => {
     if (user) {
-      setForm({ name: user.name ?? "", bio: "", image: user.image ?? "" });
+      setForm({ name: user.name ?? "", bio: "", image: user.image ?? "", city: "", occupation: "" });
       // Load bio from API
       fetch(`/api/users/${user.id}`)
         .then((r) => r.json())
@@ -53,6 +53,7 @@ export default function ProfilePage() {
           if (d.success) setForm((prev) => ({ ...prev, bio: d.data?.bio ?? "" }));
         })
         .catch(() => {});
+      fetch("/api/learner-profile").then((r) => r.json()).then((d) => { if (d.success) setForm((prev) => ({ ...prev, city: d.data?.city ?? "", occupation: d.data?.occupation ?? "" })); }).catch(() => {});
     }
   }, [user?.id]);
 
@@ -73,6 +74,9 @@ export default function ProfilePage() {
       });
       const data = (await res.json()) as ApiResponse;
       if (!data.success) throw new Error(data.error ?? "Update failed");
+      const profileResponse = await fetch("/api/learner-profile", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ city: form.city, occupation: form.occupation }) });
+      const profileData = await profileResponse.json() as ApiResponse;
+      if (!profileData.success) throw new Error(profileData.error ?? "Unable to update city");
 
       await update({
         name:  data.data?.name  ?? form.name,
@@ -196,6 +200,16 @@ export default function ProfilePage() {
                 {form.bio || <span className="text-[var(--text-muted)] italic">No bio added</span>}
               </p>
             )}
+          </div>
+
+          <div>
+            <label className="block text-xs text-[var(--text-muted)] font-medium mb-1.5">City</label>
+            {editing ? <input value={form.city} onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))} className={inputClass} placeholder="Your city" autoComplete="address-level2" /> : <p className="text-[var(--text-secondary)] text-sm">{form.city || <span className="text-[var(--text-muted)] italic">No city added</span>}</p>}
+          </div>
+
+          <div>
+            <label className="block text-xs text-[var(--text-muted)] font-medium mb-1.5">Occupation</label>
+            {editing ? <input value={form.occupation} onChange={(e) => setForm((f) => ({ ...f, occupation: e.target.value }))} className={inputClass} placeholder="Your occupation" autoComplete="organization-title" /> : <p className="text-[var(--text-secondary)] text-sm">{form.occupation || <span className="text-[var(--text-muted)] italic">No occupation added</span>}</p>}
           </div>
 
           {/* Role */}

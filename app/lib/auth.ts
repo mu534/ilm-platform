@@ -6,6 +6,41 @@ import { prisma } from "../lib/prism";
 
 type UserRole = "ADMIN" | "INSTRUCTOR" | "USER";
 
+/**
+ * Determine the appropriate post-login destination based on user role and onboarding status.
+ * This function performs server-side checks using the database to ensure security.
+ */
+export async function getPostLoginDestination(userId: string, userRole: UserRole): Promise<string> {
+  // ADMIN always goes to /admin
+  if (userRole === "ADMIN") {
+    return "/admin";
+  }
+
+  // INSTRUCTOR always goes to /dashboard/instructor
+  if (userRole === "INSTRUCTOR") {
+    return "/dashboard/instructor";
+  }
+
+  // USER role: check onboarding completion
+  if (userRole === "USER") {
+    const learnerProfile = await prisma.learnerProfile.findUnique({
+      where: { userId },
+      select: { onboardingCompleted: true },
+    });
+
+    // If no profile exists or onboarding not complete, send to onboarding
+    if (!learnerProfile || !learnerProfile.onboardingCompleted) {
+      return "/onboarding";
+    }
+
+    // Onboarding complete, send to dashboard
+    return "/dashboard";
+  }
+
+  // Fallback for any unexpected role
+  return "/dashboard";
+}
+
 /** Re-sync role from DB at most every 60s so demotions/promotions take effect without full re-login. */
 const ROLE_SYNC_INTERVAL_MS = 60_000;
 
@@ -109,6 +144,12 @@ export const authOptions: NextAuthOptions = {
         return true;
       }
       return true;
+    },
+
+    async redirect({ url, baseUrl }) {
+      // Always redirect to our callback page for role-based routing after sign-in
+      // This ensures server-side security for role determination
+      return `${baseUrl}/auth/callback`;
     },
 
     async jwt({ token, user, account }) {

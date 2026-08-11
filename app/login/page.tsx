@@ -35,7 +35,6 @@ function LoginForm() {
   const router       = useRouter();
   const searchParams = useSearchParams();
   const requestedCallbackUrl = searchParams?.get("callbackUrl");
-  const callbackUrl  = requestedCallbackUrl && requestedCallbackUrl.startsWith("/") ? requestedCallbackUrl : "/onboarding";
   const urlError     = searchParams?.get("error");
 
   const [form,         setForm]         = useState({ email: "", password: "" });
@@ -68,14 +67,26 @@ function LoginForm() {
         setError("Invalid email or password. Please try again.");
       }
     } else {
-      router.push(callbackUrl);
+      // Get the correct destination from server-side API
+      try {
+        const response = await fetch("/api/auth/redirect");
+        const data = await response.json();
+        if (data.destination) {
+          router.push(data.destination);
+        } else {
+          router.push("/dashboard");
+        }
+      } catch {
+        // Fallback to dashboard if API fails
+        router.push("/dashboard");
+      }
       router.refresh();
     }
   };
 
   const handleGoogle = async () => {
     setGoogleLoading(true);
-    await signIn("google", { callbackUrl });
+    await signIn("google", { callbackUrl: "/auth/callback" });
     // Google redirects — no need to reset loading
   };
 

@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { courseSchema } from "../../lib/validations";
 import { successResponse, errorResponse, handleApiError } from "../../utils/api";
 import { checkRateLimit, getClientIp } from "../../lib/rateLimit";
-import { requireAdminOrScholar, getOptionalUser } from "../../lib/authorization";
+import { requireAdminOrInstructor, getOptionalUser } from "../../lib/authorization";
 import { CourseService } from "../../lib/services/courseService";
 
 // ── GET /api/courses ──────────────────────────────────────────────────────────
@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
   if (!rl.success) return errorResponse("Too many requests. Please try again later.", 429);
 
   try {
-    const user = await requireAdminOrScholar();
+    const user = await requireAdminOrInstructor();
     const body = (await req.json()) as unknown;
     const data = courseSchema.parse(body);
 

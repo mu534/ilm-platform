@@ -87,7 +87,16 @@ export default async function InstructorDashboardPage() {
   const user = session?.user as SessionUser | undefined;
 
   if (!user) redirect("/login?callbackUrl=/dashboard/instructor");
-  if (!["INSTRUCTOR", "ADMIN"].includes(user.role)) redirect("/dashboard");
+  
+  // Only INSTRUCTOR can access this page
+  if (user.role !== "INSTRUCTOR") {
+    // ADMIN should go to /admin
+    if (user.role === "ADMIN") {
+      redirect("/admin");
+    }
+    // Others go to dashboard
+    redirect("/dashboard");
+  }
 
   const stats = await getInstructorStats(user.id);
 
@@ -131,22 +140,10 @@ export default async function InstructorDashboardPage() {
             <FiUsers size={14} /> My Students
           </Link>
           <Link
-            href="/admin/courses/new"
-            className="flex items-center gap-2 px-4 py-2 border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent)] rounded-xl text-sm transition-colors"
-          >
-            <FiPlus size={14} /> New Course
-          </Link>
-          <Link
             href="/dashboard/instructor/analytics"
             className="flex items-center gap-2 px-4 py-2 border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--accent)] hover:border-[var(--accent)] rounded-xl text-sm transition-colors"
           >
             <FiTrendingUp size={14} /> Analytics
-          </Link>
-          <Link
-            href="/admin/courses"
-            className="flex items-center gap-2 px-4 py-2 bg-[var(--accent)] hover:bg-[var(--accent-light)] text-white rounded-xl text-sm font-medium transition-colors"
-          >
-            <FiPlus size={14} /> Manage Lessons
           </Link>
         </div>
       </div>
@@ -170,9 +167,7 @@ export default async function InstructorDashboardPage() {
         <section>
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-display text-xl font-semibold text-[var(--text-primary)]">Recent Lectures</h2>
-            <Link href="/admin/courses" className="text-xs text-[var(--accent)] hover:text-[var(--accent-light)] transition-colors">
-              View all →
-            </Link>
+            <span className="text-xs text-[var(--text-muted)]">Manage via course pages</span>
           </div>
           <div className="glass-card rounded-xl overflow-hidden">
             {stats.recentLectures.length === 0 ? (
@@ -208,17 +203,12 @@ export default async function InstructorDashboardPage() {
         <section>
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-display text-xl font-semibold text-[var(--text-primary)]">Recent Courses</h2>
-            <Link href="/admin/courses" className="text-xs text-[var(--accent)] hover:text-[var(--accent-light)] transition-colors">
-              View all →
-            </Link>
+            <span className="text-xs text-[var(--text-muted)]">Manage via course pages</span>
           </div>
           <div className="glass-card rounded-xl overflow-hidden">
             {stats.recentCourses.length === 0 ? (
               <div className="py-10 text-center text-[var(--text-muted)] text-sm">
-                No courses yet.{" "}
-                <Link href="/admin/courses/new" className="text-[var(--accent)] hover:text-[var(--accent-light)]">
-                  Create one →
-                </Link>
+                No courses yet.
               </div>
             ) : (
               <div className="divide-y divide-[var(--border)]">

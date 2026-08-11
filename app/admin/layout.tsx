@@ -19,7 +19,7 @@ const adminNav = [
   { href: "/admin/reports",      icon: <FiFlag />,      label: "Reports",     adminOnly: true  },
   { href: "/admin/cms",          icon: <FiFileText />,  label: "CMS",         adminOnly: true  },
   { href: "/admin/audit-log",    icon: <FiShield />,    label: "Audit Log",   adminOnly: true  },
-  { href: "/admin/my-analytics", icon: <FiBarChart2 />, label: "My Analytics", adminOnly: false, scholarOnly: true },
+  { href: "/admin/my-analytics", icon: <FiBarChart2 />, label: "My Analytics", adminOnly: false, instructorOnly: true },
 ];
 
 export default async function AdminLayout({
@@ -30,11 +30,21 @@ export default async function AdminLayout({
   const session = await getServerSession(authOptions);
   const user = session?.user as SessionUser | null;
 
-  if (!session || !["ADMIN", "INSTRUCTOR"].includes(user?.role ?? "")) {
+  if (!session) {
     redirect("/login?callbackUrl=/admin");
   }
 
-  const isAdmin = user?.role === "ADMIN";
+  // Only ADMIN can access /admin
+  if (user?.role !== "ADMIN") {
+    // Redirect INSTRUCTOR to their dashboard
+    if (user?.role === "INSTRUCTOR") {
+      redirect("/dashboard/instructor");
+    }
+    // Redirect others to login
+    redirect("/login?callbackUrl=/admin");
+  }
+
+  const isAdmin = true;
 
   return (
     <div className="flex min-h-screen bg-[var(--bg-primary)]">
@@ -49,7 +59,7 @@ export default async function AdminLayout({
               <GiMoon className="text-[var(--accent)]" size={14} />
             </div>
             <span className="font-display text-sm font-semibold text-[var(--text-primary)]">
-              {isAdmin ? "Admin Panel" : "Instructor Panel"}
+              Admin Panel
             </span>
           </div>
         </div>
@@ -58,8 +68,8 @@ export default async function AdminLayout({
         <nav className="p-3 flex-1 flex flex-col gap-0.5">
           {adminNav
             .filter((item) => {
-              if (item.adminOnly && !isAdmin) return false;
-              if ((item as { scholarOnly?: boolean }).scholarOnly && isAdmin) return false;
+              // Hide instructor-only items since this is admin-only layout
+              if ((item as { instructorOnly?: boolean }).instructorOnly) return false;
               return true;
             })
             .map((item) => (
@@ -76,14 +86,6 @@ export default async function AdminLayout({
 
         {/* Footer */}
         <div className="p-4 border-t border-[var(--border)] space-y-2">
-          {!isAdmin && (
-            <Link
-              href="/dashboard/instructor"
-              className="block text-xs text-[var(--accent)] hover:text-[var(--accent-light)] transition-colors"
-            >
-              ↗ Instructor Dashboard
-            </Link>
-          )}
           <Link
             href="/"
             className="block text-xs text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors"

@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { prisma } from "../../../lib/prism";
-import { requireAdminOrScholar } from "../../../lib/authorization";
+import { requireAdminOrInstructor } from "../../../lib/authorization";
 import { successResponse, errorResponse, handleApiError } from "../../../utils/api";
 import { z } from "zod";
 
@@ -20,7 +20,7 @@ const bulkSchema = z.object({
  */
 export async function POST(req: NextRequest) {
   try {
-    const user = await requireAdminOrScholar();
+    const user = await requireAdminOrInstructor();
     const { ids, action } = bulkSchema.parse(await req.json());
     const isAdmin = user.role === "ADMIN";
 

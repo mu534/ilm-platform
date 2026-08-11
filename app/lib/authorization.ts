@@ -48,10 +48,6 @@ export async function requireInstructor(): Promise<SessionUser> {
   return user;
 }
 
-export async function requireScholar(): Promise<SessionUser> {
-  return requireInstructor();
-}
-
 export async function requireAdminOrInstructor(): Promise<SessionUser> {
   const user = await requireUserFresh();
   if (user.role !== "ADMIN" && user.role !== "INSTRUCTOR") {
@@ -60,6 +56,7 @@ export async function requireAdminOrInstructor(): Promise<SessionUser> {
   return user;
 }
 
+// Alias for backward compatibility - will be deprecated
 export async function requireAdminOrScholar(): Promise<SessionUser> {
   return requireAdminOrInstructor();
 }

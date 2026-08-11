@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { prisma } from "../../lib/prism";
 import { quizSchema } from "../../lib/validations";
-import { requireUserFresh, requireAdminOrScholar } from "../../lib/authorization";
+import { requireUserFresh, requireAdminOrInstructor } from "../../lib/authorization";
 import { requireCourseLearnAccess, isPublicCourse } from "../../lib/courseAccess";
 import { successResponse, errorResponse, handleApiError } from "../../utils/api";
 
@@ -50,7 +50,7 @@ export async function GET(req: NextRequest) {
 // POST /api/quizzes
 export async function POST(req: NextRequest) {
   try {
-    const user = await requireAdminOrScholar();
+    const user = await requireAdminOrInstructor();
 
     const body = (await req.json()) as unknown;
     const data = quizSchema.parse(body);

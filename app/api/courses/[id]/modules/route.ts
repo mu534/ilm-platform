@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { prisma } from "../../../../lib/prism";
 import { moduleSchema } from "../../../../lib/validations";
-import { requireAdminOrScholar, getOptionalUser } from "../../../../lib/authorization";
+import { requireAdminOrInstructor, getOptionalUser } from "../../../../lib/authorization";
 import { isPublicCourse } from "../../../../lib/courseAccess";
 import { successResponse, errorResponse, handleApiError } from "../../../../utils/api";
 
@@ -67,7 +67,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const user = await requireAdminOrScholar();
+    const user = await requireAdminOrInstructor();
     const { id: courseId } = await params;
 
     const course = await prisma.course.findUnique({ where: { id: courseId } });

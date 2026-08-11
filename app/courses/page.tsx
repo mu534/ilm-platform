@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/app/lib/prism";
 import { publicCourseWhere } from "@/app/lib/courseAccess";
+import { getOptionalUser } from "@/app/lib/authorization";
 import { CourseCard } from "@/app/components/courses/CourseCard";
 import { SortSelect } from "@/app/components/courses/SortSelect";
 import type { DifficultyLevel } from "@/app/types/auth.types";
@@ -31,7 +32,7 @@ function getOrderBy(sort: string) {
   }
 }
 
-async function getCoursesData(params: SearchParams) {
+async function getCoursesData(params: SearchParams, userId?: string) {
   const page       = Math.max(1, Number(params.page ?? 1));
   const search     = params.search ?? "";
   const categoryId = params.categoryId ?? "";
@@ -85,8 +86,30 @@ async function getCoursesData(params: SearchParams) {
   });
   const ratingMap = new Map(ratings.map((r) => [r.courseId, r._avg.rating ?? 0]));
 
+  // Enrollment + certificate state for the state-aware course cards, fetched in
+  // two batched queries rather than per card.
+  const enrollmentMap = new Map<string, { status: "ACTIVE" | "COMPLETED" | "DROPPED"; progress: number; certificateId?: string }>();
+  if (userId && courseIds.length) {
+    const [enrollments, certificates] = await Promise.all([
+      prisma.enrollment.findMany({
+        where:  { userId, courseId: { in: courseIds }, status: { not: "DROPPED" } },
+        select: { courseId: true, status: true, progress: true },
+      }),
+      prisma.certificate.findMany({
+        where:  { userId, courseId: { in: courseIds } },
+        select: { id: true, courseId: true },
+      }),
+    ]);
+    const certificateByCourse = new Map(certificates.map((certificate) => [certificate.courseId, certificate.id]));
+    enrollments.forEach((enrollment) => enrollmentMap.set(enrollment.courseId, {
+      status:        enrollment.status,
+      progress:      enrollment.progress,
+      certificateId: certificateByCourse.get(enrollment.courseId),
+    }));
+  }
+
   return {
-    courses:    courses.map((c) => ({ ...c, avgRating: ratingMap.get(c.id) ?? 0 })),
+    courses:    courses.map((c) => ({ ...c, avgRating: ratingMap.get(c.id) ?? 0, enrollment: enrollmentMap.get(c.id) })),
     total, page,
     totalPages: Math.ceil(total / PAGE_SIZE),
     categories,
@@ -117,7 +140,8 @@ export async function generateMetadata({ searchParams }: Props) {
 
 export default async function CoursesPage({ searchParams }: Props) {
   const sp = await searchParams;
-  const { courses, total, page, totalPages, categories } = await getCoursesData(sp);
+  const user = await getOptionalUser();
+  const { courses, total, page, totalPages, categories } = await getCoursesData(sp, user?.id);
 
   const activeSort = (sp.sort ?? "newest") as SortOption;
   const hasFilters = !!(sp.search || sp.categoryId || sp.difficulty);

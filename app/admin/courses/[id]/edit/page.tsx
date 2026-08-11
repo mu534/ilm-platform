@@ -184,8 +184,11 @@ export default function EditCoursePage() {
     setErrors({});
     setSaving(true);
     try {
+      // Publication and moderation state are owned by the review workflow, so
+      // they are never part of a metadata save.
+      const { published: _published, ...editable } = form;
       const payload = {
-        ...form,
+        ...editable,
         objectives:    form.objectives.filter(Boolean),
         prerequisites: form.prerequisites.filter(Boolean),
         tags:          form.tags.split(",").map((t) => t.trim()).filter(Boolean),

@@ -62,3 +62,8 @@ CREATE TABLE "scholar_application_reviews" (
 CREATE INDEX "scholar_application_reviews_applicationId_createdAt_idx" ON "scholar_application_reviews"("applicationId", "createdAt");
 
 ALTER TABLE "scholar_applications" DROP COLUMN "intendedCategories", DROP COLUMN "documentKeys";
+ALTER TABLE "scholar_applications"
+  ALTER COLUMN "institutions" DROP DEFAULT,
+  ALTER COLUMN "qualifications" DROP DEFAULT,
+  ALTER COLUMN "specializations" DROP DEFAULT,
+  ALTER COLUMN "teachingLanguages" DROP DEFAULT;

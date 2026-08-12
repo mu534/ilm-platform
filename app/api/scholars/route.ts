@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
   try {
     const user = await requireUserFresh();
 
-    if (!["ADMIN", "SCHOLAR"].includes(user.role)) {
+    if (!["ADMIN", "INSTRUCTOR"].includes(user.role)) {
       return errorResponse("Forbidden", 403);
     }
 
@@ -52,8 +52,9 @@ export async function POST(req: NextRequest) {
     const body = (await req.json()) as unknown;
     const data = scholarSchema.parse(body);
 
+    // `featured` and verification are editorial decisions — only an admin may set them.
     const scholar = await prisma.scholar.create({
-      data: { ...data, userId: user.id },
+      data: { ...data, featured: user.role === "ADMIN" ? data.featured : false, userId: user.id },
       include: {
         user: { select: { name: true, email: true, image: true } },
       },

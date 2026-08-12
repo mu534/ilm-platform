@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { prisma } from "../../../lib/prism";
-import { quizSchema } from "../../../lib/validations";
+import { quizSchema, pickProvided } from "../../../lib/validations";
 import { requireUserFresh, getOptionalUser } from "../../../lib/authorization";
 import { requireQuizLearningAccess } from "../../../lib/courseAccess";
 import { successResponse, errorResponse, handleApiError } from "../../../utils/api";
@@ -97,7 +97,7 @@ export async function PATCH(
     if (!isAdmin && !isOwner) return errorResponse("Forbidden", 403);
 
     const body = (await req.json()) as unknown;
-    const data = quizSchema.partial().parse(body);
+    const data = pickProvided(body, quizSchema.partial().parse(body));
     const updated = await prisma.quiz.update({ where: { id }, data });
     return successResponse(updated);
   } catch (error) {

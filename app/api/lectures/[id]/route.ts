@@ -1,7 +1,11 @@
 import { NextRequest } from "next/server";
 import { prisma } from "../../../lib/prism";
-import { lectureSchema } from "../../../lib/validations";
-import { requireUserFresh } from "../../../lib/authorization";
+import { lectureSchema, pickProvided } from "../../../lib/validations";
+import {
+  requireUserFresh,
+  requireModuleOwner,
+  requireScholarAttribution,
+} from "../../../lib/authorization";
 import {
   isPublicCourse,
   requireLectureLearningAccess,
@@ -173,11 +177,20 @@ export async function PATCH(
     if (!isAdmin && !isOwner) return errorResponse("Forbidden", 403);
 
     const body = (await req.json()) as unknown;
-    const data = lectureSchema.partial().parse(body);
+    const data = pickProvided(body, lectureSchema.partial().parse(body));
 
     // Featured is admin-only
     if (!isAdmin) {
       delete (data as Record<string, unknown>).featured;
+    }
+
+    // A lecture may only be moved into a module of a course the actor owns,
+    // and only attributed to the actor's own scholar profile.
+    if (data.moduleId && data.moduleId !== lecture.moduleId) {
+      await requireModuleOwner(data.moduleId, user);
+    }
+    if (data.scholarId && data.scholarId !== lecture.scholarId) {
+      await requireScholarAttribution(data.scholarId, user);
     }
 
     const updated = await prisma.lecture.update({

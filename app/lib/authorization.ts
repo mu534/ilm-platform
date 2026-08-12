@@ -85,6 +85,37 @@ export async function requireCourseOwner(courseId: string, user?: SessionUser) {
   return { user: actor, course };
 }
 
+/**
+ * Ensure the user may place content inside a module (admin or course author).
+ * Guards against a client-supplied moduleId pointing at another author's course.
+ */
+export async function requireModuleOwner(moduleId: string, user: SessionUser) {
+  const courseModule = await prisma.module.findUnique({
+    where: { id: moduleId },
+    select: { id: true, courseId: true, course: { select: { authorId: true } } },
+  });
+  if (!courseModule) throw new HttpError("Module not found", 404);
+  if (user.role !== "ADMIN" && courseModule.course.authorId !== user.id) {
+    throw new HttpError("You do not have permission to manage this module", 403);
+  }
+  return courseModule;
+}
+
+/**
+ * Ensure a client-supplied scholarId belongs to the acting user so content
+ * cannot be attributed to another scholar. Admins may attribute freely.
+ */
+export async function requireScholarAttribution(scholarId: string, user: SessionUser) {
+  if (user.role === "ADMIN") return;
+  const scholar = await prisma.scholar.findUnique({
+    where: { id: scholarId },
+    select: { userId: true },
+  });
+  if (!scholar || scholar.userId !== user.id) {
+    throw new HttpError("You cannot attribute content to another scholar", 403);
+  }
+}
+
 /** Optional session helper — returns null when unauthenticated. */
 export async function getOptionalUser(): Promise<SessionUser | null> {
   const session = await getServerSession(authOptions);

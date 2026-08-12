@@ -28,7 +28,7 @@ import type { Role } from "../../generated/prisma/enums";
 type RecentScholarApplication = {
   id: string;
   status: string;
-  submittedAt: Date;
+  submittedAt: Date | null;
   user: {
     name: string;
     email: string;
@@ -413,7 +413,7 @@ export default async function AdminPage() {
                       {app.status.replace("_", " ")}
                     </span>
                     <p className="text-[10px] text-[var(--text-muted)] mt-1">
-                      {formatDate(app.submittedAt)}
+                      {app.submittedAt ? formatDate(app.submittedAt) : "No date"}
                     </p>
                   </div>
                 </Link>

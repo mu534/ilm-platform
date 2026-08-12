@@ -9,10 +9,52 @@ type Form = { accountIntention: "LEARN" | "TEACH"; preferredLanguage: string; pr
 const defaultForm: Form = { accountIntention: "LEARN", preferredLanguage: "en", preferredDifficulty: "BEGINNER", categoryIds: [], goals: [] };
 
 export default function OnboardingClient() {
-  const { status } = useSession(); const router = useRouter();
-  const [step, setStep] = useState(1); const [categories, setCategories] = useState<Category[]>([]); const [saving, setSaving] = useState(false); const [ready, setReady] = useState(false);
+  const { status } = useSession();
+  const router = useRouter();
+  const [step, setStep] = useState(1);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [ready, setReady] = useState(false);
   const [form, setForm] = useState<Form>(defaultForm);
-  useEffect(() => { if (status === "unauthenticated") { router.replace("/login?callbackUrl=/onboarding"); return; } if (status !== "authenticated") return; void Promise.all([fetch("/api/categories").then((r) => r.json()), fetch("/api/learner-profile").then((r) => r.json())]).then(([categoryResponse, profileResponse]) => { setCategories(categoryResponse.data ?? []); const profile = profileResponse.data; if (profile?.onboardingCompleted) { // Use role-based redirect for proper routing fetch("/api/auth/redirect").then(res => res.json()).then(data => { router.replace(data.destination || "/dashboard"); }).catch(() => router.replace("/dashboard")); return; } if (profile) { setStep(profile.onboardingStep ?? 1); setForm({ accountIntention: profile.accountIntention ?? "LEARN", preferredLanguage: profile.preferredLanguage ?? "en", preferredDifficulty: profile.preferredDifficulty ?? "BEGINNER", categoryIds: profile.interests?.map((item: { categoryId: string }) => item.categoryId) ?? [], goals: profile.goals?.map((item: { goal: string }) => item.goal) ?? [] }); } setReady(true); }).catch(() => setReady(true)); }, [status, router]);
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.replace("/login?callbackUrl=/onboarding");
+      return;
+    }
+    if (status !== "authenticated") return;
+
+    void Promise.all([
+      fetch("/api/categories").then((r) => r.json()),
+      fetch("/api/learner-profile").then((r) => r.json())
+    ]).then(([categoryResponse, profileResponse]) => {
+      setCategories(categoryResponse.data ?? []);
+      const profile = profileResponse.data;
+
+      if (profile?.onboardingCompleted) {
+        // Use role-based redirect for proper routing
+        fetch("/api/auth/redirect")
+          .then(res => res.json())
+          .then(data => {
+            router.replace(data.destination || "/dashboard");
+          })
+          .catch(() => router.replace("/dashboard"));
+        return;
+      }
+
+      if (profile) {
+        setStep(profile.onboardingStep ?? 1);
+        setForm({
+          accountIntention: profile.accountIntention ?? "LEARN",
+          preferredLanguage: profile.preferredLanguage ?? "en",
+          preferredDifficulty: profile.preferredDifficulty ?? "BEGINNER",
+          categoryIds: profile.interests?.map((item: { categoryId: string }) => item.categoryId) ?? [],
+          goals: profile.goals?.map((item: { goal: string }) => item.goal) ?? []
+        });
+      }
+
+      setReady(true);
+    }).catch(() => setReady(true));
+  }, [status, router]);
   const toggle = (key: "categoryIds" | "goals", value: string) => setForm((current) => ({ ...current, [key]: current[key].includes(value) ? current[key].filter((item) => item !== value) : [...current[key], value] }));
   const saveStep = async (nextStep: number, complete = false) => { 
     setSaving(true); 

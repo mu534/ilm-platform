@@ -1,5 +1,8 @@
 import type { NextConfig } from "next";
 import path from "path";
+import createNextIntlPlugin from 'next-intl/plugin';
+
+const withNextIntl = createNextIntlPlugin('./app/lib/i18n.ts');
 
 const nextConfig: NextConfig = {
   turbopack: {
@@ -44,4 +47,4 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ["@prisma/client", "@prisma/adapter-pg", "pg"],
 };
 
-export default nextConfig;
+export default withNextIntl(nextConfig);

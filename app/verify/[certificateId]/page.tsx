@@ -71,7 +71,19 @@ export default async function CertificateVerificationPage({ params }: Props) {
 
         {/* Certificate Display */}
         <div className="bg-white rounded-2xl shadow-xl p-4 md:p-8 mb-8">
-          <CertificateView certificate={certificate} signature={signature} />
+          <CertificateView 
+            certificate={{
+              certificateId: certificate.certificateId!,
+              studentName: certificate.studentName || "Unknown Student",
+              title: certificate.title,
+              instructorName: certificate.instructorName,
+              completionDate: certificate.completionDate || new Date(),
+              issuedAt: certificate.issuedAt,
+              courseDuration: certificate.courseDuration,
+              verificationUrl: certificate.verificationUrl,
+            }}
+            signature={signature}
+          />
         </div>
 
         {/* Verification Details */}
@@ -107,7 +119,7 @@ export default async function CertificateVerificationPage({ params }: Props) {
               <p className="text-sm text-gray-500 mb-1">Completion Date</p>
               <p className="font-semibold text-gray-900">
                 {certificate.completionDate
-                  ? new Date(certificate.completionDate as string).toLocaleDateString("en-US", {
+                  ? new Date(certificate.completionDate).toLocaleDateString("en-US", {
                       year: "numeric",
                       month: "long",
                       day: "numeric",

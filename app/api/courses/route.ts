@@ -9,7 +9,7 @@ import {
 } from "../../lib/authorization";
 import { CourseService } from "../../lib/services/courseService";
 
-// ── GET /api/courses ──────────────────────────────────────────────────────────
+
 
 export async function GET(req: NextRequest) {
   try {

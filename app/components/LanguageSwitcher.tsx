@@ -2,42 +2,45 @@
 
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
+import { useRouter, usePathname } from "next/navigation";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { FiGlobe } from "react-icons/fi";
+import { locales, localeNames, localeFlags, localeDirections } from "@/i18n/config";
 
-const LANGUAGES = [
-  { code: "en", label: "English",     dir: "ltr", flag: "🇬🇧" },
-  { code: "ar", label: "العربية",     dir: "rtl", flag: "🇸🇦" },
-  { code: "om", label: "Afaan Oromo", dir: "ltr", flag: "🇪🇹" },
-] as const;
-
-type LangCode = "en" | "ar" | "om";
+type Locale = (typeof locales)[number];
 
 export function LanguageSwitcher() {
   const { data: session } = useSession();
+  const router = useRouter();
+  const pathname = usePathname();
 
-  // Always start with "en" on both server and client to avoid hydration mismatch.
-  // After mount we overwrite with whatever is stored in localStorage.
-  const [current, setCurrent] = useState<LangCode>("en");
-  const [mounted, setMounted]  = useState(false);
+  // Get current locale from pathname
+  const getCurrentLocale = (): Locale => {
+    const segments = pathname.split('/');
+    const locale = segments[1];
+    return locales.includes(locale as Locale) ? locale as Locale : 'en';
+  };
+
+  const [current, setCurrent] = useState<Locale>(getCurrentLocale());
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const stored = localStorage.getItem("lang") as LangCode | null;
-    if (stored && ["en", "ar", "om"].includes(stored)) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+    const stored = localStorage.getItem("lang") as Locale | null;
+    if (stored && locales.includes(stored)) {
       setCurrent(stored);
     }
     setMounted(true);
   }, []);
 
-  const setLanguage = async (code: LangCode) => {
+  const setLanguage = async (code: Locale) => {
     setCurrent(code);
     localStorage.setItem("lang", code);
 
-    const html = document.documentElement;
-    const lang = LANGUAGES.find((l) => l.code === code);
-    html.setAttribute("lang", code);
-    html.setAttribute("dir", lang?.dir ?? "ltr");
+    // Update URL with new locale
+    const segments = pathname.split('/');
+    segments[1] = code;
+    const newPath = segments.join('/');
+    router.push(newPath);
 
     if (session?.user) {
       await fetch(`/api/users/${(session.user as { id: string }).id}`, {
@@ -48,21 +51,22 @@ export function LanguageSwitcher() {
     }
   };
 
-  const currentLang = LANGUAGES.find((l) => l.code === current) ?? LANGUAGES[0];
+  const currentLang = {
+    code: current,
+    name: localeNames[current],
+    flag: localeFlags[current],
+    dir: localeDirections[current],
+  };
 
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>
-        {/* suppressHydrationWarning prevents React from throwing on the
-            Radix-generated id attribute which may differ between SSR and CSR
-            due to component-counter ordering. */}
         <button
           suppressHydrationWarning
           className="flex items-center gap-1.5 p-2 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-dim)] border border-transparent hover:border-[var(--border)] transition-all"
           aria-label="Change language"
         >
           <FiGlobe size={15} />
-          {/* Only show the flag after mount to avoid SSR/CSR flag mismatch */}
           {mounted && (
             <span className="text-xs font-medium hidden sm:inline">
               {currentLang.flag}
@@ -77,19 +81,21 @@ export function LanguageSwitcher() {
           sideOffset={8}
           align="end"
         >
-          {LANGUAGES.map((lang) => (
+          {locales.map((locale) => (
             <DropdownMenu.Item
-              key={lang.code}
+              key={locale}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer outline-none transition-colors text-sm ${
-                current === lang.code
+                current === locale
                   ? "bg-[var(--accent-dim)] text-[var(--accent)]"
                   : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-hover)]"
               }`}
-              onClick={() => setLanguage(lang.code)}
+              onClick={() => setLanguage(locale)}
             >
-              <span className="text-lg">{lang.flag}</span>
-              <span className={lang.dir === "rtl" ? "font-arabic" : ""}>{lang.label}</span>
-              {current === lang.code && (
+              <span className="text-lg">{localeFlags[locale]}</span>
+              <span className={localeDirections[locale] === "rtl" ? "font-arabic" : ""}>
+                {localeNames[locale]}
+              </span>
+              {current === locale && (
                 <span className="ml-auto text-xs text-[var(--accent)]">✓</span>
               )}
             </DropdownMenu.Item>

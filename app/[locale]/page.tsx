@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from 'next-intl/server';
 import { prisma } from "@/app/lib/prism";
 import { publicCourseWhere } from "@/app/lib/courseAccess";
 import { ScholarCard } from "@/app/components/scholars/ScholarCard";
@@ -238,7 +239,8 @@ import { NewsletterForm } from "@/app/components/NewsletterForm";
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export default async function HomePage() {
+export default async function HomePage({ params: { locale } }: { params: { locale: string } }) {
+  const t = await getTranslations();
   const session = await getServerSession(authOptions);
   const user    = session?.user as SessionUser | null;
 
@@ -327,14 +329,13 @@ export default async function HomePage() {
             id="hero-heading"
             className="font-display text-4xl sm:text-5xl md:text-6xl font-bold leading-[1.08] tracking-tight mb-6 text-[var(--text-primary)]"
           >
-            Seek Knowledge
+            {t('hero.title')}
             <br />
             with <span className="gradient-text">Clarity</span>
           </h1>
 
           <p className="text-base sm:text-lg text-[var(--text-secondary)] max-w-xl mb-10 leading-relaxed">
-            Access authentic Islamic courses, connect with qualified scholars,
-            and deepen your understanding of the Deen.
+            {t('hero.subtitle')}
           </p>
 
           {/* Search */}
@@ -346,13 +347,13 @@ export default async function HomePage() {
               href="/courses"
               className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-gold-500 to-gold-600 hover:from-gold-400 hover:to-gold-500 text-white rounded-xl font-semibold shadow-md shadow-gold-600/30 hover:shadow-gold-500/40 transition-all duration-300 hover:scale-105 active:scale-95 text-sm"
             >
-              Explore Courses <FiArrowRight size={15} />
+              {t('hero.cta')} <FiArrowRight size={15} />
             </Link>
             <Link
               href="/scholars"
               className="flex items-center gap-2 px-6 py-3 border border-[var(--border-strong)] hover:border-[var(--accent)] hover:bg-[var(--accent-dim)] text-[var(--text-primary)] rounded-xl font-medium transition-all duration-300 hover:scale-105 active:scale-95 text-sm"
             >
-              Meet Scholars
+              {t('hero.secondaryCta')}
             </Link>
           </div>
         </div>

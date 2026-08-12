@@ -9,7 +9,6 @@ import {
   FiUsers,
   FiStar,
   FiPlus,
-  FiTrendingUp,
   FiClock,
   FiFileText,
   FiFlag,
@@ -65,9 +64,7 @@ async function getDashboardStats() {
     userCount,
     scholarCount,
     courseCount,
-    lectureCount,
     enrollmentCount,
-    certificateCount,
 
     // Growth
     newUsersThisMonth,
@@ -88,9 +85,7 @@ async function getDashboardStats() {
     prisma.user.count(),
     prisma.scholar.count(),
     prisma.course.count(),
-    prisma.lecture.count(),
     prisma.enrollment.count(),
-    prisma.certificate.count(),
 
     prisma.user.count({ where: { createdAt: { gte: day30Ago } } }),
     prisma.user.count({ where: { createdAt: { gte: day7Ago } } }),
@@ -141,9 +136,7 @@ async function getDashboardStats() {
     userCount,
     scholarCount,
     courseCount,
-    lectureCount,
     enrollmentCount,
-    certificateCount,
     newUsersThisMonth,
     newUsersThisWeek,
     newCoursesThisMonth,
@@ -164,77 +157,30 @@ function StatCard({
   label,
   value,
   href,
-  trend,
-  trendValue,
+  subtext,
 }: {
   icon: React.ReactNode;
   label: string;
   value: number;
   href: string;
-  trend?: string;
-  trendValue?: number;
+  subtext?: string;
 }) {
   return (
     <Link
       href={href}
-      className="group relative flex flex-col gap-3 p-5 rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] hover:border-[var(--border-strong)] hover:bg-[var(--bg-card-hover)] hover:shadow-[var(--shadow-md)] hover:-translate-y-0.5 transition-all duration-300 overflow-hidden"
+      className="glass-card rounded-2xl p-5 flex flex-col justify-between gap-3 border border-[var(--border)] hover:border-[var(--border-strong)] hover:shadow-md transition-all group"
     >
-      {/* subtle top accent line */}
-      <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-transparent via-[var(--accent)] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-
       <div className="flex items-center justify-between">
-        <div className="w-9 h-9 rounded-xl bg-[var(--accent-dim)] border border-[var(--border-strong)] flex items-center justify-center text-[var(--accent)]">
+        <span className="text-xs font-medium text-[var(--text-muted)]">{label}</span>
+        <div className="p-2 rounded-xl bg-[var(--accent-dim)] border border-[var(--border-subtle)] text-[var(--accent)]">
           {icon}
         </div>
-        {trend && trendValue && (
-          <span className="flex items-center gap-1 text-xs text-emerald-400 font-medium">
-            <FiTrendingUp size={11} />
-            {trendValue > 0 ? `+${trendValue}` : trendValue}
-          </span>
-        )}
       </div>
-
       <div>
-        <div className="font-display text-3xl font-bold text-[var(--text-primary)] tabular-nums leading-none mb-1">
+        <p className="font-display text-2xl sm:text-3xl font-bold text-[var(--text-primary)] tabular-nums">
           {value.toLocaleString()}
-        </div>
-        <div className="text-xs text-[var(--text-muted)]">{label}</div>
-      </div>
-    </Link>
-  );
-}
-
-function AttentionCard({
-  icon,
-  label,
-  count,
-  href,
-  color = "gold",
-}: {
-  icon: React.ReactNode;
-  label: string;
-  count: number;
-  href: string;
-  color?: "gold" | "red" | "blue";
-}) {
-  const colorClasses = {
-    gold: "text-[var(--accent)] bg-[var(--accent-dim)] border-[var(--border-strong)]",
-    red: "text-red-400 bg-red-500/10 border-red-500/20",
-    blue: "text-blue-400 bg-blue-500/10 border-blue-500/20",
-  };
-
-  return (
-    <Link
-      href={href}
-      className={`flex items-center gap-4 p-4 rounded-xl border ${colorClasses[color]} hover:scale-[1.02] transition-all duration-200`}
-    >
-      <div className="flex-shrink-0">{icon}</div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-[var(--text-primary)]">{label}</p>
-        <p className="text-xs text-[var(--text-muted)]">{count} pending</p>
-      </div>
-      <div className="flex-shrink-0">
-        <span className="text-2xl font-bold tabular-nums">{count}</span>
+        </p>
+        {subtext && <p className="text-[11px] text-[var(--text-muted)] mt-0.5">{subtext}</p>}
       </div>
     </Link>
   );
@@ -256,30 +202,28 @@ export default async function AdminPage() {
       label: "Total Users",
       value: stats.userCount,
       href: "/admin/users",
-      trend: "New this month",
-      trendValue: stats.newUsersThisMonth,
+      subtext: `+${stats.newUsersThisMonth} this month`,
     },
     {
       icon: <FiStar size={16} />,
-      label: "Scholars",
+      label: "Scholars & Instructors",
       value: stats.scholarCount,
       href: "/admin/instructors",
+      subtext: "Verified educators",
     },
     {
       icon: <FiBookOpen size={16} />,
       label: "Courses",
       value: stats.courseCount,
       href: "/admin/courses",
-      trend: "New this month",
-      trendValue: stats.newCoursesThisMonth,
+      subtext: `+${stats.newCoursesThisMonth} this month`,
     },
     {
       icon: <FiEye size={16} />,
       label: "Enrollments",
       value: stats.enrollmentCount,
       href: "/admin/enrollments",
-      trend: "New this month",
-      trendValue: stats.newEnrollmentsThisMonth,
+      subtext: `+${stats.newEnrollmentsThisMonth} this month`,
     },
   ];
 
@@ -298,22 +242,32 @@ export default async function AdminPage() {
             Welcome back, {user.name?.split(" ")[0]} 👋
           </h1>
           <p className="text-xs sm:text-sm text-[var(--text-secondary)] max-w-xl leading-relaxed">
-            Platform overview and administration. Monitor activity, manage content, and ensure quality.
+            Oversee the platform's growth and quality. Review applications, moderate content, and support our community of learners and scholars.
           </p>
         </div>
 
         <div className="relative z-10 flex flex-wrap items-center gap-3">
+          {stats.pendingScholarApplications > 0 && (
+            <Link
+              href="/admin/scholar-applications"
+              className="btn-primary px-5 py-2.5 text-xs sm:text-sm rounded-xl font-semibold inline-flex items-center gap-2 shadow-sm"
+            >
+              <FiFileText size={16} /> Review Applications ({stats.pendingScholarApplications})
+            </Link>
+          )}
+          {stats.pendingCourseReviews > 0 && (
+            <Link
+              href="/admin/courses"
+              className="btn-primary px-5 py-2.5 text-xs sm:text-sm rounded-xl font-semibold inline-flex items-center gap-2 shadow-sm"
+            >
+              <FiBookOpen size={16} /> Review Courses ({stats.pendingCourseReviews})
+            </Link>
+          )}
           <Link
             href="/admin/courses/new"
-            className="btn-primary px-5 py-2.5 text-xs sm:text-sm rounded-xl font-semibold inline-flex items-center gap-2 shadow-sm"
-          >
-            <FiPlus size={16} /> New Course
-          </Link>
-          <Link
-            href="/admin/users"
             className="btn-secondary px-5 py-2.5 text-xs sm:text-sm rounded-xl font-medium inline-flex items-center gap-2"
           >
-            <FiUsers size={16} /> Manage Users
+            <FiPlus size={16} /> New Course
           </Link>
         </div>
       </div>
@@ -321,46 +275,86 @@ export default async function AdminPage() {
       {/* ── Stat Cards ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {statCards.map((card) => (
-          <StatCard key={card.label} {...card} />
+          <StatCard
+            key={card.label}
+            icon={card.icon}
+            label={card.label}
+            value={card.value}
+            href={card.href}
+            subtext={card.subtext}
+          />
         ))}
       </div>
 
       {/* ── Needs Attention Section ── */}
       {(stats.pendingScholarApplications > 0 || stats.pendingCourseReviews > 0 || stats.pendingReports > 0) && (
-        <section className="space-y-4">
+        <section className="glass-card rounded-2xl p-5 border border-[var(--border)] space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="font-display text-xl font-bold text-[var(--text-primary)] flex items-center gap-2">
-              <FiAlertCircle className="text-[var(--accent)]" size={20} />
+            <h2 className="font-display text-lg font-bold text-[var(--text-primary)] flex items-center gap-2">
+              <FiAlertCircle className="text-[var(--accent)]" size={18} />
               Needs Your Attention
             </h2>
+            <span className="text-xs text-[var(--text-muted)]">
+              {stats.pendingScholarApplications + stats.pendingCourseReviews + stats.pendingReports} pending items
+            </span>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {stats.pendingScholarApplications > 0 && (
-              <AttentionCard
-                icon={<FiFileText size={24} />}
-                label="Scholar Applications"
-                count={stats.pendingScholarApplications}
+              <Link
                 href="/admin/scholar-applications"
-                color="gold"
-              />
+                className="flex items-center gap-3 p-3 rounded-xl bg-[var(--accent-dim)] border border-[var(--border-strong)] hover:bg-[var(--accent)] hover:text-white transition-all group"
+              >
+                <div className="w-10 h-10 rounded-lg bg-[var(--accent)]/20 border border-[var(--accent)]/30 flex items-center justify-center text-[var(--accent)] group-hover:text-white flex-shrink-0">
+                  <FiFileText size={18} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-[var(--text-primary)] group-hover:text-white transition-colors">
+                    Scholar Applications
+                  </p>
+                  <p className="text-xs text-[var(--text-muted)] group-hover:text-white/80 transition-colors">
+                    {stats.pendingScholarApplications} pending review
+                  </p>
+                </div>
+                <FiArrowRight size={16} className="text-[var(--accent)] group-hover:text-white flex-shrink-0" />
+              </Link>
             )}
             {stats.pendingCourseReviews > 0 && (
-              <AttentionCard
-                icon={<FiBookOpen size={24} />}
-                label="Courses Awaiting Review"
-                count={stats.pendingCourseReviews}
+              <Link
                 href="/admin/courses"
-                color="blue"
-              />
+                className="flex items-center gap-3 p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500 hover:text-white transition-all group"
+              >
+                <div className="w-10 h-10 rounded-lg bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-blue-400 group-hover:text-white flex-shrink-0">
+                  <FiBookOpen size={18} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-[var(--text-primary)] group-hover:text-white transition-colors">
+                    Courses Awaiting Review
+                  </p>
+                  <p className="text-xs text-[var(--text-muted)] group-hover:text-white/80 transition-colors">
+                    {stats.pendingCourseReviews} pending approval
+                  </p>
+                </div>
+                <FiArrowRight size={16} className="text-blue-400 group-hover:text-white flex-shrink-0" />
+              </Link>
             )}
             {stats.pendingReports > 0 && (
-              <AttentionCard
-                icon={<FiFlag size={24} />}
-                label="Reported Content"
-                count={stats.pendingReports}
+              <Link
                 href="/admin/reports"
-                color="red"
-              />
+                className="flex items-center gap-3 p-3 rounded-xl bg-red-500/10 border border-red-500/20 hover:bg-red-500 hover:text-white transition-all group"
+              >
+                <div className="w-10 h-10 rounded-lg bg-red-500/20 border border-red-500/30 flex items-center justify-center text-red-400 group-hover:text-white flex-shrink-0">
+                  <FiFlag size={18} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-[var(--text-primary)] group-hover:text-white transition-colors">
+                    Reported Content
+                  </p>
+                  <p className="text-xs text-[var(--text-muted)] group-hover:text-white/80 transition-colors">
+                    {stats.pendingReports} pending review
+                  </p>
+                </div>
+                <FiArrowRight size={16} className="text-red-400 group-hover:text-white flex-shrink-0" />
+              </Link>
             )}
           </div>
         </section>
@@ -465,7 +459,7 @@ export default async function AdminPage() {
                       {course.title}
                     </p>
                     <p className="text-[11px] text-[var(--text-muted)] truncate mt-0.5">
-                      {course.author.name}
+                      by {course.author.name}
                     </p>
                   </div>
                   <div className="text-right flex-shrink-0">
@@ -539,36 +533,56 @@ export default async function AdminPage() {
         </div>
       </section>
 
-      {/* ── Quick Stats Summary ── */}
-      <section className="glass-card rounded-2xl p-6 border border-[var(--border)] space-y-4">
+      {/* ── Platform Activity Summary ── */}
+      <section className="glass-card rounded-2xl p-5 border border-[var(--border)] space-y-3">
         <h2 className="font-display text-lg font-bold text-[var(--text-primary)] flex items-center gap-2">
-          <FiClock className="text-[var(--accent)]" size={16} />
-          Platform Growth This Month
+          <FiActivity className="text-[var(--accent)]" size={16} />
+          Platform Activity This Month
         </h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="text-center p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border)]">
-            <p className="font-display text-2xl font-bold text-[var(--text-primary)] tabular-nums">
-              {stats.newUsersThisMonth}
-            </p>
-            <p className="text-xs text-[var(--text-muted)] mt-1">New Users</p>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="flex items-center gap-3 p-3 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)]">
+            <div className="w-8 h-8 rounded-lg bg-[var(--accent-dim)] border border-[var(--border-subtle)] flex items-center justify-center text-[var(--accent)]">
+              <FiUsers size={14} />
+            </div>
+            <div>
+              <p className="font-display text-lg font-bold text-[var(--text-primary)] tabular-nums">
+                {stats.newUsersThisMonth}
+              </p>
+              <p className="text-[10px] text-[var(--text-muted)]">New Users</p>
+            </div>
           </div>
-          <div className="text-center p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border)]">
-            <p className="font-display text-2xl font-bold text-[var(--text-primary)] tabular-nums">
-              {stats.newUsersThisWeek}
-            </p>
-            <p className="text-xs text-[var(--text-muted)] mt-1">This Week</p>
+          <div className="flex items-center gap-3 p-3 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)]">
+            <div className="w-8 h-8 rounded-lg bg-[var(--accent-dim)] border border-[var(--border-subtle)] flex items-center justify-center text-[var(--accent)]">
+              <FiBookOpen size={14} />
+            </div>
+            <div>
+              <p className="font-display text-lg font-bold text-[var(--text-primary)] tabular-nums">
+                {stats.newCoursesThisMonth}
+              </p>
+              <p className="text-[10px] text-[var(--text-muted)]">New Courses</p>
+            </div>
           </div>
-          <div className="text-center p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border)]">
-            <p className="font-display text-2xl font-bold text-[var(--text-primary)] tabular-nums">
-              {stats.newCoursesThisMonth}
-            </p>
-            <p className="text-xs text-[var(--text-muted)] mt-1">New Courses</p>
+          <div className="flex items-center gap-3 p-3 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)]">
+            <div className="w-8 h-8 rounded-lg bg-[var(--accent-dim)] border border-[var(--border-subtle)] flex items-center justify-center text-[var(--accent)]">
+              <FiEye size={14} />
+            </div>
+            <div>
+              <p className="font-display text-lg font-bold text-[var(--text-primary)] tabular-nums">
+                {stats.newEnrollmentsThisMonth}
+              </p>
+              <p className="text-[10px] text-[var(--text-muted)]">New Enrollments</p>
+            </div>
           </div>
-          <div className="text-center p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border)]">
-            <p className="font-display text-2xl font-bold text-[var(--text-primary)] tabular-nums">
-              {stats.newEnrollmentsThisMonth}
-            </p>
-            <p className="text-xs text-[var(--text-muted)] mt-1">New Enrollments</p>
+          <div className="flex items-center gap-3 p-3 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)]">
+            <div className="w-8 h-8 rounded-lg bg-[var(--accent-dim)] border border-[var(--border-subtle)] flex items-center justify-center text-[var(--accent)]">
+              <FiActivity size={14} />
+            </div>
+            <div>
+              <p className="font-display text-lg font-bold text-[var(--text-primary)] tabular-nums">
+                {stats.newUsersThisWeek}
+              </p>
+              <p className="text-[10px] text-[var(--text-muted)]">This Week</p>
+            </div>
           </div>
         </div>
       </section>

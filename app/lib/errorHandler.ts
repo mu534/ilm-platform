@@ -100,7 +100,7 @@ export function handleApiError(error: unknown) {
   console.error("[API Error]", error);
 
   const userMessage = getUserFacingMessage(error);
-  const statusCode = error instanceof HttpError ? error.statusCode : 500;
+  const statusCode = error instanceof HttpError ? error.status : 500;
 
   return {
     success: false,

@@ -26,7 +26,6 @@ export function handleApiError(error: unknown) {
     return errorResponse("Validation failed", 422, error.flatten().fieldErrors);
   }
 
-  // eslint-disable-next-line no-console
   console.error("[API Error]", error);
 
   // Mask Prisma/internal errors to avoid exposing database schema or internal paths

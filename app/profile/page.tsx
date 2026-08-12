@@ -55,7 +55,7 @@ export default function ProfilePage() {
         .catch(() => {});
       fetch("/api/learner-profile").then((r) => r.json()).then((d) => { if (d.success) setForm((prev) => ({ ...prev, city: d.data?.city ?? "", occupation: d.data?.occupation ?? "" })); }).catch(() => {});
     }
-  }, [user?.id]);
+  }, [user?.id, user]);
 
   useEffect(() => {
     if (authStatus === "unauthenticated") router.push("/login");

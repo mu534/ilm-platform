@@ -403,6 +403,8 @@ model Course {
   // stay locked until every lesson before them (in module/lecture order)
   // is marked complete.
   sequentialLearning Boolean     @default(false)
+  // When true, certificates are issued upon course completion
+  certificateEnabled Boolean     @default(false)
   status            CourseStatus @default(DRAFT)
   featured          Boolean      @default(false)
   published         Boolean      @default(false)
@@ -675,19 +677,38 @@ model QuizAnswer {
 // ─── Certificates ─────────────────────────────────────────────────────────────
 
 model Certificate {
-  id             String   @id @default(cuid())
-  userId         String
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  courseId       String
-  course         Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  title          String
-  issuedAt       DateTime @default(now())
-  certificateUrl String?  // generated PDF URL on Cloudinary
+  id                String   @id @default(cuid())
+  certificateId     String?  @unique // Publicly verifiable unique ID (e.g., ILM-2024-XXXXX)
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId          String
+  course            Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  studentName       String?  // Full name from profile at time of issuance
+  title             String
+  instructorName    String?  // Name of scholar/instructor
+  completionDate    DateTime? // When course was completed
+  issuedAt          DateTime @default(now())
+  courseDuration    Int?     // Course duration in minutes
+  certificateUrl    String?  // generated PDF URL on Cloudinary
+  verificationUrl   String?  // URL to public verification page
 
   @@unique([userId, courseId])
   @@index([userId])
   @@index([courseId])
+  @@index([certificateId])
   @@map("certificates")
+}
+
+model CertificateSignature {
+  id          String   @id @default(cuid())
+  name        String   // Display name (e.g., "Dr. Ahmed Ibrahim")
+  title       String?  // Title/position (e.g., "Director of Islamic Studies")
+  imageUrl    String   // Signature image URL
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("certificate_signatures")
 }
 
 // ─── Bookmarks ────────────────────────────────────────────────────────────────

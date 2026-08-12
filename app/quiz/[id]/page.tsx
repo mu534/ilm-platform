@@ -69,22 +69,6 @@ export default function QuizPage() {
       .finally(() => setLoading(false));
   }, [id]);
 
-  // Timer
-  useEffect(() => {
-    if (!started || timeLeft === null || result) return;
-    timerRef.current = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev === null || prev <= 1) {
-          clearInterval(timerRef.current);
-          void handleSubmit();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    return () => clearInterval(timerRef.current);
-  }, [started, result]);
-
   const handleSubmit = async () => {
     if (submitting || !quiz) return;
     clearInterval(timerRef.current);
@@ -111,6 +95,22 @@ export default function QuizPage() {
       setSubmitting(false);
     }
   };
+
+  // Timer
+  useEffect(() => {
+    if (!started || timeLeft === null || result) return;
+    timerRef.current = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev === null || prev <= 1) {
+          clearInterval(timerRef.current);
+          void handleSubmit();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timerRef.current);
+  }, [started, result, handleSubmit, timeLeft]);
 
   const formatTime = (secs: number) => {
     const m = Math.floor(secs / 60).toString().padStart(2, "0");

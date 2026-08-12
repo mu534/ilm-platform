@@ -242,7 +242,7 @@ export default async function AdminPage() {
             Welcome back, {user.name?.split(" ")[0]} 👋
           </h1>
           <p className="text-xs sm:text-sm text-[var(--text-secondary)] max-w-xl leading-relaxed">
-            Oversee the platform's growth and quality. Review applications, moderate content, and support our community of learners and scholars.
+            Oversee the platform&apos;s growth and quality. Review applications, moderate content, and support our community of learners and scholars.
           </p>
         </div>
 

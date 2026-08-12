@@ -66,7 +66,7 @@ interface RateLimitEntry {
 }
 
 declare global {
-  // eslint-disable-next-line no-var
+   
   var __rateLimitStore: Map<string, RateLimitEntry> | undefined;
 }
 
@@ -88,7 +88,7 @@ if (typeof setInterval !== "undefined") {
 function checkRateLimitMemory(identifier: string, options: RateLimitOptions): RateLimitResult {
   if (process.env.NODE_ENV === "production" && !warnedNoRedis) {
     warnedNoRedis = true;
-    // eslint-disable-next-line no-console
+     
     console.warn(
       "[rateLimit] UPSTASH_REDIS_REST_URL/TOKEN not set — falling back to " +
       "in-memory rate limiting. This does NOT work correctly across multiple " +
@@ -135,7 +135,7 @@ export async function checkRateLimit(
     try {
       return await checkRateLimitRedis(identifier, options);
     } catch (err) {
-      // eslint-disable-next-line no-console
+       
       console.error("[rateLimit] Redis error during rate limit check:", err);
       // Fallback to in-memory store before giving up
       const memResult = checkRateLimitMemory(identifier, options);

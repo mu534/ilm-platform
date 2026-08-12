@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
     const stripe = getStripe();
     event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
   } catch (err) {
-    // eslint-disable-next-line no-console
+     
     console.error("[stripe webhook] Signature verification failed:", err);
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
   try {
     await PaymentService.handleWebhookEvent(event);
   } catch (err) {
-    // eslint-disable-next-line no-console
+     
     console.error(`[stripe webhook] Error handling ${event.type}:`, err);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }

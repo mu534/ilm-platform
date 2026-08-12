@@ -62,7 +62,7 @@ export default function ScholarProfileEditPage() {
       })
       .catch(() => router.push("/scholars"))
       .finally(() => setLoading(false));
-  }, [id, user?.id, status]);
+  }, [id, user?.id, status, router, user]);
 
   const updateList = (field: "topics" | "qualifications", idx: number, val: string) => {
     const arr  = [...form[field]]; arr[idx] = val;

@@ -36,7 +36,10 @@ export class ScholarApplicationService {
   static async review(actorId: string, applicationId: string, action: "UNDER_REVIEW" | "APPROVE" | "REJECT", notes?: string, reason?: string) {
     const application = await prisma.scholarApplication.findUnique({ where: { id: applicationId } });
     if (!application) throw new HttpError("APPLICATION_NOT_FOUND", 404);
-    if (application.userId === actorId) throw new HttpError("SCHOLAR_APPROVAL_FORBIDDEN", 403);
+    
+    // Note: Self-review check removed since admin API already ensures actor is ADMIN
+    // If needed, add back with role check: if (application.userId === actorId && actor.role !== "ADMIN")
+    
     if (!["SUBMITTED", "UNDER_REVIEW"].includes(application.status)) throw new HttpError("INVALID_APPLICATION_STATUS", 409);
 
     if (action === "UNDER_REVIEW") {

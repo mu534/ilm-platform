@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
     ]);
 
     return successResponse({
-      logs,
+      items: logs,
       total,
       page,
       pageSize,

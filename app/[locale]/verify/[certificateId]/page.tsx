@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
-import { prisma } from "../../lib/prism";
-import { CertificateView } from "../../components/certificates/CertificateView";
+import { prisma } from "../../../lib/prism";
+import { CertificateView } from "../../../components/certificates/CertificateView";
 import { FiShield, FiAlertCircle } from "react-icons/fi";
 
 interface Props {

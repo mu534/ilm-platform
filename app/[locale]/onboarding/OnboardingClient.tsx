@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { useLocale } from "next-intl";
 
 type Category = { id: string; name: string };
 const goals = ["Build foundational Islamic knowledge", "Improve Qur'an understanding", "Study Hadith", "Study Fiqh", "Learn at my own pace", "Follow structured learning", "Prepare for advanced study"];
@@ -11,6 +12,7 @@ const defaultForm: Form = { accountIntention: "LEARN", preferredLanguage: "en", 
 export default function OnboardingClient() {
   const { status } = useSession();
   const router = useRouter();
+  const locale = useLocale();
   const [step, setStep] = useState(1);
   const [categories, setCategories] = useState<Category[]>([]);
   const [saving, setSaving] = useState(false);
@@ -18,7 +20,7 @@ export default function OnboardingClient() {
   const [form, setForm] = useState<Form>(defaultForm);
   useEffect(() => {
     if (status === "unauthenticated") {
-      router.replace("/login?callbackUrl=/onboarding");
+      router.replace(`/${locale}/login?callbackUrl=/${locale}/onboarding`);
       return;
     }
     if (status !== "authenticated") return;
@@ -35,9 +37,9 @@ export default function OnboardingClient() {
         fetch("/api/auth/redirect")
           .then(res => res.json())
           .then(data => {
-            router.replace(data.destination || "/dashboard");
+            router.replace(data.destination || `/${locale}/dashboard`);
           })
-          .catch(() => router.replace("/dashboard"));
+          .catch(() => router.replace(`/${locale}/dashboard`));
         return;
       }
 
@@ -54,7 +56,7 @@ export default function OnboardingClient() {
 
       setReady(true);
     }).catch(() => setReady(true));
-  }, [status, router]);
+  }, [status, router, locale]);
   const toggle = (key: "categoryIds" | "goals", value: string) => setForm((current) => ({ ...current, [key]: current[key].includes(value) ? current[key].filter((item) => item !== value) : [...current[key], value] }));
   const saveStep = async (nextStep: number, complete = false) => { 
     setSaving(true); 
@@ -64,12 +66,12 @@ export default function OnboardingClient() {
       if (!data.success) throw new Error(data.error ?? "Unable to save progress"); 
       if (complete) { 
         if (form.accountIntention === "TEACH") { 
-          router.push("/scholar-application"); 
+          router.push(`/${locale}/scholar-application`); 
         } else { 
           // Use the role-based redirect API for proper routing
           const redirectResponse = await fetch("/api/auth/redirect"); 
           const redirectData = await redirectResponse.json(); 
-          router.push(redirectData.destination || "/dashboard"); 
+          router.push(redirectData.destination || `/${locale}/dashboard`); 
         } 
       } else setStep(nextStep); 
     } finally { 

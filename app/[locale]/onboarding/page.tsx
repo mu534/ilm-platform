@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
-import { authOptions } from "../lib/auth";
+import { authOptions } from "../../lib/auth";
 import OnboardingClient from "./OnboardingClient";
+import { getLocale } from "next-intl/server";
 
 /**
  * Server-side protection for onboarding page.
@@ -10,20 +11,21 @@ import OnboardingClient from "./OnboardingClient";
  */
 export default async function OnboardingPage() {
   const session = await getServerSession(authOptions);
+  const locale = await getLocale();
   
   if (!session?.user?.id) {
-    redirect("/login?callbackUrl=/onboarding");
+    redirect(`/${locale}/login?callbackUrl=/${locale}/onboarding`);
   }
 
   const userRole = session.user.role as "ADMIN" | "INSTRUCTOR" | "USER";
 
   // ADMIN and INSTRUCTOR should not access onboarding
   if (userRole === "ADMIN") {
-    redirect("/admin");
+    redirect(`/${locale}/admin`);
   }
 
   if (userRole === "INSTRUCTOR") {
-    redirect("/dashboard/instructor");
+    redirect(`/${locale}/dashboard/instructor`);
   }
 
   // For USER role, let the client component handle onboarding completion check

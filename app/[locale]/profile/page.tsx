@@ -10,9 +10,9 @@ import {
   FiLock, FiEye, FiEyeOff, FiLoader,
 } from "react-icons/fi";
 import * as Avatar from "@radix-ui/react-avatar";
-import { RoleBadge } from "../components/ui/Badge";
-import { FileUploader } from "../components/FileUploader";
-import type { SessionUser } from "../types/auth.types";
+import { RoleBadge } from "../../components/ui/Badge";
+import { FileUploader } from "../../components/FileUploader";
+import type { SessionUser } from "../../types/auth.types";
 
 type SaveStatus = "idle" | "saving" | "success" | "error";
 

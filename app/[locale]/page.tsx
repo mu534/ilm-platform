@@ -239,7 +239,8 @@ import { NewsletterForm } from "@/app/components/NewsletterForm";
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export default async function HomePage({ params: { locale } }: { params: { locale: string } }) {
+export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
   const t = await getTranslations();
   const session = await getServerSession(authOptions);
   const user    = session?.user as SessionUser | null;

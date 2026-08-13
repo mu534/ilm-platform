@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getTranslations } from 'next-intl/server';
+import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { prisma } from "@/app/lib/prism";
 import { publicCourseWhere } from "@/app/lib/courseAccess";
 import { ScholarCard } from "@/app/components/scholars/ScholarCard";
@@ -241,6 +241,7 @@ import { NewsletterForm } from "@/app/components/NewsletterForm";
 
 export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
+  setRequestLocale(locale);
   const t = await getTranslations();
   const session = await getServerSession(authOptions);
   const user    = session?.user as SessionUser | null;

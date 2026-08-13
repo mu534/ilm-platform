@@ -34,12 +34,14 @@ export function Navbar() {
     { href: "/forum", label: t("forum") },
   ];
 
-  // Hide public navbar on LMS app shell routes
+  // Hide public navigation inside the LMS shells. Routes are locale-prefixed
+  // (for example, /en/dashboard), so compare after the locale segment.
+  const appPath = pathname.replace(/^\/[a-z]{2}(?=\/|$)/, "") || "/";
   if (
-    pathname.startsWith("/dashboard") ||
-    pathname.startsWith("/profile") ||
-    pathname.startsWith("/settings") ||
-    pathname.startsWith("/admin")
+    appPath.startsWith("/dashboard") ||
+    appPath.startsWith("/profile") ||
+    appPath.startsWith("/settings") ||
+    appPath.startsWith("/admin")
   ) {
     return null;
   }

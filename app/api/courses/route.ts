@@ -10,7 +10,6 @@ import {
 import { CourseService } from "../../lib/services/courseService";
 
 
-
 export async function GET(req: NextRequest) {
   try {
     const user = await getOptionalUser();

@@ -27,11 +27,12 @@ export function Footer() {
     { href: "/dashboard", label: nav("myLearning") },
   ];
 
+  const appPath = pathname.replace(/^\/[a-z]{2}(?=\/|$)/, "") || "/";
   if (
-    pathname.startsWith("/dashboard") ||
-    pathname.startsWith("/profile") ||
-    pathname.startsWith("/settings") ||
-    pathname.startsWith("/admin")
+    appPath.startsWith("/dashboard") ||
+    appPath.startsWith("/profile") ||
+    appPath.startsWith("/settings") ||
+    appPath.startsWith("/admin")
   ) {
     return null;
   }

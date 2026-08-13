@@ -3,6 +3,31 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { locales, defaultLocale } from './i18n/config';
 
+// These routes have their own locale-aware pages under app/[locale]. All other
+// application pages currently live at the app root and are served through an
+// internal rewrite after their locale prefix has been processed.
+const localeRoutePrefixes = [
+  "/activity",
+  "/forgot-password",
+  "/login",
+  "/onboarding",
+  "/profile",
+  "/register",
+  "/reset-password",
+  "/scholar-application",
+  "/settings",
+  "/terms",
+  "/verify",
+  "/verify-email",
+  "/privacy",
+];
+
+function hasLocaleRoute(pathname: string): boolean {
+  return pathname === "/" || localeRoutePrefixes.some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`),
+  );
+}
+
 /**
  * Next.js middleware — runs on the Edge before every matched request.
  *
@@ -77,8 +102,13 @@ export default withAuth(
       return NextResponse.redirect(new URL(`/${currentLocale}/admin/courses`, req.url));
     }
 
-    // Add security headers
-    const response = NextResponse.next();
+    // Most feature pages have not yet moved beneath app/[locale]. Keep the
+    // locale in the browser URL, while rendering their existing root route.
+    // This makes /om/courses, /ar/dashboard and similar links work without
+    // duplicating the entire route tree.
+    const response = hasLocaleRoute(pathnameWithoutLocale)
+      ? NextResponse.next()
+      : NextResponse.rewrite(new URL(pathnameWithoutLocale + req.nextUrl.search, req.url));
     response.headers.set("X-Content-Type-Options", "nosniff");
     response.headers.set("X-Frame-Options", "DENY");
     response.headers.set("X-XSS-Protection", "1; mode=block");

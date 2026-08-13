@@ -1,31 +1,22 @@
 import { withAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import createMiddleware from 'next-intl/middleware';
 import { locales, defaultLocale } from './i18n/config';
 
 /**
  * Next.js middleware — runs on the Edge before every matched request.
  *
  * Responsibilities:
- *  1. Handle i18n locale routing
- *  2. Protect /admin, /dashboard, /profile, /onboarding routes (require auth)
- *  3. Restrict /admin (except /admin/courses) to ADMIN or SCHOLAR roles
- *  4. Send learners who have not finished onboarding to /onboarding, and send
+ *  1. Protect /admin, /dashboard, /profile, /onboarding routes (require auth)
+ *  2. Restrict /admin (except /admin/courses) to ADMIN or SCHOLAR roles
+ *  3. Send learners who have not finished onboarding to /onboarding, and send
  *     learners who already finished it away from /onboarding
- *  5. Add security headers on every response
+ *  4. Add security headers on every response
  *
  * Lectures are managed exclusively inside the Course Builder
  * (/admin/courses/[id]/builder) — there is no separate top-level Lecture
  * admin module, so non-admins land on their course list instead.
  */
-
-// Create the i18n middleware
-const i18nMiddleware = createMiddleware({
-  locales,
-  defaultLocale,
-  localePrefix: 'always'
-});
 
 // Helper function to remove locale prefix from pathname
 function getPathnameWithoutLocale(pathname: string): string {
@@ -33,24 +24,31 @@ function getPathnameWithoutLocale(pathname: string): string {
   return localeMatch ? pathname.slice(3) : pathname;
 }
 
+// Helper function to extract locale from pathname
+function getLocale(pathname: string): string {
+  const localeMatch = pathname.match(/^\/([a-z]{2})/);
+  return localeMatch ? localeMatch[1] : defaultLocale;
+}
+
 export default withAuth(
   function middleware(req: NextRequest) {
     const token = (req as NextRequest & { nextauth?: { token?: { role?: string; onboardingCompleted?: boolean } } }).nextauth?.token;
     const pathname = req.nextUrl.pathname;
     const pathnameWithoutLocale = getPathnameWithoutLocale(pathname);
-    
-    // Extract locale from pathname
-    const localeMatch = pathname.match(/^\/([a-z]{2})/);
-    const currentLocale = localeMatch ? localeMatch[1] : defaultLocale;
+    const currentLocale = getLocale(pathname);
 
-    // Handle root path redirect
+    // Handle root path - redirect to default locale
     if (pathname === '/') {
       return NextResponse.redirect(new URL(`/${defaultLocale}`, req.url));
     }
 
-    // First, apply i18n middleware for locale routing
-    const i18nResponse = i18nMiddleware(req);
-    if (i18nResponse) return i18nResponse;
+    // Handle paths without locale prefix
+    const localeMatch = pathname.match(/^\/([a-z]{2})/);
+    if (!localeMatch) {
+      // Check if it's a valid path without locale
+      // Redirect to add locale prefix
+      return NextResponse.redirect(new URL(`/${defaultLocale}${pathname}`, req.url));
+    }
 
     // Onboarding gate — the flag is copied onto the JWT from the database
     // (LearnerProfile.onboardingCompleted) and never from client storage.

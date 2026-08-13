@@ -1,8 +1,7 @@
 import Link from "next/link";
-import { getLocale } from "next-intl/server";
 
-export default async function TermsPage() {
-  const locale = await getLocale();
+export default async function TermsPage({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
 
   return (
     <main className="max-w-3xl mx-auto px-4 sm:px-6 py-16 sm:py-24">

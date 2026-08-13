@@ -45,13 +45,13 @@ function hasLocaleRoute(pathname: string): boolean {
 
 // Helper function to remove locale prefix from pathname
 function getPathnameWithoutLocale(pathname: string): string {
-  const localeMatch = pathname.match(/^\/[a-z]{2}/);
+  const localeMatch = pathname.match(/^\/(en|om|ar|am)(?=\/|$)/);
   return localeMatch ? pathname.slice(3) : pathname;
 }
 
 // Helper function to extract locale from pathname
 function getLocale(pathname: string): string {
-  const localeMatch = pathname.match(/^\/([a-z]{2})/);
+  const localeMatch = pathname.match(/^\/(en|om|ar|am)(?=\/|$)/);
   return localeMatch ? localeMatch[1] : defaultLocale;
 }
 
@@ -68,7 +68,7 @@ export default withAuth(
     }
 
     // Handle paths without locale prefix
-    const localeMatch = pathname.match(/^\/([a-z]{2})/);
+    const localeMatch = pathname.match(/^\/(en|om|ar|am)(?=\/|$)/);
     if (!localeMatch) {
       // Check if it's a valid path without locale
       // Redirect to add locale prefix

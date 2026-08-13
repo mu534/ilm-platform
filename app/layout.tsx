@@ -1,5 +1,6 @@
 import { Cormorant_Garamond, DM_Sans, Amiri } from "next/font/google";
 import "./globals.css";
+import { Providers } from "./components/Providers";
 
 const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
@@ -28,7 +29,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="en" className={`${cormorant.variable} ${dmSans.variable} ${amiri.variable}`}>
       <body className="w-full bg-[var(--bg-primary)] text-[var(--text-primary)] transition-colors duration-300">
-        {children}
+      <Providers>{children}</Providers>  
       </body>
     </html>
   );

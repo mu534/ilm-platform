@@ -85,17 +85,18 @@ async function getInstructorStats(userId: string) {
 export default async function InstructorDashboardPage() {
   const session = await getServerSession(authOptions);
   const user = session?.user as SessionUser | undefined;
+  const { defaultLocale } = await import("@/i18n/config");
 
-  if (!user) redirect("/login?callbackUrl=/dashboard/instructor");
+  if (!user) redirect(`/${defaultLocale}/login?callbackUrl=/${defaultLocale}/dashboard/instructor`);
   
   // Only INSTRUCTOR can access this page
   if (user.role !== "INSTRUCTOR") {
     // ADMIN should go to /admin
     if (user.role === "ADMIN") {
-      redirect("/admin");
+      redirect(`/${defaultLocale}/admin`);
     }
     // Others go to dashboard
-    redirect("/dashboard");
+    redirect(`/${defaultLocale}/dashboard`);
   }
 
   const stats = await getInstructorStats(user.id);

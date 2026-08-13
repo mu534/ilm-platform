@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { authOptions } from "../lib/auth";
 import { AdminLayout } from "../components/admin/AdminLayout";
 import type { SessionUser } from "@/app/types/auth.types";
+import { defaultLocale } from "@/i18n/config";
 
 export default async function AdminLayoutWrapper({
   children,
@@ -14,17 +15,17 @@ export default async function AdminLayoutWrapper({
   const user = session?.user as SessionUser | null;
 
   if (!session) {
-    redirect("/login?callbackUrl=/admin");
+    redirect(`/${defaultLocale}/login?callbackUrl=/${defaultLocale}/admin`);
   }
 
   // Only ADMIN can access /admin
   if (user?.role !== "ADMIN") {
     // Redirect INSTRUCTOR to their dashboard
     if (user?.role === "INSTRUCTOR") {
-      redirect("/dashboard/instructor");
+      redirect(`/${defaultLocale}/dashboard/instructor`);
     }
     // Redirect others to login
-    redirect("/login?callbackUrl=/admin");
+    redirect(`/${defaultLocale}/login?callbackUrl=/${defaultLocale}/admin`);
   }
 
   return <AdminLayout>{children}</AdminLayout>;

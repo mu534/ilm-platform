@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
+import { defaultLocale } from "@/i18n/config";
 
 export default function LegacyScholarStudentsRedirect() {
-  redirect("/dashboard/instructor/students");
+  redirect(`/${defaultLocale}/dashboard/instructor/students`);
 }

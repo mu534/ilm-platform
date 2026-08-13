@@ -46,11 +46,12 @@ export async function generateMetadata({ params }: Props) {
 export default async function LecturePage({ params }: Props) {
   const { slug } = await params;
   const lecture  = await getLecture(slug);
+  const { defaultLocale } = await import("@/i18n/config");
 
   if (!lecture) notFound();
 
   if (lecture.module?.course) {
-    redirect(`/courses/${lecture.module.course.slug}/learn/${lecture.slug}`);
+    redirect(`/${defaultLocale}/courses/${lecture.module.course.slug}/learn/${lecture.slug}`);
   }
 
   return (

@@ -23,7 +23,8 @@ async function getCourses(role: string, userId: string) {
 export default async function AdminCoursesPage() {
   const session = await getServerSession(authOptions);
   const user = session?.user as SessionUser | undefined;
-  if (!user) redirect("/login");
+  const { defaultLocale } = await import("@/i18n/config");
+  if (!user) redirect(`/${defaultLocale}/login`);
 
   const courses = await getCourses(user.role, user.id);
 

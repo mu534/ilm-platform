@@ -135,7 +135,8 @@ function BarChart({
 export default async function AnalyticsPage() {
   const session = await getServerSession(authOptions);
   const user = session?.user as SessionUser | undefined;
-  if (user?.role !== "ADMIN") redirect("/admin");
+  const { defaultLocale } = await import("@/i18n/config");
+  if (user?.role !== "ADMIN") redirect(`/${defaultLocale}/admin`);
 
   const stats = await getAnalytics();
 

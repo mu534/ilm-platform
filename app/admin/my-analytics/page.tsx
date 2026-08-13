@@ -72,7 +72,8 @@ async function getScholarAnalytics(authorId: string) {
 export default async function MyAnalyticsPage() {
   const session = await getServerSession(authOptions);
   const user = session?.user as SessionUser | undefined;
-  if (!user || !["ADMIN", "INSTRUCTOR"].includes(user.role)) redirect("/login");
+  const { defaultLocale } = await import("@/i18n/config");
+  if (!user || !["ADMIN", "INSTRUCTOR"].includes(user.role)) redirect(`/${defaultLocale}/login`);
 
   const data = await getScholarAnalytics(user.id);
 

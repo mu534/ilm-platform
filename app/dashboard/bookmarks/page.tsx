@@ -43,7 +43,8 @@ async function getBookmarks(userId: string) {
 export default async function BookmarksPage() {
   const session = await getServerSession(authOptions);
   const user = session?.user as SessionUser | undefined;
-  if (!user) redirect("/login?callbackUrl=/dashboard/bookmarks");
+  const { defaultLocale } = await import("@/i18n/config");
+  if (!user) redirect(`/${defaultLocale}/login?callbackUrl=/${defaultLocale}/dashboard/bookmarks`);
 
   const bookmarks = await getBookmarks(user.id);
   const lectureBookmarks = bookmarks.filter((b) => b.lecture);

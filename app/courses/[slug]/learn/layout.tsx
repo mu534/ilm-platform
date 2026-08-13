@@ -36,15 +36,16 @@ export default async function LearnLayout({ children, params }: Props) {
   if (!course) notFound();
 
   const user = session?.user as SessionUser | undefined;
+  const { defaultLocale } = await import("@/i18n/config");
 
-  if (!user) redirect(`/login?callbackUrl=/courses/${course.slug}/learn`);
+  if (!user) redirect(`/${defaultLocale}/login?callbackUrl=/${defaultLocale}/courses/${course.slug}/learn`);
 
   // Re-validate role against DB so a demoted admin/scholar cannot preview.
   const dbUser = await prisma.user.findUnique({
     where: { id: user.id },
     select: { id: true, role: true },
   });
-  if (!dbUser) redirect(`/login?callbackUrl=/courses/${course.slug}/learn`);
+  if (!dbUser) redirect(`/${defaultLocale}/login?callbackUrl=/${defaultLocale}/courses/${course.slug}/learn`);
 
   const isStaffPreview =
     dbUser.role === "ADMIN" || course.authorId === dbUser.id;

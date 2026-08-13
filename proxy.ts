@@ -38,6 +38,10 @@ export default withAuth(
     const token = (req as NextRequest & { nextauth?: { token?: { role?: string; onboardingCompleted?: boolean } } }).nextauth?.token;
     const pathname = req.nextUrl.pathname;
     const pathnameWithoutLocale = getPathnameWithoutLocale(pathname);
+    
+    // Extract locale from pathname
+    const localeMatch = pathname.match(/^\/([a-z]{2})/);
+    const currentLocale = localeMatch ? localeMatch[1] : defaultLocale;
 
     // First, apply i18n middleware for locale routing
     const i18nResponse = i18nMiddleware(req);
@@ -51,10 +55,10 @@ export default withAuth(
 
     if (pathnameWithoutLocale.startsWith("/onboarding")) {
       if (onboardingCompleted) {
-        return NextResponse.redirect(new URL("/dashboard", req.url));
+        return NextResponse.redirect(new URL(`/${currentLocale}/dashboard`, req.url));
       }
     } else if (token && isLearner && !onboardingCompleted) {
-      return NextResponse.redirect(new URL("/onboarding", req.url));
+      return NextResponse.redirect(new URL(`/${currentLocale}/onboarding`, req.url));
     }
 
     // Block non-admin/scholar from admin-only pages
@@ -67,7 +71,7 @@ export default withAuth(
     const isAdminOnlyPath = adminOnlyPaths.some((p) => pathnameWithoutLocale.startsWith(p));
 
     if (isAdminOnlyPath && token?.role !== "ADMIN") {
-      return NextResponse.redirect(new URL("/admin/courses", req.url));
+      return NextResponse.redirect(new URL(`/${currentLocale}/admin/courses`, req.url));
     }
 
     // Add security headers

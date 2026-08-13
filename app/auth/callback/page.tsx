@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions, getPostLoginDestination } from "@/app/lib/auth";
+import { defaultLocale } from "@/i18n/config";
 
 /**
  * Server-side callback page for role-based routing after authentication.
@@ -10,7 +11,7 @@ export default async function AuthCallbackPage() {
   const session = await getServerSession(authOptions);
   
   if (!session?.user?.id) {
-    redirect("/login");
+    redirect(`/${defaultLocale}/login`);
   }
 
   const userId = session.user.id as string;
@@ -18,9 +19,9 @@ export default async function AuthCallbackPage() {
 
   try {
     const destination = await getPostLoginDestination(userId, userRole);
-    redirect(destination);
+    redirect(`/${defaultLocale}${destination}`);
   } catch (error) {
     // Fallback to dashboard if something goes wrong
-    redirect("/dashboard");
+    redirect(`/${defaultLocale}/dashboard`);
   }
 }

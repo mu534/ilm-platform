@@ -17,8 +17,9 @@ export default async function LegacyLectureEditRedirect({ params }: Props) {
     where:  { id },
     select: { module: { select: { courseId: true } } },
   });
+  const { defaultLocale } = await import("@/i18n/config");
 
   if (!lecture?.module?.courseId) notFound();
 
-  redirect(`/admin/courses/${lecture.module.courseId}/builder`);
+  redirect(`/${defaultLocale}/admin/courses/${lecture.module.courseId}/builder`);
 }

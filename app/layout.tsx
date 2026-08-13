@@ -1,8 +1,5 @@
-import { redirect } from 'next/navigation';
-import { locales, defaultLocale } from '@/i18n/config';
-
-export default function RootLayout() {
-  // The i18n middleware will handle root path redirection
-  // This is a fallback in case middleware doesn't handle it
-  redirect(`/${defaultLocale}`);
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  // Locale routing is handled by proxy.ts. This layout also wraps locale
+  // routes, so redirecting here would redirect /en back to itself indefinitely.
+  return children;
 }

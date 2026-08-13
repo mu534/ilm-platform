@@ -43,6 +43,11 @@ export default withAuth(
     const localeMatch = pathname.match(/^\/([a-z]{2})/);
     const currentLocale = localeMatch ? localeMatch[1] : defaultLocale;
 
+    // Handle root path redirect
+    if (pathname === '/') {
+      return NextResponse.redirect(new URL(`/${defaultLocale}`, req.url));
+    }
+
     // First, apply i18n middleware for locale routing
     const i18nResponse = i18nMiddleware(req);
     if (i18nResponse) return i18nResponse;

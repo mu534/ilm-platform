@@ -549,25 +549,29 @@ export default function CourseReviewPage() {
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-[var(--text-muted)]">Status</span>
+                <span className="text-[var(--text-muted)]">Approval Status</span>
                 <span className={`px-2 py-0.5 rounded-full border font-medium text-[10px] ${
                   course.certificateApprovalStatus === "APPROVED"
                     ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                    : course.certificateApprovalStatus === "PENDING"
+                    : course.certificateApprovalStatus === "PENDING_REVIEW" || course.certificateApprovalStatus === "PENDING"
                     ? "bg-blue-500/10 text-blue-400 border-blue-500/20"
                     : course.certificateApprovalStatus === "REJECTED"
                     ? "bg-red-500/10 text-red-400 border-red-500/20"
+                    : course.certificateApprovalStatus === "DISABLED"
+                    ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
                     : "bg-[var(--bg-secondary)] text-[var(--text-muted)] border-[var(--border)]"
                 }`}>
-                  {course.certificateApprovalStatus === "DRAFT"
+                  {course.certificateApprovalStatus === "DRAFT" || course.certificateApprovalStatus === "NOT_REQUESTED"
                     ? "Not Requested"
+                    : course.certificateApprovalStatus === "PENDING_REVIEW"
+                    ? "Pending Review"
                     : course.certificateApprovalStatus.replace("_", " ")}
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-[var(--text-muted)]">Certificates</span>
-                <span className={`font-semibold ${course.certificateEnabled ? "text-emerald-400" : "text-[var(--text-muted)]"}`}>
-                  {course.certificateEnabled ? "Enabled ✓" : "Disabled"}
+                <span className="text-[var(--text-muted)]">Eligibility Gate</span>
+                <span className={`font-semibold ${course.certificateEnabled && course.certificateApprovalStatus === "APPROVED" ? "text-emerald-400" : "text-[var(--text-muted)]"}`}>
+                  {course.certificateEnabled && course.certificateApprovalStatus === "APPROVED" ? "Eligible ✓" : "Not Eligible"}
                 </span>
               </div>
               {course.certificateReviewNote && (
@@ -604,7 +608,7 @@ export default function CourseReviewPage() {
             </div>
 
             {/* Action buttons based on current state */}
-            {course.certificateApprovalStatus === "PENDING" && (
+            {(course.certificateApprovalStatus === "PENDING" || course.certificateApprovalStatus === "PENDING_REVIEW") && (
               <div className="space-y-2">
                 <button
                   onClick={() => void certAction("approve")}
@@ -612,7 +616,7 @@ export default function CourseReviewPage() {
                   className="w-full py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50"
                 >
                   {certActing ? <FiLoader className="animate-spin" size={12} /> : <FiCheckCircle size={12} />}
-                  Approve Certificate
+                  Approve Certificate Request
                 </button>
                 {!showCertReject ? (
                   <button
@@ -650,17 +654,28 @@ export default function CourseReviewPage() {
                 className="w-full py-2 rounded-xl border border-amber-500/30 text-amber-400 hover:bg-amber-500/10 text-xs font-medium transition-colors"
               >
                 {certActing ? <FiLoader className="animate-spin inline mr-1" size={12} /> : null}
-                Disable Certificate
+                Disable Certificate Eligibility
               </button>
             )}
 
-            {(course.certificateApprovalStatus === "DRAFT" || course.certificateApprovalStatus === "REJECTED") && (
+            {course.certificateApprovalStatus === "DISABLED" && (
+              <button
+                onClick={() => void certAction("enable")}
+                disabled={certActing}
+                className="w-full py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50"
+              >
+                {certActing ? <FiLoader className="animate-spin" size={12} /> : <FiCheckCircle size={12} />}
+                Re-Enable Certificate Eligibility
+              </button>
+            )}
+
+            {(course.certificateApprovalStatus === "DRAFT" || course.certificateApprovalStatus === "NOT_REQUESTED" || course.certificateApprovalStatus === "REJECTED") && (
               <button
                 onClick={() => void certAction("enable")}
                 disabled={certActing}
                 className="w-full py-2 rounded-xl border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 text-xs font-medium transition-colors"
               >
-                Enable Certificate Directly
+                Approve & Enable Certificates Directly
               </button>
             )}
           </div>

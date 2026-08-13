@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { FiLock, FiBookOpen } from "react-icons/fi";
+import { BackButton } from "@/app/components/ui/BackButton";
 
 interface EnrollmentGateProps {
   courseSlug:   string;
@@ -44,9 +45,7 @@ export function EnrollmentGate({ courseSlug, courseTitle, lectureTitle }: Enroll
             <Link href={`/courses/${courseSlug}`} className="btn-primary w-full text-center">
               <FiBookOpen size={14} /> View Course &amp; Enroll
             </Link>
-            <Link href="/courses" className="btn-secondary w-full text-center text-sm">
-              Browse All Courses
-            </Link>
+            <BackButton label="Back to Previous Page" fallbackHref="/courses" className="justify-center py-2.5 btn-secondary text-sm" />
           </div>
         </div>
       </div>

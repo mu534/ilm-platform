@@ -14,8 +14,7 @@ function escapeHtml(value: string): string {
 
 /**
  * GET /api/certificates/[id]/pdf
- * Returns an HTML page styled for printing/saving as PDF.
- * Users can open this URL and use Ctrl+P → Save as PDF.
+ * Returns an HTML page styled for high-resolution printing / saving as PDF.
  */
 export async function GET(
   _req: NextRequest,
@@ -32,15 +31,6 @@ export async function GET(
 
   const cert = await prisma.certificate.findUnique({
     where: { id },
-    include: {
-      user:   { select: { name: true, email: true } },
-      course: {
-        select: {
-          title: true,
-          scholar: { select: { user: { select: { name: true } } } },
-        },
-      },
-    },
   });
 
   if (!cert) return errorResponse("Certificate not found", 404);
@@ -49,11 +39,49 @@ export async function GET(
   }
 
   const issuedDate = new Date(cert.issuedAt).toLocaleDateString("en-US", {
-    year: "numeric", month: "long", day: "numeric",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
   });
-  const instructor = escapeHtml(cert.course?.scholar?.user.name ?? "Ilm Platform");
-  const courseTitle = escapeHtml(cert.course?.title ?? cert.title);
-  const studentName = escapeHtml(cert.user.name ?? "Student");
+
+  // Use stored immutable snapshots
+  const studentName = escapeHtml(cert.studentName || "Student");
+  const courseTitle = escapeHtml(cert.title);
+  const instructor = escapeHtml(cert.instructorName || "Ilm Academic Faculty");
+  const certId = escapeHtml(cert.certificateId || cert.id.slice(0, 12).toUpperCase());
+
+  // Parse signature snapshots
+  let signaturesHtml = "";
+  if (Array.isArray(cert.signaturesSnapshot) && cert.signaturesSnapshot.length > 0) {
+    const list = cert.signaturesSnapshot as Array<{ name: string; title?: string | null; imageUrl?: string }>;
+    signaturesHtml = list
+      .map(
+        (s) => `
+      <div style="text-align:center; min-width: 140px;">
+        <div style="height: 48px; display:flex; align-items:center; justify-content:center; margin-bottom: 4px;">
+          ${s.imageUrl ? `<img src="${escapeHtml(s.imageUrl)}" style="max-height: 48px; object-fit: contain;" />` : `<span style="font-family:'Cormorant Garamond',serif; font-style:italic; font-size: 16px; color: #4a5568;">Signature</span>`}
+        </div>
+        <div style="border-top: 1px solid #4a5568; padding-top: 4px;">
+          <div style="font-[#064e3b]; font-weight:600; font-size: 12px;">${escapeHtml(s.name)}</div>
+          ${s.title ? `<div style="font-size: 10px; color: #718096;">${escapeHtml(s.title)}</div>` : ""}
+        </div>
+      </div>
+    `
+      )
+      .join("");
+  } else {
+    signaturesHtml = `
+      <div style="text-align:center; min-width: 140px;">
+        <div style="height: 48px; display:flex; align-items:center; justify-content:center; margin-bottom: 4px;">
+          <span style="font-family:'Cormorant Garamond',serif; font-style:italic; font-size: 18px; font-weight:bold; color: #064e3b;">Ilm Platform</span>
+        </div>
+        <div style="border-top: 1px solid #4a5568; padding-top: 4px;">
+          <div style="font-[#064e3b]; font-weight:600; font-size: 12px;">${instructor}</div>
+          <div style="font-size: 10px; color: #718096;">Course Scholar</div>
+        </div>
+      </div>
+    `;
+  }
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -62,7 +90,7 @@ export async function GET(
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Certificate — ${studentName}</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@400;500&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,400&family=DM+Sans:wght@400;500;600;700&display=swap');
     * { margin:0; padding:0; box-sizing:border-box; }
     body {
       font-family: 'DM Sans', sans-serif;
@@ -74,166 +102,157 @@ export async function GET(
       justify-content: center;
     }
     .page {
-      width: 842px;
-      height: 595px;
-      background: #fffdf8;
-      border: 2px solid #c8871a;
-      box-shadow: 0 0 60px rgba(200,135,26,0.15);
+      width: 960px;
+      height: 680px;
+      background: #fffdfa;
+      border: 12px solid rgba(6, 78, 59, 0.12);
+      box-shadow: 0 10px 40px rgba(0,0,0,0.1);
       position: relative;
       overflow: hidden;
-      padding: 48px 60px;
+      padding: 48px 64px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
     }
-    /* Corner ornaments */
+    .inner-frame {
+      position: absolute;
+      inset: 16px;
+      border: 1px solid rgba(217, 119, 6, 0.35);
+      pointer-events: none;
+    }
     .corner {
       position: absolute;
-      width: 48px;
-      height: 48px;
-      border-color: #c8871a;
+      width: 40px;
+      height: 40px;
+      border-color: #d97706;
       border-style: solid;
-      opacity: 0.6;
     }
-    .tl { top:16px; left:16px;  border-width:3px 0 0 3px; }
-    .tr { top:16px; right:16px; border-width:3px 3px 0 0; }
-    .bl { bottom:16px; left:16px;  border-width:0 0 3px 3px; }
-    .br { bottom:16px; right:16px; border-width:0 3px 3px 0; }
+    .tl { top:20px; left:20px;  border-width:3px 0 0 3px; }
+    .tr { top:20px; right:20px; border-width:3px 3px 0 0; }
+    .bl { bottom:20px; left:20px;  border-width:0 0 3px 3px; }
+    .br { bottom:20px; right:20px; border-width:0 3px 3px 0; }
 
     .logo {
       font-family: 'Cormorant Garamond', serif;
-      font-size: 22px;
+      font-size: 26px;
       font-weight: 700;
-      color: #c8871a;
-      letter-spacing: 3px;
-      text-transform: uppercase;
+      color: #064e3b;
+      letter-spacing: 2px;
+      text-[#064e3b];
       text-align: center;
-      margin-bottom: 6px;
     }
     .subtitle {
       text-align: center;
-      font-size: 11px;
-      color: #8a7060;
-      letter-spacing: 2px;
+      font-size: 10px;
+      color: #d97706;
+      letter-spacing: 3px;
       text-transform: uppercase;
-      margin-bottom: 28px;
+      font-weight: 600;
+      margin-top: 2px;
+      margin-bottom: 8px;
     }
     .divider {
-      width: 120px;
-      height: 1px;
-      background: linear-gradient(90deg, transparent, #c8871a, transparent);
-      margin: 0 auto 28px;
+      width: 140px;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, #d97706, transparent);
+      margin: 0 auto 16px;
     }
     .certifies {
       text-align: center;
-      font-size: 13px;
-      color: #6b5d52;
-      letter-spacing: 1.5px;
+      font-size: 12px;
+      color: #718096;
+      letter-spacing: 2px;
       text-transform: uppercase;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
     }
     .name {
       font-family: 'Cormorant Garamond', serif;
-      font-size: 48px;
+      font-size: 42px;
       font-weight: 700;
-      color: #1a0e04;
+      color: #0f291e;
       text-align: center;
       line-height: 1.1;
-      margin-bottom: 16px;
+      margin-bottom: 12px;
     }
     .completed-text {
       text-align: center;
-      font-size: 13px;
-      color: #6b5d52;
-      margin-bottom: 10px;
+      font-size: 12px;
+      color: #718096;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
     }
     .course-title {
       font-family: 'Cormorant Garamond', serif;
-      font-size: 26px;
+      font-size: 28px;
       font-weight: 600;
-      color: #c8871a;
+      color: #064e3b;
       text-align: center;
-      margin-bottom: 28px;
+      margin-bottom: 16px;
     }
     .footer {
       display: flex;
       justify-content: space-between;
       align-items: flex-end;
-      margin-top: 32px;
+      padding-top: 16px;
+      border-top: 1px solid #e2e8f0;
     }
-    .sig-block {
-      text-align: center;
+    .signatures {
+      display: flex;
+      gap: 32px;
+      align-items: flex-end;
     }
-    .sig-line {
-      width: 160px;
-      height: 1px;
-      background: #c8871a;
-      margin-bottom: 6px;
-    }
-    .sig-label {
+    .cert-meta {
+      text-align: right;
       font-size: 11px;
-      color: #8a7060;
-      letter-spacing: 1px;
-    }
-    .sig-name {
-      font-family: 'Cormorant Garamond', serif;
-      font-size: 16px;
-      font-weight: 600;
-      color: #4a3520;
-      margin-bottom: 2px;
-    }
-    .cert-id {
-      font-size: 9px;
-      color: #a09080;
-      text-align: center;
+      color: #4a5568;
     }
 
     @media print {
       body { background: white; }
-      .page { box-shadow: none; border-color: #c8871a; }
+      .page { box-shadow: none; width: 100%; height: 100vh; border-color: #064e3b; }
       .print-btn { display: none; }
     }
   </style>
 </head>
 <body>
   <div class="page">
+    <div class="inner-frame"></div>
     <div class="corner tl"></div>
     <div class="corner tr"></div>
     <div class="corner bl"></div>
     <div class="corner br"></div>
 
-    <div class="logo">🌙 Ilm Platform</div>
-    <div class="subtitle">Authentic Islamic Knowledge</div>
-    <div class="divider"></div>
+    <div style="text-align:center;">
+      <div class="logo">Ilm Platform</div>
+      <div class="subtitle">Center of Academic Excellence</div>
+      <div class="divider"></div>
+    </div>
 
-    <div class="certifies">This certifies that</div>
-    <div class="name">${studentName}</div>
-    <div class="completed-text">has successfully completed the course</div>
-    <div class="course-title">${courseTitle}</div>
+    <div>
+      <div class="certifies">This is to certify that</div>
+      <div class="name">${studentName}</div>
+      <div class="completed-text">has successfully fulfilled all course requirements for</div>
+      <div class="course-title">${courseTitle}</div>
+    </div>
 
     <div class="footer">
-      <div class="sig-block">
-        <div class="sig-name">${instructor}</div>
-        <div class="sig-line"></div>
-        <div class="sig-label">INSTRUCTOR</div>
+      <div class="signatures">
+        ${signaturesHtml}
       </div>
-      <div class="cert-id">
-        <div style="font-size:11px;color:#6b5d52;margin-bottom:4px;">Date Issued</div>
-        <div style="font-family:'Cormorant Garamond',serif;font-size:15px;color:#4a3520;">${escapeHtml(issuedDate)}</div>
-        <div style="margin-top:6px;">Certificate ID: ${escapeHtml(cert.id.slice(0, 8).toUpperCase())}</div>
-      </div>
-      <div class="sig-block">
-        <div class="sig-name">Ilm Platform</div>
-        <div class="sig-line"></div>
-        <div class="sig-label">VERIFIED BY</div>
+      <div class="cert-meta">
+        <div><strong>Issue Date:</strong> ${escapeHtml(issuedDate)}</div>
+        <div style="margin-top: 4px; font-family: monospace; font-size: 12px; font-weight: bold; color: #064e3b;">ID: ${certId}</div>
       </div>
     </div>
   </div>
 
-  <!-- Print button shown on screen only -->
   <div class="print-btn" style="position:fixed;bottom:24px;right:24px;">
     <button
       onclick="window.print()"
-      style="background:linear-gradient(135deg,#e9c34f,#c8871a);color:#fff;border:none;padding:12px 24px;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 4px 16px rgba(200,135,26,0.4);"
+      style="background:linear-gradient(135deg,#064e3b,#047857);color:#fff;border:none;padding:12px 24px;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 4px 16px rgba(6,78,59,0.4);"
     >
-      🖨️ Save as PDF
+      🖨️ Print / Save as PDF
     </button>
   </div>
 </body>
@@ -241,9 +260,9 @@ export async function GET(
 
   return new NextResponse(html, {
     headers: {
-      "Content-Type":        "text/html; charset=utf-8",
-      "X-Robots-Tag":        "noindex",
-      "Content-Disposition": `inline; filename="certificate-${cert.id.slice(0, 8)}.html"`,
+      "Content-Type": "text/html; charset=utf-8",
+      "X-Robots-Tag": "noindex",
+      "Content-Disposition": `inline; filename="certificate-${certId}.html"`,
     },
   });
 }

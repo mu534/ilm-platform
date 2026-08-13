@@ -594,19 +594,25 @@ export default async function DashboardPage() {
                     className="flex items-center justify-between p-2.5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)]"
                   >
                     <div className="min-w-0 flex-1 pr-2">
-                      <p className="text-xs font-semibold text-[var(--text-primary)] truncate">
-                        {cert.course?.title ?? "Course Certificate"}
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-xs font-semibold text-[var(--text-primary)] truncate">
+                          {cert.title || cert.course?.title || "Course Certificate"}
+                        </p>
+                        {cert.isRevoked && (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-red-500/10 text-red-400 font-semibold border border-red-500/20">
+                            Revoked
+                          </span>
+                        )}
+                      </div>
                       <p className="text-[10px] text-[var(--text-muted)] mt-0.5">
                         Issued {formatDate(cert.issuedAt)}
                       </p>
                     </div>
                     <Link
-                      href={`/api/certificates/${cert.id}/pdf`}
-                      target="_blank"
+                      href={`/certificates/verify/${cert.certificateId || cert.id}`}
                       className="text-xs text-[var(--accent)] hover:underline font-semibold flex-shrink-0"
                     >
-                      View →
+                      Verify →
                     </Link>
                   </div>
                 ))}

@@ -4,11 +4,11 @@
  * PATCH — Instructor/Scholar: request certificate for their course
  *          Admin: approve, reject, enable, disable certificate
  *
- * Security:
- *   - Instructor can ONLY submit a request (certificateApprovalStatus → PENDING)
- *   - Admin controls all other state transitions
- *   - certificateEnabled is only ever set true by an admin
- *   - No client-supplied value can bypass this
+ * Security & Integrity Rules:
+ *   - Instructor can ONLY submit a request (certificateApprovalStatus → PENDING_REVIEW)
+ *   - Admin controls all state transitions (NOT_REQUESTED, PENDING_REVIEW, APPROVED, REJECTED, DISABLED)
+ *   - Contradictory states (e.g. enabling a REJECTED request directly) are rejected server-side
+ *   - certificateEnabled is only ever set to true when status is APPROVED
  */
 
 import { NextRequest } from "next/server";
@@ -19,7 +19,7 @@ import { z } from "zod";
 
 const schema = z.object({
   action: z.enum(["request", "approve", "reject", "enable", "disable"]),
-  note:   z.string().max(500).optional(),
+  note: z.string().max(500).optional(),
 });
 
 export async function GET(
@@ -31,9 +31,10 @@ export async function GET(
     const { id } = await params;
 
     const course = await prisma.course.findUnique({
-      where:  { id },
+      where: { id },
       select: {
-        id: true, authorId: true,
+        id: true,
+        authorId: true,
         certificateEnabled: true,
         certificateApprovalStatus: true,
         certificateRequestedAt: true,
@@ -62,9 +63,11 @@ export async function PATCH(
     const { id } = await params;
 
     const course = await prisma.course.findUnique({
-      where:  { id },
+      where: { id },
       select: {
-        id: true, authorId: true, title: true,
+        id: true,
+        authorId: true,
+        title: true,
         certificateEnabled: true,
         certificateApprovalStatus: true,
       },
@@ -81,34 +84,35 @@ export async function PATCH(
     if (action === "request") {
       if (!isOwner && !isAdmin) return errorResponse("Forbidden", 403);
 
-      if (!["DRAFT", "REJECTED"].includes(course.certificateApprovalStatus)) {
+      const status = course.certificateApprovalStatus as string;
+      if (status !== "NOT_REQUESTED" && status !== "REJECTED" && status !== "DRAFT") {
         return errorResponse(
-          "A certificate request can only be submitted when the current status is Draft or Rejected",
-          409,
+          "A certificate request can only be submitted when current status is Not Requested or Rejected",
+          409
         );
       }
 
       await prisma.course.update({
         where: { id },
         data: {
-          certificateApprovalStatus: "PENDING",
-          certificateRequestedAt:    new Date(),
-          certificateEnabled:        false, // never auto-enable — admin must approve
+          certificateApprovalStatus: "PENDING_REVIEW",
+          certificateRequestedAt: new Date(),
+          certificateEnabled: false,
         },
       });
 
-      // Notify all admins
+      // Notify admins
       const admins = await prisma.user.findMany({
-        where:  { role: "ADMIN" },
+        where: { role: "ADMIN" },
         select: { id: true },
       });
       await prisma.notification.createMany({
         data: admins.map((a) => ({
-          userId:  a.id,
-          type:    "ANNOUNCEMENT" as const,
-          title:   "Certificate Request",
+          userId: a.id,
+          type: "ANNOUNCEMENT" as const,
+          title: "Certificate Request",
           message: `"${course.title}" has requested certificate approval.`,
-          link:    `/admin/courses/${id}/review`,
+          link: `/admin/courses/${id}/review`,
         })),
         skipDuplicates: true,
       });
@@ -116,35 +120,39 @@ export async function PATCH(
       return successResponse({ message: "Certificate request submitted for admin review" });
     }
 
-    // ── Admin-only actions below ────────────────────────────────────────────
+    // ── Admin-only actions ──────────────────────────────────────────────────
     if (!isAdmin) return errorResponse("Only admins can perform this action", 403);
 
+    const currentStatus = course.certificateApprovalStatus as string;
+
     if (action === "approve") {
-      if (course.certificateApprovalStatus !== "PENDING") {
-        return errorResponse("Only pending certificate requests can be approved", 409);
+      if (currentStatus !== "PENDING_REVIEW" && currentStatus !== "PENDING" && currentStatus !== "NOT_REQUESTED" && currentStatus !== "DRAFT") {
+        return errorResponse("This course certificate request cannot be approved in its current state", 409);
       }
 
       await prisma.course.update({
         where: { id },
         data: {
           certificateApprovalStatus: "APPROVED",
-          certificateEnabled:        true,
-          certificateReviewedAt:     new Date(),
-          certificateReviewNote:     note ?? null,
+          certificateEnabled: true,
+          certificateReviewedAt: new Date(),
+          certificateReviewNote: note ?? null,
         },
       });
 
       await prisma.notification.create({
         data: {
-          userId:  course.authorId,
-          type:    "ANNOUNCEMENT" as const,
-          title:   "Certificate Approved ✅",
-          message: `Certificates for "${course.title}" have been approved. Students who complete the course will receive certificates.`,
-          link:    `/admin/courses/${id}/review`,
+          userId: course.authorId,
+          type: "ANNOUNCEMENT" as const,
+          title: "Certificate Approved ✅",
+          message: `Certificates for "${course.title}" have been approved. Students who complete required content will receive certificates.`,
+          link: `/admin/courses/${id}/review`,
         },
       });
 
-      return successResponse({ message: "Certificate approved. Students who complete this course will receive certificates." });
+      return successResponse({
+        message: "Certificate approved. Students who complete this course will receive certificates.",
+      });
     }
 
     if (action === "reject") {
@@ -152,19 +160,21 @@ export async function PATCH(
         where: { id },
         data: {
           certificateApprovalStatus: "REJECTED",
-          certificateEnabled:        false,
-          certificateReviewedAt:     new Date(),
-          certificateReviewNote:     note ?? null,
+          certificateEnabled: false,
+          certificateReviewedAt: new Date(),
+          certificateReviewNote: note ?? null,
         },
       });
 
       await prisma.notification.create({
         data: {
-          userId:  course.authorId,
-          type:    "ANNOUNCEMENT" as const,
-          title:   "Certificate Request Rejected",
-          message: `The certificate request for "${course.title}" was not approved.${note ? ` Reason: ${note}` : ""}`,
-          link:    `/admin/courses/${id}/review`,
+          userId: course.authorId,
+          type: "ANNOUNCEMENT" as const,
+          title: "Certificate Request Rejected",
+          message: `The certificate request for "${course.title}" was not approved.${
+            note ? ` Reason: ${note}` : ""
+          }`,
+          link: `/admin/courses/${id}/review`,
         },
       });
 
@@ -172,14 +182,20 @@ export async function PATCH(
     }
 
     if (action === "enable") {
-      // Admin can enable directly (e.g. for already-approved courses)
+      if (currentStatus === "REJECTED") {
+        return errorResponse(
+          "Cannot enable a rejected certificate request directly. Approve the certificate request instead.",
+          400
+        );
+      }
+
       await prisma.course.update({
         where: { id },
         data: {
-          certificateEnabled:        true,
           certificateApprovalStatus: "APPROVED",
-          certificateReviewedAt:     new Date(),
-          certificateReviewNote:     note ?? null,
+          certificateEnabled: true,
+          certificateReviewedAt: new Date(),
+          certificateReviewNote: note ?? null,
         },
       });
       return successResponse({ message: "Certificates enabled for this course" });
@@ -189,10 +205,10 @@ export async function PATCH(
       await prisma.course.update({
         where: { id },
         data: {
-          certificateEnabled:        false,
-          certificateApprovalStatus: "DRAFT",
-          certificateReviewedAt:     new Date(),
-          certificateReviewNote:     note ?? null,
+          certificateApprovalStatus: "DISABLED",
+          certificateEnabled: false,
+          certificateReviewedAt: new Date(),
+          certificateReviewNote: note ?? null,
         },
       });
       return successResponse({ message: "Certificates disabled for this course" });

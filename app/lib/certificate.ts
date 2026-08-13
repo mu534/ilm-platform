@@ -1,6 +1,8 @@
 import { prisma } from "./prism";
 import { HttpError } from "./httpError";
 
+type Tx = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
+
 export class CertificateEligibilityError extends Error {
   constructor(message: string) {
     super(message);
@@ -16,114 +18,183 @@ export class StudentNameValidationError extends Error {
 }
 
 /**
- * Validate that a student has a complete, valid full name in their profile.
- * This is mandatory before certificate generation.
+ * Validate that a student has a complete, valid full profile name.
+ * Mandatory before certificate generation.
  */
-export async function validateStudentName(userId: string): Promise<string> {
-  const user = await prisma.user.findUnique({
+export async function validateStudentName(userId: string, tx?: Tx): Promise<string> {
+  const db = tx || prisma;
+  const user = await db.user.findUnique({
     where: { id: userId },
-    select: { name: true },
+    select: { name: true, certificateName: true },
   });
 
   if (!user) {
     throw new HttpError("User not found", 404);
   }
 
-  const fullName = user.name?.trim();
+  // Use certificateName override if present, otherwise profile name
+  const rawName = user.certificateName?.trim() || user.name?.trim();
 
-  // Validation rules
-  if (!fullName) {
+  if (!rawName) {
     throw new StudentNameValidationError(
       "Your full name is required before a certificate can be issued. Please complete your profile name."
     );
   }
 
-  if (fullName.length < 2) {
+  if (rawName.length < 2) {
     throw new StudentNameValidationError(
       "Your full name must be at least 2 characters. Please update your profile name."
     );
   }
 
-  // Check if it looks like an email (common fallback for incomplete profiles)
-  if (fullName.includes("@") && fullName.includes(".")) {
+  // Reject email addresses
+  if (rawName.includes("@") && rawName.includes(".")) {
     throw new StudentNameValidationError(
       "Your email address cannot be used as your certificate name. Please provide your full name in your profile."
     );
   }
 
-  // Check for placeholder names
+  // Reject placeholder names
   const placeholders = ["user", "username", "name", "test", "student", "learner"];
-  const lowerName = fullName.toLowerCase();
+  const lowerName = rawName.toLowerCase();
   if (placeholders.some((p) => lowerName === p)) {
     throw new StudentNameValidationError(
       "Please provide your real full name in your profile before receiving a certificate."
     );
   }
 
-  return fullName;
+  return rawName;
 }
 
 /**
- * Check if a course is eligible for certificate issuance.
- * Course must have certificateEnabled = true.
+ * Check if a course is approved and enabled for certificate issuance.
  */
-export async function validateCourseCertificateEligibility(courseId: string): Promise<void> {
-  const course = await prisma.course.findUnique({
+export async function validateCourseCertificateEligibility(
+  courseId: string,
+  tx?: Tx
+): Promise<void> {
+  const db = tx || prisma;
+  const course = await db.course.findUnique({
     where: { id: courseId },
-    select: { certificateEnabled: true, title: true },
+    select: {
+      certificateApprovalStatus: true,
+      certificateEnabled: true,
+      title: true,
+    },
   });
 
   if (!course) {
     throw new HttpError("Course not found", 404);
   }
 
-  if (!course.certificateEnabled) {
+  const isApproved = (course.certificateApprovalStatus as string) === "APPROVED";
+  if (!isApproved || !course.certificateEnabled) {
     throw new CertificateEligibilityError(
-      `Certificates are not enabled for this course (${course.title}). Contact your instructor for more information.`
+      `Certificates are not enabled for this course ("${course.title}"). Administrator approval is required.`
     );
   }
 }
 
 /**
- * Check if a student has completed a course and is eligible for a certificate.
+ * Validate that student has completed required lectures and passed required quizzes.
  */
 export async function validateStudentCompletion(
   userId: string,
-  courseId: string
+  courseId: string,
+  tx?: Tx
 ): Promise<void> {
-  const enrollment = await prisma.enrollment.findUnique({
+  const db = tx || prisma;
+  const enrollment = await db.enrollment.findUnique({
     where: {
       userId_courseId: { userId, courseId },
     },
     select: { status: true, progress: true },
   });
 
-  if (!enrollment) {
+  if (!enrollment || enrollment.status === "DROPPED") {
     throw new CertificateEligibilityError(
-      "You must be enrolled in this course to receive a certificate."
+      "You must be actively enrolled in this course to receive a certificate."
     );
   }
 
-  if (enrollment.status !== "COMPLETED") {
-    throw new CertificateEligibilityError(
-      "You must complete all course requirements before receiving a certificate."
-    );
+  const course = await db.course.findUnique({
+    where: { id: courseId },
+    select: {
+      modules: {
+        select: {
+          lectures: {
+            where: { published: true },
+            select: { id: true, isOptional: true },
+          },
+          quizzes: {
+            select: { id: true, isOptional: true, passingScore: true },
+          },
+        },
+      },
+    },
+  });
+
+  if (!course) {
+    throw new HttpError("Course not found", 404);
   }
 
-  if (enrollment.progress < 100) {
-    throw new CertificateEligibilityError(
-      "Course completion must be 100% before certificate issuance."
-    );
+  // Filter required published lectures
+  const requiredLectureIds = course.modules
+    .flatMap((m) => m.lectures)
+    .filter((l) => !l.isOptional)
+    .map((l) => l.id);
+
+  if (requiredLectureIds.length > 0) {
+    const completedCount = await db.lectureProgress.count({
+      where: {
+        userId,
+        lectureId: { in: requiredLectureIds },
+        completed: true,
+      },
+    });
+
+    if (completedCount < requiredLectureIds.length) {
+      throw new CertificateEligibilityError(
+        "You must complete all required course lectures before receiving a certificate."
+      );
+    }
+  }
+
+  // Filter required quizzes
+  const requiredQuizzes = course.modules
+    .flatMap((m) => m.quizzes)
+    .filter((q) => !q.isOptional);
+
+  if (requiredQuizzes.length > 0) {
+    const requiredQuizIds = requiredQuizzes.map((q) => q.id);
+    const passedAttempts = await db.quizAttempt.findMany({
+      where: {
+        userId,
+        quizId: { in: requiredQuizIds },
+        passed: true,
+      },
+      select: { quizId: true },
+      distinct: ["quizId"],
+    });
+
+    if (passedAttempts.length < requiredQuizIds.length) {
+      throw new CertificateEligibilityError(
+        "You must pass all required course quizzes before receiving a certificate."
+      );
+    }
   }
 }
 
 /**
- * Generate a unique certificate ID in format: ILM-YYYY-XXXXX
+ * Generate human-readable certificate ID: ILM-CERT-7X4K9P2M
  */
 export function generateCertificateId(): string {
-  const year = new Date().getFullYear();
-  const random = Math.random().toString(36).substring(2, 7).toUpperCase();
-  return `ILM-${year}-${random}`;
+  const chars = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"; // Clear alphanumeric chars
+  let random = "";
+  for (let i = 0; i < 8; i++) {
+    random += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return `ILM-CERT-${random}`;
 }
 
 /**
@@ -131,42 +202,45 @@ export function generateCertificateId(): string {
  */
 export async function checkExistingCertificate(
   userId: string,
-  courseId: string
-): Promise<boolean> {
-  const existing = await prisma.certificate.findUnique({
+  courseId: string,
+  tx?: Tx
+) {
+  const db = tx || prisma;
+  return db.certificate.findUnique({
     where: {
       userId_courseId: { userId, courseId },
     },
-    select: { id: true },
   });
-
-  return !!existing;
 }
 
 /**
- * Issue a certificate to a student.
- * Performs all validations and prevents duplicates.
+ * Single authoritative certificate issuance pipeline.
+ * Evaluates all server-side eligibility rules and stores an immutable snapshot.
  */
-export async function issueCertificate(userId: string, courseId: string) {
-  // Step 1: Validate course eligibility
-  await validateCourseCertificateEligibility(courseId);
+export async function issueCertificate(
+  userId: string,
+  courseId: string,
+  tx?: Tx
+) {
+  const db = tx || prisma;
 
-  // Step 2: Validate student completion
-  await validateStudentCompletion(userId, courseId);
+  // Rule 1: Course approval state
+  await validateCourseCertificateEligibility(courseId, db);
 
-  // Step 3: Validate student name
-  const studentName = await validateStudentName(userId);
+  // Rule 2 & 3 & 4: Enrollment, required lectures & quizzes
+  await validateStudentCompletion(userId, courseId, db);
 
-  // Step 4: Check for existing certificate
-  const existing = await checkExistingCertificate(userId, courseId);
+  // Rule 5: Student full name validation
+  const studentName = await validateStudentName(userId, db);
+
+  // Rule 6: Check existing certificate (Idempotency)
+  const existing = await checkExistingCertificate(userId, courseId, db);
   if (existing) {
-    throw new CertificateEligibilityError(
-      "You have already been issued a certificate for this course."
-    );
+    return existing;
   }
 
-  // Step 5: Fetch course details for certificate
-  const course = await prisma.course.findUnique({
+  // Fetch course metadata for snapshot
+  const course = await db.course.findUnique({
     where: { id: courseId },
     select: {
       title: true,
@@ -183,8 +257,8 @@ export async function issueCertificate(userId: string, courseId: string) {
     throw new HttpError("Course not found", 404);
   }
 
-  // Step 6: Get completion date from enrollment
-  const enrollment = await prisma.enrollment.findUnique({
+  // Get enrollment completion date
+  const enrollment = await db.enrollment.findUnique({
     where: {
       userId_courseId: { userId, courseId },
     },
@@ -193,12 +267,27 @@ export async function issueCertificate(userId: string, courseId: string) {
 
   const completionDate = enrollment?.completedAt || new Date();
 
-  // Step 7: Generate certificate
-  const certificateId = generateCertificateId();
-  const baseUrl = process.env.NEXTAUTH_URL || process.env.APP_URL || "http://localhost:3000";
-  const verificationUrl = `${baseUrl}/verify/${certificateId}`;
+  // Fetch active signatures for snapshot (up to 2)
+  const activeSignatures = await db.certificateSignature.findMany({
+    where: { isActive: true },
+    orderBy: { createdAt: "asc" },
+    take: 2,
+    select: { name: true, title: true, imageUrl: true },
+  });
 
-  const certificate = await prisma.certificate.create({
+  const signaturesSnapshot = activeSignatures.map((s) => ({
+    name: s.name,
+    title: s.title || null,
+    imageUrl: s.imageUrl,
+  }));
+
+  const certificateId = generateCertificateId();
+  const baseUrl =
+    process.env.NEXTAUTH_URL || process.env.APP_URL || "http://localhost:3000";
+  const verificationUrl = `${baseUrl}/certificates/verify/${certificateId}`;
+
+  // Issue certificate record with immutable snapshot
+  const certificate = await db.certificate.create({
     data: {
       certificateId,
       userId,
@@ -207,13 +296,53 @@ export async function issueCertificate(userId: string, courseId: string) {
       title: course.title,
       instructorName: course.scholar?.user.name || null,
       completionDate,
+      issuedAt: new Date(),
       courseDuration: course.estimatedDuration || null,
+      certificateTemplateVersion: "v2.0",
+      signaturesSnapshot: signaturesSnapshot.length > 0 ? signaturesSnapshot : undefined,
       verificationUrl,
     },
     include: {
       course: {
         select: { title: true, slug: true },
       },
+    },
+  });
+
+  // Ensure enrollment is updated to COMPLETED
+  await db.enrollment.update({
+    where: { userId_courseId: { userId, courseId } },
+    data: {
+      progress: 100,
+      status: "COMPLETED",
+      completedAt: completionDate,
+    },
+  });
+
+  // Create audit trail entry
+  await db.certificateAudit.create({
+    data: {
+      certificateId: certificate.id,
+      action: "ISSUED",
+      performedById: userId,
+      reason: "All course completion requirements met and certificate issued.",
+      metadata: {
+        certificateId,
+        studentName,
+        courseTitle: course.title,
+        templateVersion: "v2.0",
+      },
+    },
+  });
+
+  // Send notification to student
+  await db.notification.create({
+    data: {
+      userId,
+      type: "CERTIFICATE_ISSUED",
+      title: "Certificate Issued! 🎓",
+      message: `You have earned a certificate for completing "${course.title}".`,
+      link: "/dashboard/certificates",
     },
   });
 

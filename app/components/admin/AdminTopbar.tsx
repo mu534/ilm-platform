@@ -15,6 +15,7 @@ import {
   FiActivity,
   FiSidebar,
   FiSearch,
+  FiArrowLeft,
 } from "react-icons/fi";
 import { GiMoon, GiSun } from "react-icons/gi";
 import { useTheme } from "@/app/components/ThemeProvider";
@@ -70,6 +71,19 @@ export function AdminTopbar({
         >
           <FiMenu size={20} />
         </button>
+
+        {/* Back Button */}
+        {pathname !== "/admin" && (
+          <button
+            onClick={() => window.history.back()}
+            className="p-2 rounded-xl text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-dim)] transition-all focus:outline-none focus:ring-2 focus:ring-[var(--accent)] flex items-center gap-1.5 text-xs font-medium"
+            title="Go back to previous page"
+            aria-label="Go back to previous page"
+          >
+            <FiArrowLeft size={16} />
+            <span className="hidden sm:inline">Back</span>
+          </button>
+        )}
 
         {/* Desktop Sidebar Toggle */}
         {/* <button

@@ -85,6 +85,8 @@ export async function generateMetadata({ params }: Props) {
   };
 }
 
+import { BackButton } from "../../components/ui/BackButton";
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default async function CourseDetailPage({ params }: Props) {
@@ -143,8 +145,9 @@ export default async function CourseDetailPage({ params }: Props) {
       <header className="bg-[var(--bg-secondary)] border-b border-[var(--border)]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
 
-          {/* Breadcrumb */}
-          <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs text-[var(--text-muted)] mb-6">
+          {/* Breadcrumb & Back navigation */}
+          <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs text-[var(--text-muted)] mb-6 flex-wrap">
+            <BackButton label="Back" fallbackHref="/courses" className="mr-2 pr-2 border-r border-[var(--border)]" />
             <Link href="/courses" className="hover:text-[var(--accent)] transition-colors">Courses</Link>
             {course.category && (
               <>

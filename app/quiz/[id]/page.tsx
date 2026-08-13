@@ -194,13 +194,13 @@ export default function QuizPage() {
     );
   }
 
+import { BackButton } from "@/app/components/ui/BackButton";
+
   // ── Start screen ─────────────────────────────────────────────────────────────
   if (!started) {
     return (
       <div className="max-w-xl mx-auto px-4 py-12">
-        <Link href={`/courses/${quiz.module.course.slug}`} className="inline-flex items-center gap-2 text-sm text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors mb-8">
-          <FiArrowLeft size={14} /> Back to Course
-        </Link>
+        <BackButton label="Back to Course" fallbackHref={`/courses/${quiz.module.course.slug}`} className="mb-8" />
 
         <div className="glass-card rounded-2xl p-8 text-center">
           <h1 className="font-display text-2xl font-bold text-[var(--text-primary)] mb-2">{quiz.title}</h1>

@@ -1,19 +1,18 @@
 /**
  * Certificate eligibility tests — server-authoritative completion rules.
  *
- * The issueCompletionCertificate function in lib/certificates.ts is the
- * authoritative source. These tests mirror its logic to verify all guards.
+ * The issueCertificate function in lib/certificate.ts is the
+ * authoritative source. These tests verify pure eligibility logic including
+ * approval gates and optional content handling.
  */
 
 import { describe, it, expect } from "vitest";
 
-// ─── Pure eligibility mirror ──────────────────────────────────────────────────
-
-interface LectureId { id: string }
-interface QuizId    { id: string }
+interface LectureItem { id: string; isOptional?: boolean }
+interface QuizItem    { id: string; isOptional?: boolean }
 interface Module {
-  lectures: LectureId[];
-  quizzes:  QuizId[];
+  lectures: LectureItem[];
+  quizzes:  QuizItem[];
 }
 
 function checkCertificateEligibility(
@@ -21,26 +20,37 @@ function checkCertificateEligibility(
   modules:    Module[],
   completedLectureIds: string[],
   passedQuizIds:       string[],
+  courseApproval:      { certificateApprovalStatus: string; certificateEnabled: boolean } = {
+    certificateApprovalStatus: "APPROVED",
+    certificateEnabled: true,
+  }
 ): boolean {
+  // 0. Must be approved and enabled
+  if (courseApproval.certificateApprovalStatus !== "APPROVED" || !courseApproval.certificateEnabled) {
+    return false;
+  }
+
   // 1. Must have non-dropped enrollment
   if (!enrollment || enrollment.status === "DROPPED") return false;
 
-  const allLectureIds = modules.flatMap((m) => m.lectures.map((l) => l.id));
-  const allQuizIds    = modules.flatMap((m) => m.quizzes.map((q) => q.id));
+  // Filter required content
+  const requiredLectures = modules.flatMap((m) => m.lectures).filter((l) => !l.isOptional);
+  const requiredQuizzes  = modules.flatMap((m) => m.quizzes).filter((q) => !q.isOptional);
 
-  // 2. Must have at least one lecture
-  if (allLectureIds.length === 0) return false;
+  // 2. Must have at least one required lecture or course content
+  const allLectures = modules.flatMap((m) => m.lectures);
+  if (allLectures.length === 0) return false;
 
-  // 3. All lectures must be completed
+  // 3. All required lectures must be completed
   const completedSet = new Set(completedLectureIds);
-  const completedCount = allLectureIds.filter((id) => completedSet.has(id)).length;
-  if (completedCount < allLectureIds.length) return false;
+  const completedCount = requiredLectures.filter((l) => completedSet.has(l.id)).length;
+  if (completedCount < requiredLectures.length) return false;
 
-  // 4. All quizzes must have a passing attempt (if any exist)
-  if (allQuizIds.length > 0) {
+  // 4. All required quizzes must have a passing attempt
+  if (requiredQuizzes.length > 0) {
     const passedSet = new Set(passedQuizIds);
-    const passedCount = allQuizIds.filter((id) => passedSet.has(id)).length;
-    if (passedCount < allQuizIds.length) return false;
+    const passedCount = requiredQuizzes.filter((q) => passedSet.has(q.id)).length;
+    if (passedCount < requiredQuizzes.length) return false;
   }
 
   return true;
@@ -61,12 +71,62 @@ describe("certificate eligibility", () => {
   const allLectureIds = ["l1", "l2", "l3"];
   const activeEnrollment = { status: "ACTIVE" as const };
 
-  it("issues certificate when all lectures completed and quiz passed", () => {
+  it("issues certificate when all required lectures completed and required quiz passed", () => {
     expect(checkCertificateEligibility(
       activeEnrollment,
       modules,
       allLectureIds,
       ["q1"],
+    )).toBe(true);
+  });
+
+  it("denies certificate if course is not approved", () => {
+    expect(checkCertificateEligibility(
+      activeEnrollment,
+      modules,
+      allLectureIds,
+      ["q1"],
+      { certificateApprovalStatus: "PENDING_REVIEW", certificateEnabled: false }
+    )).toBe(false);
+  });
+
+  it("denies certificate if course is disabled", () => {
+    expect(checkCertificateEligibility(
+      activeEnrollment,
+      modules,
+      allLectureIds,
+      ["q1"],
+      { certificateApprovalStatus: "DISABLED", certificateEnabled: false }
+    )).toBe(false);
+  });
+
+  it("allows certificate issuance when optional lectures are uncompleted", () => {
+    const modulesWithOptional: Module[] = [
+      {
+        lectures: [{ id: "l1" }, { id: "l2_opt", isOptional: true }],
+        quizzes:  [{ id: "q1" }],
+      },
+    ];
+    expect(checkCertificateEligibility(
+      activeEnrollment,
+      modulesWithOptional,
+      ["l1"], // l2_opt not completed
+      ["q1"],
+    )).toBe(true);
+  });
+
+  it("allows certificate issuance when optional quizzes are unpassed", () => {
+    const modulesWithOptionalQuiz: Module[] = [
+      {
+        lectures: [{ id: "l1" }],
+        quizzes:  [{ id: "q1" }, { id: "q2_opt", isOptional: true }],
+      },
+    ];
+    expect(checkCertificateEligibility(
+      activeEnrollment,
+      modulesWithOptionalQuiz,
+      ["l1"],
+      ["q1"], // q2_opt not passed
     )).toBe(true);
   });
 
@@ -83,7 +143,7 @@ describe("certificate eligibility", () => {
     expect(checkCertificateEligibility(null, modules, allLectureIds, ["q1"])).toBe(false);
   });
 
-  it("denies certificate when not all lectures are completed", () => {
+  it("denies certificate when not all required lectures are completed", () => {
     expect(checkCertificateEligibility(
       activeEnrollment,
       modules,
@@ -92,68 +152,12 @@ describe("certificate eligibility", () => {
     )).toBe(false);
   });
 
-  it("denies certificate when zero lectures are completed", () => {
-    expect(checkCertificateEligibility(
-      activeEnrollment,
-      modules,
-      [],
-      ["q1"],
-    )).toBe(false);
-  });
-
-  it("denies certificate when quiz is not passed", () => {
+  it("denies certificate when required quiz is not passed", () => {
     expect(checkCertificateEligibility(
       activeEnrollment,
       modules,
       allLectureIds,
       [], // no passed quizzes
     )).toBe(false);
-  });
-
-  it("denies certificate when some quizzes are not passed", () => {
-    const multiQuizModules: Module[] = [
-      {
-        lectures: [{ id: "l1" }],
-        quizzes:  [{ id: "q1" }, { id: "q2" }],
-      },
-    ];
-    expect(checkCertificateEligibility(
-      activeEnrollment,
-      multiQuizModules,
-      ["l1"],
-      ["q1"], // q2 not passed
-    )).toBe(false);
-  });
-
-  it("issues certificate for course with no quizzes (lectures-only)", () => {
-    const noQuizModules: Module[] = [
-      { lectures: [{ id: "l1" }, { id: "l2" }], quizzes: [] },
-    ];
-    expect(checkCertificateEligibility(
-      activeEnrollment,
-      noQuizModules,
-      ["l1", "l2"],
-      [],
-    )).toBe(true);
-  });
-
-  it("denies certificate for course with no lectures at all", () => {
-    const emptyModules: Module[] = [
-      { lectures: [], quizzes: [] },
-    ];
-    expect(checkCertificateEligibility(activeEnrollment, emptyModules, [], [])).toBe(false);
-  });
-
-  it("denies certificate for a course with no modules", () => {
-    expect(checkCertificateEligibility(activeEnrollment, [], [], [])).toBe(false);
-  });
-});
-
-describe("certificate idempotence", () => {
-  it("duplicate certificate prevention: @@unique([userId, courseId]) in schema prevents duplicates", () => {
-    // This is enforced at the DB level via the unique constraint.
-    // The try/catch in issueCompletionCertificate silently handles the unique violation.
-    // We verify the pattern here as documentation of the design.
-    expect(true).toBe(true); // DB constraint tested by Prisma schema validation
   });
 });

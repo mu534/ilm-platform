@@ -107,6 +107,14 @@ enum ContentApprovalStatus {
   REJECTED
 }
 
+enum CertificateApprovalStatus {
+  NOT_REQUESTED
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+  DISABLED
+}
+
 // ─── Auth Tokens ─────────────────────────────────────────────────────────────
 
 model VerificationToken {
@@ -167,6 +175,8 @@ model User {
   lectureProgress   LectureProgress[]
   quizAttempts      QuizAttempt[]
   certificates      Certificate[]
+  revokedCertificates Certificate[]     @relation("CertificateRevoker")
+  certificateAudits   CertificateAudit[]
   bookmarks         Bookmark[]
   likes             Like[]
   courseRatings     CourseRating[]
@@ -406,8 +416,8 @@ model Course {
   // Certificate control: instructor may request, Admin must approve.
   // certificateEnabled is the live gate used by certificate issuance.
   // certificateApprovalStatus tracks the approval workflow.
-  certificateEnabled          Boolean               @default(false)
-  certificateApprovalStatus   ContentApprovalStatus @default(DRAFT)
+  certificateEnabled          Boolean                   @default(false)
+  certificateApprovalStatus   CertificateApprovalStatus @default(NOT_REQUESTED)
   certificateRequestedAt      DateTime?
   certificateReviewedAt       DateTime?
   certificateReviewNote       String?
@@ -490,6 +500,7 @@ model Lecture {
   tags         String[]
   published    Boolean     @default(false)
   featured     Boolean     @default(false)
+  isOptional   Boolean     @default(false)
   views        Int         @default(0)
   order        Int         @default(0)
   duration     Int?        // in seconds
@@ -616,6 +627,7 @@ model Quiz {
   module       Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
   passingScore Int      @default(70) // percentage
   timeLimit    Int?     // in minutes, null = no limit
+  isOptional   Boolean  @default(false)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -683,26 +695,52 @@ model QuizAnswer {
 // ─── Certificates ─────────────────────────────────────────────────────────────
 
 model Certificate {
-  id                String   @id @default(cuid())
-  certificateId     String?  @unique // Publicly verifiable unique ID (e.g., ILM-2024-XXXXX)
-  userId            String
-  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  courseId          String
-  course            Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  studentName       String?  // Full name from profile at time of issuance
-  title             String
-  instructorName    String?  // Name of scholar/instructor
-  completionDate    DateTime? // When course was completed
-  issuedAt          DateTime @default(now())
-  courseDuration    Int?     // Course duration in minutes
-  certificateUrl    String?  // generated PDF URL on Cloudinary
-  verificationUrl   String?  // URL to public verification page
+  id                         String   @id @default(cuid())
+  certificateId              String?  @unique // Publicly verifiable unique ID (e.g., ILM-CERT-7X4K9P2M)
+  userId                     String
+  user                       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId                   String
+  course                     Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  studentName                String?  // Immutable snapshot of full name from profile at time of issuance
+  title                      String   // Immutable snapshot of course title
+  instructorName             String?  // Immutable snapshot of scholar/instructor name
+  completionDate             DateTime? // When course was completed
+  issuedAt                   DateTime @default(now())
+  courseDuration             Int?     // Immutable snapshot of course duration in minutes
+  certificateUrl             String?  // Generated PDF URL
+  verificationUrl            String?  // URL to public verification page
+  certificateTemplateVersion String   @default("v2.0") // Template version for visual rendering immutability
+  signaturesSnapshot         Json?    // Immutable snapshot of active signature(s) used at issuance: [{ name, title, imageUrl }]
+
+  // Revocation fields
+  isRevoked                  Boolean  @default(false)
+  revokedAt                  DateTime?
+  revokedById                String?
+  revokedBy                  User?    @relation("CertificateRevoker", fields: [revokedById], references: [id], onDelete: SetNull)
+  revocationReason           String?
+
+  audits                     CertificateAudit[]
 
   @@unique([userId, courseId])
   @@index([userId])
   @@index([courseId])
   @@index([certificateId])
   @@map("certificates")
+}
+
+model CertificateAudit {
+  id            String      @id @default(cuid())
+  certificateId String
+  certificate   Certificate @relation(fields: [certificateId], references: [id], onDelete: Cascade)
+  action        String      // "ISSUED", "REVOKED", "REINSTATED"
+  performedById String?
+  performedBy   User?       @relation(fields: [performedById], references: [id], onDelete: SetNull)
+  reason        String?
+  metadata      Json?
+  createdAt     DateTime    @default(now())
+
+  @@index([certificateId])
+  @@map("certificate_audits")
 }
 
 model CertificateSignature {

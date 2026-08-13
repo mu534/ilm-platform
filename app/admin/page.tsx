@@ -191,9 +191,8 @@ function StatCard({
 export default async function AdminPage() {
   const session = await getServerSession(authOptions);
   const user = session?.user as SessionUser | null;
-  const { defaultLocale } = await import("@/i18n/config");
 
-  if (user?.role !== "ADMIN") redirect(`/${defaultLocale}/admin/courses`);
+  if (user?.role !== "ADMIN") redirect("/admin/courses");
 
   const stats = await getDashboardStats();
 

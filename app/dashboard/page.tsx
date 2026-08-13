@@ -166,8 +166,7 @@ function formatWatchTime(seconds: number): string {
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
   const user = session?.user as SessionUser | undefined;
-  const { defaultLocale } = await import("@/i18n/config");
-  if (!user) redirect(`/${defaultLocale}/login?callbackUrl=/${defaultLocale}/dashboard`);
+  if (!user) redirect("/login?callbackUrl=/dashboard");
 
   const data = await getDashboardData(user.id);
 

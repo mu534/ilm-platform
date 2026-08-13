@@ -12,8 +12,7 @@ export const metadata = { title: "Learning Progress | Ilm Platform" };
 export default async function QuizHistoryPage() {
   const session = await getServerSession(authOptions);
   const user = session?.user as SessionUser | undefined;
-  const { defaultLocale } = await import("@/i18n/config");
-  if (!user) redirect(`/${defaultLocale}/login?callbackUrl=/${defaultLocale}/dashboard/quiz-history`);
+  if (!user) redirect("/login?callbackUrl=/dashboard/quiz-history");
 
   const attempts = await prisma.quizAttempt.findMany({
     where: { userId: user.id },

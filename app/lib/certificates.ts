@@ -20,10 +20,18 @@ export async function issueCompletionCertificate(
   });
   if (!enrollment || enrollment.status === "DROPPED") return false;
 
+  // ── Student must have a valid name for the certificate ───────────────────
+  const student = await tx.user.findUnique({
+    where:  { id: userId },
+    select: { name: true },
+  });
+  if (!student?.name?.trim()) return false;
+
   const course = await tx.course.findUnique({
     where: { id: courseId },
     select: {
       title: true,
+      certificateEnabled: true,
       modules: {
         select: {
           lectures: { where: { published: true }, select: { id: true } },
@@ -33,6 +41,9 @@ export async function issueCompletionCertificate(
     },
   });
   if (!course) return false;
+
+  // ── Certificate must be admin-approved for this course ────────────────────
+  if (!course.certificateEnabled) return false;
 
   const allLectureIds = course.modules.flatMap((m) => m.lectures.map((l) => l.id));
   const allQuizIds = course.modules.flatMap((m) => m.quizzes.map((q) => q.id));

@@ -8,7 +8,7 @@ import { FileUploader } from "../../../../components/FileUploader";
 import { PublishingChecklist } from "../../../../components/courses/PublishingChecklist";
 import {
   FiSave, FiX, FiPlus, FiTrash2, FiArrowLeft,
-  FiSettings, FiSearch, FiGlobe, FiInfo, FiLock,
+  FiSettings, FiSearch, FiGlobe, FiInfo, FiLock, FiAward,
 } from "react-icons/fi";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -130,6 +130,14 @@ export default function EditCoursePage() {
   const [activeTab,    setActiveTab]    = useState<Tab>("info");
   const [form,         setForm]         = useState<FormState>(EMPTY_FORM);
 
+  // Certificate request state (scholar-side)
+  const [certStatus,   setCertStatus]   = useState<string>("DRAFT");
+  const [certEnabled,  setCertEnabled]  = useState(false);
+  const [certReqNote,  setCertReqNote]  = useState("");
+  const [certReqMsg,   setCertReqMsg]   = useState("");
+  const [certReqErr,   setCertReqErr]   = useState("");
+  const [certReqBusy,  setCertReqBusy] = useState(false);
+
   // Load course + categories in parallel
   useEffect(() => {
     if (!id) return;
@@ -146,6 +154,8 @@ export default function EditCoursePage() {
         if (cd.success) {
           const c = cd.data;
           setCourseStatus(c.status ?? "DRAFT");
+          setCertStatus(c.certificateApprovalStatus ?? "DRAFT");
+          setCertEnabled(c.certificateEnabled ?? false);
           setForm({
             title:             c.title           ?? "",
             subtitle:          c.subtitle         ?? "",
@@ -178,6 +188,24 @@ export default function EditCoursePage() {
   const set = useCallback(<K extends keyof FormState>(key: K, val: FormState[K]) => {
     setForm((f) => ({ ...f, [key]: val }));
   }, []);
+
+  const requestCertificate = async () => {
+    setCertReqBusy(true); setCertReqErr(""); setCertReqMsg("");
+    try {
+      const res  = await fetch(`/api/courses/${id}/certificate`, {
+        method:  "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ action: "request", note: certReqNote.trim() || undefined }),
+      });
+      const data = await res.json() as { success?: boolean; error?: string };
+      if (data.success) {
+        setCertReqMsg("Certificate request submitted. An admin will review it shortly.");
+        setCertStatus("PENDING");
+      } else {
+        setCertReqErr(data.error ?? "Request failed");
+      }
+    } finally { setCertReqBusy(false); }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -553,6 +581,94 @@ export default function EditCoursePage() {
               <div>
                 <p className="text-xs text-[var(--text-muted)] font-medium mb-2 uppercase tracking-wide">Publishing</p>
                 <PublishingChecklist courseId={id} currentStatus={courseStatus} isAdmin={isAdmin} />
+              </div>
+            )}
+
+            {/* Certificate Request — scholar can request, admin must approve */}
+            {id && (
+              <div>
+                <p className="text-xs text-[var(--text-muted)] font-medium mb-2 uppercase tracking-wide">Certificate</p>
+                <div className="glass-card rounded-xl p-5 border border-[var(--border-strong)] space-y-4">
+                  <div className="flex items-start gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-[var(--accent-dim)] border border-[var(--border-strong)] flex items-center justify-center flex-shrink-0">
+                      <FiAward className="text-[var(--accent)]" size={16} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-[var(--text-primary)]">Certificate of Completion</p>
+                      <p className="text-xs text-[var(--text-muted)] mt-0.5 leading-relaxed">
+                        {isAdmin
+                          ? "Manage certificate eligibility for this course from the Review page."
+                          : "Students who complete all lessons and pass required quizzes will receive a certificate — but only after an admin approves it."}
+                      </p>
+                    </div>
+                    {/* Current status badge */}
+                    <span className={`flex-shrink-0 text-[10px] px-2 py-1 rounded-full border font-semibold ${
+                      certEnabled
+                        ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                        : certStatus === "PENDING"
+                        ? "bg-blue-500/10 text-blue-400 border-blue-500/20"
+                        : certStatus === "REJECTED"
+                        ? "bg-red-500/10 text-red-400 border-red-500/20"
+                        : "bg-[var(--bg-secondary)] text-[var(--text-muted)] border-[var(--border)]"
+                    }`}>
+                      {certEnabled ? "Approved ✓"
+                        : certStatus === "PENDING" ? "Pending Review"
+                        : certStatus === "REJECTED" ? "Rejected"
+                        : "Not Requested"}
+                    </span>
+                  </div>
+
+                  {/* Messages */}
+                  {certReqMsg && (
+                    <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs">
+                      {certReqMsg}
+                    </div>
+                  )}
+                  {certReqErr && (
+                    <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs">
+                      {certReqErr}
+                    </div>
+                  )}
+
+                  {/* Scholar actions — only show when not approved and not admin */}
+                  {!isAdmin && !certEnabled && certStatus !== "PENDING" && (
+                    <div className="space-y-2">
+                      <p className="text-xs text-[var(--text-muted)]">
+                        {certStatus === "REJECTED"
+                          ? "Your previous request was rejected. You can submit a new request after addressing the feedback."
+                          : "Request certificate approval from an admin for this course."}
+                      </p>
+                      <textarea
+                        value={certReqNote}
+                        onChange={(e) => setCertReqNote(e.target.value)}
+                        rows={2}
+                        placeholder="Optional note to admin (e.g. why this course deserves a certificate)…"
+                        className="w-full px-3 py-2 bg-[var(--bg-card)] border border-[var(--border)] rounded-xl text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] transition-colors resize-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={requestCertificate}
+                        disabled={certReqBusy}
+                        className="btn-secondary text-xs flex items-center gap-1.5"
+                      >
+                        {certReqBusy
+                          ? <><span className="animate-spin">⏳</span> Requesting…</>
+                          : <><FiAward size={12} /> Request Certificate Approval</>
+                        }
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Admin shortcut to review page */}
+                  {isAdmin && (
+                    <Link
+                      href={`/admin/courses/${id}/review`}
+                      className="inline-flex items-center gap-1.5 text-xs text-[var(--accent)] hover:text-[var(--accent-light)] transition-colors"
+                    >
+                      <FiAward size={12} /> Manage certificate on Review page →
+                    </Link>
+                  )}
+                </div>
               </div>
             )}
 

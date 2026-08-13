@@ -7,7 +7,7 @@ import Image from "next/image";
 import {
   FiArrowLeft, FiCheckCircle, FiXCircle, FiLoader,
   FiBookOpen, FiUser, FiTag, FiClock, FiAlertTriangle,
-  FiEye, FiBarChart2,
+  FiEye, FiBarChart2, FiAward,
 } from "react-icons/fi";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -33,6 +33,11 @@ interface CourseDetail {
   approvalNote:   string | null;
   enrollmentType: string;
   price:          number;
+  certificateEnabled:        boolean;
+  certificateApprovalStatus: string;
+  certificateRequestedAt:    string | null;
+  certificateReviewedAt:     string | null;
+  certificateReviewNote:     string | null;
   category:       { name: string; icon: string | null } | null;
   author:         { id: string; name: string; image: string | null };
   modules:        Module[];
@@ -73,6 +78,13 @@ export default function CourseReviewPage() {
   const [showReject, setShowReject] = useState(false);
   const [msg,  setMsg]  = useState("");
   const [err,  setErr]  = useState("");
+
+  // Certificate state
+  const [certActing, setCertActing]   = useState(false);
+  const [certNote,   setCertNote]     = useState("");
+  const [certMsg,    setCertMsg]      = useState("");
+  const [certErr,    setCertErr]      = useState("");
+  const [showCertReject, setShowCertReject] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -128,6 +140,33 @@ export default function CourseReviewPage() {
         setErr(data.error ?? "Rejection failed");
       }
     } finally { setActing(false); }
+  };
+
+  const certAction = async (action: "approve" | "reject" | "enable" | "disable") => {
+    if (action === "reject" && !certNote.trim()) {
+      setCertErr("A note is required when rejecting a certificate request.");
+      return;
+    }
+    setCertActing(true); setCertErr(""); setCertMsg("");
+    try {
+      const res  = await fetch(`/api/courses/${id}/certificate`, {
+        method:  "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ action, note: certNote.trim() || undefined }),
+      });
+      const data = await res.json() as { success?: boolean; error?: string; data?: { message?: string } };
+      if (data.success) {
+        setCertMsg(data.data?.message ?? "Done");
+        setShowCertReject(false);
+        setCertNote("");
+        // Refresh course data
+        const cr = await fetch(`/api/courses/${id}`);
+        const cd = await cr.json() as { success?: boolean; data?: CourseDetail };
+        if (cd.success && cd.data) setCourse(cd.data);
+      } else {
+        setCertErr(data.error ?? "Failed");
+      }
+    } finally { setCertActing(false); }
   };
 
   if (loading) {
@@ -493,6 +532,138 @@ export default function CourseReviewPage() {
               </Link>
             </div>
           )}
+
+          {/* ── Certificate Control Panel ── */}
+          <div className="glass-card rounded-2xl p-5 space-y-4 border border-[var(--border-strong)]">
+            <h3 className="text-sm font-semibold text-[var(--text-primary)] flex items-center gap-2">
+              <FiAward size={14} className="text-[var(--accent)]" />
+              Certificate Control
+            </h3>
+
+            {/* Status display */}
+            <div className="space-y-2 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-[var(--text-muted)]">Requested</span>
+                <span className={`font-medium ${course.certificateRequestedAt ? "text-[var(--text-primary)]" : "text-[var(--text-muted)]"}`}>
+                  {course.certificateRequestedAt ? "Yes" : "Not requested"}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[var(--text-muted)]">Status</span>
+                <span className={`px-2 py-0.5 rounded-full border font-medium text-[10px] ${
+                  course.certificateApprovalStatus === "APPROVED"
+                    ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                    : course.certificateApprovalStatus === "PENDING"
+                    ? "bg-blue-500/10 text-blue-400 border-blue-500/20"
+                    : course.certificateApprovalStatus === "REJECTED"
+                    ? "bg-red-500/10 text-red-400 border-red-500/20"
+                    : "bg-[var(--bg-secondary)] text-[var(--text-muted)] border-[var(--border)]"
+                }`}>
+                  {course.certificateApprovalStatus === "DRAFT"
+                    ? "Not Requested"
+                    : course.certificateApprovalStatus.replace("_", " ")}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[var(--text-muted)]">Certificates</span>
+                <span className={`font-semibold ${course.certificateEnabled ? "text-emerald-400" : "text-[var(--text-muted)]"}`}>
+                  {course.certificateEnabled ? "Enabled ✓" : "Disabled"}
+                </span>
+              </div>
+              {course.certificateReviewNote && (
+                <p className="text-[var(--text-muted)] italic pt-1 border-t border-[var(--border)]">
+                  Note: {course.certificateReviewNote}
+                </p>
+              )}
+            </div>
+
+            {/* Certificate messages */}
+            {certMsg && (
+              <div className="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs flex items-center gap-1.5">
+                <FiCheckCircle size={12} /> {certMsg}
+              </div>
+            )}
+            {certErr && (
+              <div className="p-2.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-center gap-1.5">
+                <FiAlertTriangle size={12} /> {certErr}
+              </div>
+            )}
+
+            {/* Admin certificate note */}
+            <div>
+              <label className="block text-[10px] text-[var(--text-muted)] font-medium mb-1">
+                Note <span className="font-normal">(required for rejection)</span>
+              </label>
+              <textarea
+                value={certNote}
+                onChange={(e) => setCertNote(e.target.value)}
+                rows={2}
+                placeholder="Optional note to the instructor…"
+                className="w-full px-3 py-2 bg-[var(--bg-card)] border border-[var(--border)] rounded-xl text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] transition-colors resize-none"
+              />
+            </div>
+
+            {/* Action buttons based on current state */}
+            {course.certificateApprovalStatus === "PENDING" && (
+              <div className="space-y-2">
+                <button
+                  onClick={() => void certAction("approve")}
+                  disabled={certActing}
+                  className="w-full py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50"
+                >
+                  {certActing ? <FiLoader className="animate-spin" size={12} /> : <FiCheckCircle size={12} />}
+                  Approve Certificate
+                </button>
+                {!showCertReject ? (
+                  <button
+                    onClick={() => setShowCertReject(true)}
+                    disabled={certActing}
+                    className="w-full py-2 rounded-xl border border-red-500/30 text-red-400 hover:bg-red-500/10 text-xs font-medium transition-colors"
+                  >
+                    <FiXCircle size={12} className="inline mr-1" /> Reject Request
+                  </button>
+                ) : (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => void certAction("reject")}
+                      disabled={certActing}
+                      className="flex-1 py-2 rounded-xl bg-red-500 hover:bg-red-400 text-white text-xs font-semibold flex items-center justify-center gap-1"
+                    >
+                      {certActing ? <FiLoader className="animate-spin" size={12} /> : <FiXCircle size={12} />}
+                      Confirm Reject
+                    </button>
+                    <button
+                      onClick={() => { setShowCertReject(false); setCertErr(""); }}
+                      className="flex-1 py-2 rounded-xl border border-[var(--border)] text-[var(--text-muted)] text-xs"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {course.certificateApprovalStatus === "APPROVED" && (
+              <button
+                onClick={() => void certAction("disable")}
+                disabled={certActing}
+                className="w-full py-2 rounded-xl border border-amber-500/30 text-amber-400 hover:bg-amber-500/10 text-xs font-medium transition-colors"
+              >
+                {certActing ? <FiLoader className="animate-spin inline mr-1" size={12} /> : null}
+                Disable Certificate
+              </button>
+            )}
+
+            {(course.certificateApprovalStatus === "DRAFT" || course.certificateApprovalStatus === "REJECTED") && (
+              <button
+                onClick={() => void certAction("enable")}
+                disabled={certActing}
+                className="w-full py-2 rounded-xl border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 text-xs font-medium transition-colors"
+              >
+                Enable Certificate Directly
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>

@@ -403,8 +403,14 @@ model Course {
   // stay locked until every lesson before them (in module/lecture order)
   // is marked complete.
   sequentialLearning Boolean     @default(false)
-  // When true, certificates are issued upon course completion
-  certificateEnabled Boolean     @default(false)
+  // Certificate control: instructor may request, Admin must approve.
+  // certificateEnabled is the live gate used by certificate issuance.
+  // certificateApprovalStatus tracks the approval workflow.
+  certificateEnabled          Boolean               @default(false)
+  certificateApprovalStatus   ContentApprovalStatus @default(DRAFT)
+  certificateRequestedAt      DateTime?
+  certificateReviewedAt       DateTime?
+  certificateReviewNote       String?
   status            CourseStatus @default(DRAFT)
   featured          Boolean      @default(false)
   published         Boolean      @default(false)

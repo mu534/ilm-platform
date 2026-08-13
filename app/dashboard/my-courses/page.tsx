@@ -93,8 +93,7 @@ async function getMyCoursesData(userId: string) {
 export default async function MyCoursesPage() {
   const session = await getServerSession(authOptions);
   const user = session?.user as SessionUser | undefined;
-  const { defaultLocale } = await import("@/i18n/config");
-  if (!user) redirect(`/${defaultLocale}/login?callbackUrl=/${defaultLocale}/dashboard/my-courses`);
+  if (!user) redirect("/login?callbackUrl=/dashboard/my-courses");
 
   const data = await getMyCoursesData(user.id);
 

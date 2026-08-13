@@ -12,8 +12,7 @@ export const metadata = { title: "Certificates | Ilm Platform" };
 export default async function CertificatesPage() {
   const session = await getServerSession(authOptions);
   const user = session?.user as SessionUser | undefined;
-  const { defaultLocale } = await import("@/i18n/config");
-  if (!user) redirect(`/${defaultLocale}/login?callbackUrl=/${defaultLocale}/dashboard/certificates`);
+  if (!user) redirect("/login?callbackUrl=/dashboard/certificates");
 
   const certificates = await prisma.certificate.findMany({
     where: { userId: user.id },

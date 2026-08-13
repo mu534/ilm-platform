@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
-import { defaultLocale } from "@/i18n/config";
 
 export default function LegacyAdminScholarsRedirect() {
-  redirect(`/${defaultLocale}/admin/instructors`);
+  redirect("/admin/instructors");
 }

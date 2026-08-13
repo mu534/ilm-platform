@@ -86,6 +86,8 @@ export async function generateMetadata({ params }: Props) {
 }
 
 import { BackButton } from "../../components/ui/BackButton";
+import { Navbar } from "../../components/NavBar";
+import { Footer } from "../../components/Footer";
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
@@ -139,7 +141,8 @@ export default async function CourseDetailPage({ params }: Props) {
   const canAccess     = !!enrollment || user?.role === "ADMIN" || user?.role === "INSTRUCTOR";
 
   return (
-    <div className="min-h-screen bg-[var(--bg-primary)]">
+    <div className="min-h-screen bg-[var(--bg-primary)] flex flex-col">
+      <Navbar />
 
       {/* ── Hero header band ─────────────────────────────────────────────── */}
       <header className="bg-[var(--bg-secondary)] border-b border-[var(--border)]">
@@ -556,6 +559,7 @@ export default async function CourseDetailPage({ params }: Props) {
           </aside>
         </div>
       </div>
+      <Footer />
     </div>
   );
 }

@@ -4,8 +4,11 @@ import { publicCourseWhere } from "@/app/lib/courseAccess";
 import { getOptionalUser } from "@/app/lib/authorization";
 import { CourseCard } from "@/app/components/courses/CourseCard";
 import { SortSelect } from "@/app/components/courses/SortSelect";
+import { Navbar } from "@/app/components/NavBar";
+import { Footer } from "@/app/components/Footer";
+import { BackButton } from "@/app/components/ui/BackButton";
 import type { DifficultyLevel } from "@/app/types/auth.types";
-import { FiSearch } from "react-icons/fi";
+import { FiSearch, FiArrowLeft } from "react-icons/fi";
 
 type SortOption = "newest" | "oldest" | "popular" | "top-rated";
 
@@ -153,11 +156,16 @@ export default async function CoursesPage({ searchParams }: Props) {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--bg-primary)]">
+    <div className="min-h-screen bg-[var(--bg-primary)] flex flex-col">
+      {/* ── Top Navigation Bar ── */}
+      <Navbar />
 
       {/* ── Page header ── */}
       <div className="border-b border-[var(--border)] bg-[var(--bg-secondary)]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
+          <div className="flex items-center gap-3 mb-2">
+            <BackButton label="Back to Home" fallbackHref="/" className="text-xs text-[var(--accent)] font-semibold" />
+          </div>
           <h1 className="font-display text-3xl sm:text-4xl font-bold text-[var(--text-primary)] mb-2">
             Islamic Courses
           </h1>
@@ -345,6 +353,7 @@ export default async function CoursesPage({ searchParams }: Props) {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 }

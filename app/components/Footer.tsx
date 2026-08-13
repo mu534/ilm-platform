@@ -8,9 +8,31 @@ import { useLocale, useTranslations } from "next-intl";
 
 export function Footer() {
   const pathname = usePathname();
-  const locale = useLocale();
-  const nav = useTranslations("nav");
-  const t = useTranslations("footer");
+  let locale = "en";
+  try {
+    locale = useLocale();
+  } catch {
+    locale = "en";
+  }
+
+  let nav = (key: string) => key;
+  let t = (key: string) => key;
+  try {
+    const intlNav = useTranslations("nav");
+    const intlFooter = useTranslations("footer");
+    nav = (key: string) => { try { return intlNav(key); } catch { return key; } };
+    t = (key: string) => { try { return intlFooter(key); } catch { return key; } };
+  } catch {
+    const navMap: Record<string, string> = {
+      home: "Home", courses: "Courses", scholars: "Scholars", forum: "Forum", login: "Log in", register: "Register", myLearning: "My Learning",
+    };
+    const footerMap: Record<string, string> = {
+      lectures: "Lectures", activity: "Activity", myProfile: "My Profile", tagline: "Authentic Islamic knowledge from verified scholars.", explore: "Explore", account: "Account", madeWith: "Made with", forUmmah: "for the Ummah",
+    };
+    nav = (k: string) => navMap[k] ?? k;
+    t = (k: string) => footerMap[k] ?? k;
+  }
+
   const localHref = (href: string) => href === "/" ? `/${locale}` : `/${locale}${href}`;
   const exploreLinks = [
     { href: "/", label: nav("home") },

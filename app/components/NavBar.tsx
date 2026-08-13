@@ -20,8 +20,36 @@ import { usePathname } from "next/navigation";
 
 export function Navbar() {
   const pathname = usePathname();
-  const locale = useLocale();
-  const t = useTranslations("nav");
+  let locale = "en";
+  try {
+    locale = useLocale();
+  } catch {
+    locale = "en";
+  }
+
+  let t = (key: string) => key;
+  try {
+    const intlT = useTranslations("nav");
+    t = (key: string) => {
+      try {
+        return intlT(key);
+      } catch {
+        const fallbackMap: Record<string, string> = {
+          home: "Home", courses: "Courses", scholars: "Scholars", forum: "Forum", admin: "Admin",
+          profile: "Profile", settings: "Settings", myLearning: "My Learning", manageCourses: "Manage Courses",
+          dashboard: "Dashboard", signOut: "Sign Out", login: "Log in", getStarted: "Get Started", register: "Register",
+        };
+        return fallbackMap[key] ?? key;
+      }
+    };
+  } catch {
+    const fallbackMap: Record<string, string> = {
+      home: "Home", courses: "Courses", scholars: "Scholars", forum: "Forum", admin: "Admin",
+      profile: "Profile", settings: "Settings", myLearning: "My Learning", manageCourses: "Manage Courses",
+      dashboard: "Dashboard", signOut: "Sign Out", login: "Log in", getStarted: "Get Started", register: "Register",
+    };
+    t = (key: string) => fallbackMap[key] ?? key;
+  }
   const { data: session }            = useSession();
   const [mobileOpen, setMobileOpen]  = useState(false);
   const { theme, toggleTheme, isLight } = useTheme();

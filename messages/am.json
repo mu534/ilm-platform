@@ -976,23 +976,53 @@
   "nav": {
     "home": "መነሻ",
     "courses": "ኮርሶች",
-    "scholars": "ሊወፎች",
-    "myLearning": "ትምህርቴ",
-    "dashboard": "ዳሽቦር",
-    "profile": "መገለል",
-    "settings": "ቅንብሮት",
+    "scholars": "ምሁራን",
+    "myLearning": "የእኔ ትምህርት",
+    "dashboard": "መቆጣጠሪያ ሰሌዳ",
+    "profile": "መገለጫ",
+    "settings": "ቅንብሮች",
     "logout": "ውጣ",
     "login": "ግባ",
-    "register": "ምዝግባ",
-    "searchPlaceholder": "ፈልግ ኮርሶችንርት ሊወፎች...",
-    "notifications": "ማስታወሻዎች",
-    "noNotifications": "ማስታወሻዎች የለለ"
+    "register": "ተመዝገብ",
+    "searchPlaceholder": "ኮርሶችን እና ምሁራንን ይፈልጉ...",
+    "notifications": "ማሳወቂያዎች",
+    "noNotifications": "ማሳወቂያዎች የሉም",
+    "forum": "ውይይት",
+    "admin": "አስተዳዳሪ",
+    "manageCourses": "ኮርሶችን ያስተዳድሩ",
+    "signOut": "ውጣ",
+    "getStarted": "ጀምር"
+  },
+  "footer": {
+    "tagline": "የእውቀት ፈላጊዎችን ከታማኝ እስላማዊ ምሁራን ጋር እናገናኛለን። ለሁሉም ነፃና ተደራሽ ትምህርት።",
+    "explore": "ያስሱ",
+    "account": "መለያ",
+    "lectures": "ትምህርቶች",
+    "activity": "እንቅስቃሴ",
+    "myProfile": "የእኔ መገለጫ",
+    "madeWith": "በፍቅር የተሠራ",
+    "forUmmah": "ለኡማው።"
   },
   "hero": {
-    "title": "ለለላ� የልለ ለለለ ለል",
-    "subtitle": "ከተማ የማህየች ከፈሰማ ለለምማ ይየብ",
-    "cta": "ትምህርት ጀምር",
-    "secondaryCta": "ኮርሶችንን አሳይ"
+    "title": "እስላማዊ እውቀት ለሁሉም",
+    "subtitle": "ከዓለም ዙሪያ ካሉ ታዋቂ ምሁራን ይማሩ",
+    "cta": "መማር ይጀምሩ",
+    "secondaryCta": "ኮርሶችን ይመልከቱ"
+  },
+  "whyIlm": {
+    "eyebrow": "ለምን Ilm Platform?",
+    "title": "ትምህርት የተደራጀ፣ ትክክለኛ እና ዓላማ ያለው መሆን አለበት።",
+    "description": "Ilm Platform ብቁ ምሁራንን፣ በሥርዓት የተዘጋጀ የኮርስ ይዘትን እና እውነተኛ የእድገት ክትትልን ያገናኛል፤ ስለዚህ በትምህርት ላይ የሚያውሉት እያንዳንዱ ደቂቃ ዋጋ አለው።",
+    "features": {
+      "structured": { "title": "የተደራጀ ትምህርት", "description": "እያንዳንዱ ኮርስ ግልጽ በሆኑ ክፍሎች፣ ተከታታይ ትምህርቶች፣ ፈተናዎች እና የእድገት ክትትል የተደራጀ ነው፤ በየጊዜው የት እንዳሉ እንዲያውቁ።" },
+      "scholars": { "title": "ብቁ ምሁራን", "description": "በእስላማዊ ሳይንስ መስኮች ጥልቅ እውቀት ካላቸው የተረጋገጡ ምሁራንና ልምድ ካላቸው አስተማሪዎች ይማሩ።" },
+      "progress": { "title": "እድገትዎን ይከታተሉ", "description": "ምዝገባዎ፣ የትምህርት ማጠናቀቅዎ እና የኮርስ እድገትዎ በራስ-ሰር ይከታተላሉ፤ የትምህርት ጉዞዎ ሁልጊዜ እንዲታይ።" },
+      "pace": { "title": "በራስዎ ፍጥነት ይማሩ", "description": "የኮርስ ይዘቶችን በማንኛውም ጊዜ እና ከማንኛውም መሣሪያ ያግኙ፤ እንደፈለጉም ትምህርቶቹን ደግመው ይመልከቱ።" }
+    }
+  },
+  "home": {
+    "structuredLearning": "የተደራጀ ትምህርት",
+    "featuredCourses": "ተለይተው የቀረቡ ኮርሶች"
   },
   "auth": {
     "login": "ግባ",

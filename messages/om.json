@@ -975,24 +975,54 @@
   },
   "nav": {
     "home": "Mana",
-    "courses": "Qabxiiwwan",
-    "scholars": "Barreessota",
-    "myLearning": "Barataa Kiyya",
-    "dashboard": "Dhaabata",
-    "profile": "Qabxii",
-    "settings": "Qindeessitoota",
-    "logout": "Baasuu",
-    "login": "Seenuu",
-    "register": "Galmeessuu",
-    "searchPlaceholder": "Barbaadi qabxiiwwan, barreessota...",
-    "notifications": "Beeksistoota",
-    "noNotifications": "Beeksistoota hin jiru"
+    "courses": "Koorsiiwwan",
+    "scholars": "Hayyoota",
+    "myLearning": "Barnoota koo",
+    "dashboard": "Gabatee to'annoo",
+    "profile": "Piroofaayilii",
+    "settings": "Qindaa'inoota",
+    "logout": "Ba'i",
+    "login": "Seeni",
+    "register": "Galmaa'i",
+    "searchPlaceholder": "Koorsiiwwan fi hayyoota barbaadi...",
+    "notifications": "Beeksisawwan",
+    "noNotifications": "Beeksisni hin jiru",
+    "forum": "Mari'ii",
+    "admin": "Bulchaa",
+    "manageCourses": "Koorsiiwwan bulchi",
+    "signOut": "Ba'i",
+    "getStarted": "Jalqabi"
+  },
+  "footer": {
+    "tagline": "Barattoota beekumsaa hayyoota Islaamaa amanamoo waliin wal qunnamsiisuu. Barnoota bilisaa, nama hundaaf dhaqqabamaa.",
+    "explore": "Qoradhu",
+    "account": "Herrega",
+    "lectures": "Barnoota",
+    "activity": "Sochii",
+    "myProfile": "Piroofaayilii koo",
+    "madeWith": "Jaalalaan hojjetame",
+    "forUmmah": "ummata Islaamaatiif."
   },
   "hero": {
-    "title": "Barannuu Islaamaa Hundaaf",
-    "subtitle": "Barreessota beekamoo addunyaa irraa baradhu",
-    "cta": "Barannuu Jalqabuu",
-    "secondaryCta": "Qabxiiwwan Agarsiisu"
+    "title": "Barnoota Islaamaa Hundaaf",
+    "subtitle": "Hayyoota beekamoo addunyaa irraa baradhu",
+    "cta": "Barachuu Jalqabi",
+    "secondaryCta": "Koorsiiwwan Qoradhu"
+  },
+  "whyIlm": {
+    "eyebrow": "Maaliif Ilm Platform?",
+    "title": "Barachuun sirna qabeessa, amanamaa fi kaayyoo qabeessa ta'uu qaba.",
+    "description": "Ilm Platform hayyoota gahumsa qaban, qabiyyee koorsii sirnaan qindaa'e fi hordoffii guddinaa walitti fida — kanaaf daqiiqaan ati barnoota irratti oolchitu hundi gatii qaba.",
+    "features": {
+      "structured": { "title": "Barnoota Sirna Qabeessa", "description": "Koorsiin tokkoon tokkoon isaanii moojuloota ifa ta'aniin, barnoota wal irraa fufaa, qormaataa fi hordoffii guddinaan qindaa'eera — yeroo hunda eessa akka jirtu akka beektuuf." },
+      "scholars": { "title": "Hayyoota Gahumsa Qaban", "description": "Hayyoota mirkanaa'an fi barsiisota muuxannoo qaban irraa, kanneen saayinsii Islaamaa keessatti ogummaa gadi fagoo qaban irraa baradhu." },
+      "progress": { "title": "Guddina Kee Hordofi", "description": "Galmeen kee, xumura barnootaa fi guddinni koorsii ofumaan ni hordofamu — imalli barnoota kee yeroo hunda akka mul'atuuf." },
+      "pace": { "title": "Saffisa Kee irratti Baradhu", "description": "Qabiyyee koorsii hunda yeroo kamiyyuu, meeshaa kamirraayyuu argadhu; yeroo barbaadde hunda barnoota deebitee ilaali." }
+    }
+  },
+  "home": {
+    "structuredLearning": "Barnoota Sirna Qabeessa",
+    "featuredCourses": "Koorsiiwwan Filatamoo"
   },
   "auth": {
     "login": "Seenuu",

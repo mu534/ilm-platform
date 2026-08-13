@@ -381,8 +381,8 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         <section className="w-full py-16 sm:py-20">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
             <SectionHeader
-              eyebrow="Structured Learning"
-              title="Featured Courses"
+              eyebrow={t('home.structuredLearning')}
+              title={t('home.featuredCourses')}
               subtitle="A curated selection of courses to help you build meaningful Islamic knowledge."
               href="/courses"
               linkLabel="View All Courses"

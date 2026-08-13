@@ -1,33 +1,15 @@
 import { FiBookOpen, FiShield, FiTrendingUp, FiClock } from 'react-icons/fi';
+import { getTranslations } from 'next-intl/server';
 
-const features = [
-  {
-    icon: <FiBookOpen className="w-5 h-5 text-[var(--accent)]" />,
-    title: 'Structured Learning',
-    description:
-      'Each course is organized into clear modules with sequential lectures, quizzes, and progress tracking — so you always know where you are.',
-  },
-  {
-    icon: <FiShield className="w-5 h-5 text-[var(--accent)]" />,
-    title: 'Qualified Scholars',
-    description:
-      'Learn from verified scholars and experienced instructors with deep expertise in their fields of Islamic science.',
-  },
-  {
-    icon: <FiTrendingUp className="w-5 h-5 text-[var(--accent)]" />,
-    title: 'Track Your Progress',
-    description:
-      'Your enrollment, lecture completion, and course progress are tracked automatically — so your learning journey is always visible.',
-  },
-  {
-    icon: <FiClock className="w-5 h-5 text-[var(--accent)]" />,
-    title: 'Learn at Your Pace',
-    description:
-      'Access all course content anytime, from any device, and revisit lectures as many times as you need.',
-  },
-];
+export default async function WhyIlmPlatform() {
+  const t = await getTranslations('whyIlm');
+  const features = [
+    { icon: <FiBookOpen className="w-5 h-5 text-[var(--accent)]" />, key: 'structured' },
+    { icon: <FiShield className="w-5 h-5 text-[var(--accent)]" />, key: 'scholars' },
+    { icon: <FiTrendingUp className="w-5 h-5 text-[var(--accent)]" />, key: 'progress' },
+    { icon: <FiClock className="w-5 h-5 text-[var(--accent)]" />, key: 'pace' },
+  ] as const;
 
-export default function WhyIlmPlatform() {
   return (
     <section className="w-full" aria-labelledby="why-ilm-title">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
@@ -38,21 +20,17 @@ export default function WhyIlmPlatform() {
           {/* Left — heading column */}
           <div className="lg:sticky lg:top-24">
             <p className="text-[var(--accent)] text-xs font-semibold tracking-widest uppercase mb-4">
-              Why Ilm Platform
+              {t('eyebrow')}
             </p>
             <h2
               id="why-ilm-title"
               className="font-display text-3xl sm:text-4xl lg:text-5xl font-semibold text-[var(--text-primary)] leading-tight"
             >
-              Learning should be
-              structured,
-              authentic,
-              and purposeful.
+              {t('title')}
             </h2>
             <div className="mt-6 h-px bg-gradient-to-r from-[var(--border-strong)] to-transparent w-32" aria-hidden="true" />
             <p className="mt-6 text-[var(--text-secondary)] text-base leading-relaxed max-w-md">
-              Ilm Platform brings together qualified scholars, structured course content,
-              and real progress tracking — so every minute you invest in learning counts.
+              {t('description')}
             </p>
           </div>
 
@@ -71,10 +49,10 @@ export default function WhyIlmPlatform() {
                 {/* Text */}
                 <div className="min-w-0">
                   <h3 className="font-body text-base font-semibold text-[var(--text-primary)] mb-1.5">
-                    {feature.title}
+                    {t(`features.${feature.key}.title`)}
                   </h3>
                   <p className="text-[var(--text-secondary)] text-sm leading-relaxed">
-                    {feature.description}
+                    {t(`features.${feature.key}.description`)}
                   </p>
                 </div>
               </div>

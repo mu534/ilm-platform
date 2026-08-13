@@ -986,13 +986,43 @@
     "register": "Register",
     "searchPlaceholder": "Search courses, scholars...",
     "notifications": "Notifications",
-    "noNotifications": "No notifications"
+    "noNotifications": "No notifications",
+    "forum": "Forum",
+    "admin": "Admin",
+    "manageCourses": "Manage Courses",
+    "signOut": "Sign Out",
+    "getStarted": "Get Started"
+  },
+  "footer": {
+    "tagline": "Connecting seekers of knowledge with authentic Islamic scholarship. Free, accessible education for all.",
+    "explore": "Explore",
+    "account": "Account",
+    "lectures": "Lectures",
+    "activity": "Activity",
+    "myProfile": "My Profile",
+    "madeWith": "Made with",
+    "forUmmah": "for the Ummah."
   },
   "hero": {
     "title": "Islamic Knowledge for Everyone",
     "subtitle": "Learn from renowned scholars around the world",
     "cta": "Start Learning",
     "secondaryCta": "Explore Courses"
+  },
+  "whyIlm": {
+    "eyebrow": "Why Ilm Platform",
+    "title": "Learning should be structured, authentic, and purposeful.",
+    "description": "Ilm Platform brings together qualified scholars, structured course content, and real progress tracking — so every minute you invest in learning counts.",
+    "features": {
+      "structured": { "title": "Structured Learning", "description": "Each course is organized into clear modules with sequential lectures, quizzes, and progress tracking — so you always know where you are." },
+      "scholars": { "title": "Qualified Scholars", "description": "Learn from verified scholars and experienced instructors with deep expertise in their fields of Islamic science." },
+      "progress": { "title": "Track Your Progress", "description": "Your enrollment, lecture completion, and course progress are tracked automatically — so your learning journey is always visible." },
+      "pace": { "title": "Learn at Your Pace", "description": "Access all course content anytime, from any device, and revisit lectures as many times as you need." }
+    }
+  },
+  "home": {
+    "structuredLearning": "Structured Learning",
+    "featuredCourses": "Featured Courses"
   },
   "auth": {
     "login": "Login",

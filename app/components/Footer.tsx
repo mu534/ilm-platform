@@ -4,25 +4,28 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { GiMoon, GiStarFormation } from "react-icons/gi";
 import { FiMail, FiGithub, FiHeart } from "react-icons/fi";
-
-const exploreLinks = [
-  { href: "/",         label: "Home"     },
-  { href: "/courses",  label: "Courses"  },
-  { href: "/lectures", label: "Lectures" },
-  { href: "/scholars", label: "Scholars" },
-  { href: "/forum",    label: "Forum"    },
-  { href: "/activity", label: "Activity" },
-];
-
-const accountLinks = [
-  { href: "/login",      label: "Sign In"        },
-  { href: "/register",   label: "Register"       },
-  { href: "/profile",    label: "My Profile"     },
-  { href: "/dashboard",  label: "My Learning"    },
-];
+import { useLocale, useTranslations } from "next-intl";
 
 export function Footer() {
   const pathname = usePathname();
+  const locale = useLocale();
+  const nav = useTranslations("nav");
+  const t = useTranslations("footer");
+  const localHref = (href: string) => href === "/" ? `/${locale}` : `/${locale}${href}`;
+  const exploreLinks = [
+    { href: "/", label: nav("home") },
+    { href: "/courses", label: nav("courses") },
+    { href: "/lectures", label: t("lectures") },
+    { href: "/scholars", label: nav("scholars") },
+    { href: "/forum", label: nav("forum") },
+    { href: "/activity", label: t("activity") },
+  ];
+  const accountLinks = [
+    { href: "/login", label: nav("login") },
+    { href: "/register", label: nav("register") },
+    { href: "/profile", label: t("myProfile") },
+    { href: "/dashboard", label: nav("myLearning") },
+  ];
 
   if (
     pathname.startsWith("/dashboard") ||
@@ -50,7 +53,7 @@ export function Footer() {
 
           {/* ── Brand ── */}
           <div className="col-span-1 md:col-span-2">
-            <Link href="/" className="inline-flex items-center gap-2.5 group mb-4">
+            <Link href={localHref("/")} className="inline-flex items-center gap-2.5 group mb-4">
               <div className="relative">
                 <GiMoon className="text-gold-500 text-2xl group-hover:rotate-12 transition-transform duration-300" />
                 <div className="absolute inset-0 bg-gold-400/20 rounded-full blur-md scale-150 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -62,8 +65,7 @@ export function Footer() {
             </Link>
 
             <p className="text-sm text-[var(--text-secondary)] leading-relaxed max-w-xs mb-5">
-              Connecting seekers of knowledge with authentic Islamic scholarship.
-              Free, accessible education for all.
+              {t("tagline")}
             </p>
 
             {/* Arabic */}
@@ -79,13 +81,13 @@ export function Footer() {
           {/* ── Explore ── */}
           <div>
             <h4 className="text-xs font-bold text-[var(--text-primary)] mb-4 tracking-widest uppercase">
-              Explore
+              {t("explore")}
             </h4>
             <ul className="space-y-2.5">
               {exploreLinks.map(({ href, label }) => (
                 <li key={href}>
                   <Link
-                    href={href}
+                    href={localHref(href)}
                     className="group flex items-center gap-1.5 text-sm text-[var(--text-secondary)] hover:text-[var(--accent)] transition-colors duration-200"
                   >
                     <span className="w-0 h-px bg-gold-500 group-hover:w-3 transition-all duration-300 rounded-full" />
@@ -99,13 +101,13 @@ export function Footer() {
           {/* ── Account ── */}
           <div>
             <h4 className="text-xs font-bold text-[var(--text-primary)] mb-4 tracking-widest uppercase">
-              Account
+              {t("account")}
             </h4>
             <ul className="space-y-2.5">
               {accountLinks.map(({ href, label }) => (
                 <li key={href}>
                   <Link
-                    href={href}
+                    href={localHref(href)}
                     className="group flex items-center gap-1.5 text-sm text-[var(--text-secondary)] hover:text-[var(--accent)] transition-colors duration-200"
                   >
                     <span className="w-0 h-px bg-gold-500 group-hover:w-3 transition-all duration-300 rounded-full" />
@@ -120,9 +122,9 @@ export function Footer() {
         {/* ── Bottom bar ── */}
         <div className="border-t border-[var(--border)] pt-6 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-xs text-[var(--text-muted)] flex items-center gap-1.5">
-            © {new Date().getFullYear()} Ilm Platform. Made with
+            © {new Date().getFullYear()} Ilm Platform. {t("madeWith")}
             <FiHeart className="text-gold-500 animate-pulse" size={11} />
-            for the Ummah.
+            {t("forUmmah")}
           </p>
           <div className="flex items-center gap-3">
             

@@ -25,12 +25,11 @@ export function LanguageSwitcher() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const stored = localStorage.getItem("lang") as Locale | null;
-    if (stored && locales.includes(stored)) {
-      setCurrent(stored);
-    }
+    // The URL is the source of truth so browser navigation and shared links
+    // always show the same language as the page content.
+    setCurrent(getCurrentLocale());
     setMounted(true);
-  }, []);
+  }, [pathname]);
 
   const setLanguage = async (code: Locale) => {
     setCurrent(code);

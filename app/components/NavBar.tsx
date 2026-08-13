@@ -14,22 +14,25 @@ import { GiMoon, GiSun } from "react-icons/gi";
 import { useTheme } from "./ThemeProvider";
 import { NotificationBell } from "./NotificationBell";
 import { LanguageSwitcher } from "./LanguageSwitcher";
+import { useLocale, useTranslations } from "next-intl";
 
 import { usePathname } from "next/navigation";
 
-const navLinks = [
-  { href: "/",         label: "Home"     },
-  { href: "/courses",  label: "Courses"  },
-  { href: "/scholars", label: "Scholars" },
-  { href: "/forum",    label: "Forum"    },
-];
-
 export function Navbar() {
   const pathname = usePathname();
+  const locale = useLocale();
+  const t = useTranslations("nav");
   const { data: session }            = useSession();
   const [mobileOpen, setMobileOpen]  = useState(false);
   const { theme, toggleTheme, isLight } = useTheme();
   const user = session?.user as SessionUser | undefined;
+  const localHref = (href: string) => href === "/" ? `/${locale}` : `/${locale}${href}`;
+  const navLinks = [
+    { href: "/", label: t("home") },
+    { href: "/courses", label: t("courses") },
+    { href: "/scholars", label: t("scholars") },
+    { href: "/forum", label: t("forum") },
+  ];
 
   // Hide public navbar on LMS app shell routes
   if (
@@ -57,7 +60,7 @@ export function Navbar() {
         <div className="flex items-center justify-between h-16">
 
           {/* ── Logo ── */}
-          <Link href="/" className="flex items-center gap-2.5 group flex-shrink-0">
+          <Link href={localHref("/")} className="flex items-center gap-2.5 group flex-shrink-0">
             <div className="relative">
               {isLight ? (
                 <GiSun className="text-[var(--accent)] text-2xl group-hover:rotate-180 transition-transform duration-700" />
@@ -76,15 +79,15 @@ export function Navbar() {
             {navLinks.map((l) => (
               <Link
                 key={l.href}
-                href={l.href}
+                href={localHref(l.href)}
                 className="relative px-3 py-1.5 text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] rounded-lg hover:bg-[var(--accent-dim)] transition-all duration-200"
               >
                 {l.label}
               </Link>
             ))}
             {user?.role === "ADMIN" && (
-              <Link href="/admin" className="px-3 py-1.5 text-sm font-medium text-[var(--accent)] rounded-lg hover:bg-[var(--accent-dim)] transition-all">
-                Admin
+              <Link href={localHref("/admin")} className="px-3 py-1.5 text-sm font-medium text-[var(--accent)] rounded-lg hover:bg-[var(--accent-dim)] transition-all">
+                {t("admin")}
               </Link>
             )}
           </div>
@@ -143,31 +146,31 @@ export function Navbar() {
                     </div>
 
                     <DropdownMenu.Item asChild>
-                      <Link href="/profile" className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-dim)] rounded-xl cursor-pointer transition-colors">
-                        <FiUser size={14} className="text-[var(--accent)]" /> Profile
+                      <Link href={localHref("/profile")} className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-dim)] rounded-xl cursor-pointer transition-colors">
+                        <FiUser size={14} className="text-[var(--accent)]" /> {t("profile")}
                       </Link>
                     </DropdownMenu.Item>
                     <DropdownMenu.Item asChild>
-                      <Link href="/settings" className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-dim)] rounded-xl cursor-pointer transition-colors">
-                        <FiSettings size={14} className="text-[var(--accent)]" /> Settings
+                      <Link href={localHref("/settings")} className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-dim)] rounded-xl cursor-pointer transition-colors">
+                        <FiSettings size={14} className="text-[var(--accent)]" /> {t("settings")}
                       </Link>
                     </DropdownMenu.Item>
                     <DropdownMenu.Item asChild>
-                      <Link href="/dashboard" className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-dim)] rounded-xl cursor-pointer transition-colors">
-                        <FiActivity size={14} className="text-[var(--accent)]" /> My Learning
+                      <Link href={localHref("/dashboard")} className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-dim)] rounded-xl cursor-pointer transition-colors">
+                        <FiActivity size={14} className="text-[var(--accent)]" /> {t("myLearning")}
                       </Link>
                     </DropdownMenu.Item>
                     {["ADMIN", "INSTRUCTOR"].includes(user?.role ?? "") && (
                       <DropdownMenu.Item asChild>
-                        <Link href="/admin/courses" className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-dim)] rounded-xl cursor-pointer transition-colors">
-                          <FiBookOpen size={14} className="text-[var(--accent)]" /> Manage Courses
+                      <Link href={localHref("/admin/courses")} className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-dim)] rounded-xl cursor-pointer transition-colors">
+                        <FiBookOpen size={14} className="text-[var(--accent)]" /> {t("manageCourses")}
                         </Link>
                       </DropdownMenu.Item>
                     )}
                     {user?.role === "ADMIN" && (
                       <DropdownMenu.Item asChild>
-                        <Link href="/admin" className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-[var(--accent)] hover:bg-[var(--accent-dim)] rounded-xl cursor-pointer transition-colors">
-                          <FiSettings size={14} /> Admin Dashboard
+                      <Link href={localHref("/admin")} className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-[var(--accent)] hover:bg-[var(--accent-dim)] rounded-xl cursor-pointer transition-colors">
+                        <FiSettings size={14} /> {t("admin")} {t("dashboard")}
                         </Link>
                       </DropdownMenu.Item>
                     )}
@@ -176,18 +179,18 @@ export function Navbar() {
                       className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-xl cursor-pointer transition-colors"
                       onClick={() => signOut({ callbackUrl: "/" })}
                     >
-                      <FiLogOut size={14} /> Sign Out
+                      <FiLogOut size={14} /> {t("signOut")}
                     </DropdownMenu.Item>
                   </DropdownMenu.Content>
                 </DropdownMenu.Portal>
               </DropdownMenu.Root>
             ) : (
               <div className="flex items-center gap-2 ml-1">
-                <Link href="/login" className="px-4 py-1.5 text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] rounded-xl hover:bg-[var(--accent-dim)] transition-all">
-                  Sign In
+                <Link href={localHref("/login")} className="px-4 py-1.5 text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] rounded-xl hover:bg-[var(--accent-dim)] transition-all">
+                  {t("login")}
                 </Link>
-                <Link href="/register" className="btn-primary px-4 py-2 text-sm rounded-xl">
-                  Get Started
+                <Link href={localHref("/register")} className="btn-primary px-4 py-2 text-sm rounded-xl">
+                  {t("getStarted")}
                 </Link>
               </div>
             )}
@@ -217,7 +220,7 @@ export function Navbar() {
             {navLinks.map((l) => (
               <Link
                 key={l.href}
-                href={l.href}
+                href={localHref(l.href)}
                 onClick={() => setMobileOpen(false)}
                 className="block px-3 py-2.5 rounded-xl text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-dim)] transition-all"
               >
@@ -227,20 +230,20 @@ export function Navbar() {
             <div className="pt-2 border-t border-[var(--border)] space-y-0.5 mt-2">
               {session ? (
                 <>
-                  <Link href="/profile"    onClick={() => setMobileOpen(false)} className="block px-3 py-2.5 rounded-xl text-sm text-[var(--text-secondary)] hover:bg-[var(--accent-dim)] transition-all">Profile</Link>
-                  <Link href="/settings"   onClick={() => setMobileOpen(false)} className="block px-3 py-2.5 rounded-xl text-sm text-[var(--text-secondary)] hover:bg-[var(--accent-dim)] transition-all">Settings</Link>
-                  <Link href="/dashboard"  onClick={() => setMobileOpen(false)} className="block px-3 py-2.5 rounded-xl text-sm text-[var(--text-secondary)] hover:bg-[var(--accent-dim)] transition-all">My Learning</Link>
+                  <Link href={localHref("/profile")}    onClick={() => setMobileOpen(false)} className="block px-3 py-2.5 rounded-xl text-sm text-[var(--text-secondary)] hover:bg-[var(--accent-dim)] transition-all">{t("profile")}</Link>
+                  <Link href={localHref("/settings")}   onClick={() => setMobileOpen(false)} className="block px-3 py-2.5 rounded-xl text-sm text-[var(--text-secondary)] hover:bg-[var(--accent-dim)] transition-all">{t("settings")}</Link>
+                  <Link href={localHref("/dashboard")}  onClick={() => setMobileOpen(false)} className="block px-3 py-2.5 rounded-xl text-sm text-[var(--text-secondary)] hover:bg-[var(--accent-dim)] transition-all">{t("myLearning")}</Link>
                   {user?.role === "ADMIN" && (
-                    <Link href="/admin"    onClick={() => setMobileOpen(false)} className="block px-3 py-2.5 rounded-xl text-sm text-[var(--accent)] hover:bg-[var(--accent-dim)] transition-all">Admin</Link>
+                    <Link href={localHref("/admin")}    onClick={() => setMobileOpen(false)} className="block px-3 py-2.5 rounded-xl text-sm text-[var(--accent)] hover:bg-[var(--accent-dim)] transition-all">{t("admin")}</Link>
                   )}
                   <button onClick={() => signOut()} className="block w-full text-left px-3 py-2.5 rounded-xl text-sm text-red-400 hover:bg-red-500/10 transition-all">
-                    Sign Out
+                    {t("signOut")}
                   </button>
                 </>
               ) : (
                 <div className="flex gap-2 pt-1">
-                  <Link href="/login"    onClick={() => setMobileOpen(false)} className="flex-1 text-center px-4 py-2 text-sm border border-[var(--border)] text-[var(--text-primary)] rounded-xl hover:bg-[var(--accent-dim)] transition-all">Sign In</Link>
-                  <Link href="/register" onClick={() => setMobileOpen(false)} className="flex-1 text-center btn-primary py-2 text-sm rounded-xl">Register</Link>
+                  <Link href={localHref("/login")}    onClick={() => setMobileOpen(false)} className="flex-1 text-center px-4 py-2 text-sm border border-[var(--border)] text-[var(--text-primary)] rounded-xl hover:bg-[var(--accent-dim)] transition-all">{t("login")}</Link>
+                  <Link href={localHref("/register")} onClick={() => setMobileOpen(false)} className="flex-1 text-center btn-primary py-2 text-sm rounded-xl">{t("register")}</Link>
                 </div>
               )}
             </div>

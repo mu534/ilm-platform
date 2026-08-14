@@ -13,23 +13,52 @@ export async function uploadToCloudinary(
   fileBuffer: Buffer,
   folder: string,
   resourceType: "image" | "video" | "raw" | "auto" = "auto",
-): Promise<{ url: string; publicId: string }> {
+): Promise<{ url: string; publicId: string; duration?: number; width?: number; height?: number }> {
   return new Promise((resolve, reject) => {
-    cloudinary.uploader
-      .upload_stream(
-        {
-          folder,
-          resource_type: resourceType,
-        },
-        (error, result) => {
-          if (error || !result) {
-            reject(error || new Error("Upload failed"));
-          } else {
-            resolve({ url: result.secure_url, publicId: result.public_id });
-          }
-        },
-      )
-      .end(fileBuffer);
+    type UploadOpts = {
+      folder:                    string;
+      resource_type:             string;
+      quality?:                  string;
+      fetch_format?:             string;
+      eager?:                    Array<{ streaming_profile?: string; format?: string; video_codec?: string; quality?: string }>;
+      eager_async?:              boolean;
+      eager_notification_url?:   string | undefined;
+    };
+
+    const opts: UploadOpts = {
+      folder,
+      resource_type: resourceType,
+    };
+
+    if (resourceType === "video") {
+      // Async eager transcoding: HLS adaptive stream + mp4 fallback
+      opts.eager = [
+        { streaming_profile: "hd", format: "m3u8" },
+        { format: "mp4", video_codec: "auto", quality: "auto" },
+      ];
+      opts.eager_async = true;
+      opts.quality     = "auto";
+    }
+
+    if (resourceType === "image") {
+      opts.quality      = "auto";
+      opts.fetch_format = "auto";
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    cloudinary.uploader.upload_stream(opts as any, (error, result) => {
+      if (error || !result) {
+        reject(error ?? new Error("Upload failed"));
+      } else {
+        resolve({
+          url:      result.secure_url,
+          publicId: result.public_id,
+          duration: result.duration,
+          width:    result.width,
+          height:   result.height,
+        });
+      }
+    }).end(fileBuffer);
   });
 }
 

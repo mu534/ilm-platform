@@ -5,6 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { FiArrowLeft, FiClock, FiCheck, FiX } from "react-icons/fi";
+import { BackButton } from "@/app/components/ui/BackButton";
 
 interface QuizQuestion {
   id:       string;
@@ -193,8 +194,6 @@ export default function QuizPage() {
       </div>
     );
   }
-
-import { BackButton } from "@/app/components/ui/BackButton";
 
   // ── Start screen ─────────────────────────────────────────────────────────────
   if (!started) {

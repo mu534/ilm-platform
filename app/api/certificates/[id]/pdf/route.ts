@@ -49,6 +49,10 @@ export async function GET(
   const courseTitle = escapeHtml(cert.title);
   const instructor = escapeHtml(cert.instructorName || "Ilm Academic Faculty");
   const certId = escapeHtml(cert.certificateId || cert.id.slice(0, 12).toUpperCase());
+  const baseUrl = (process.env.NEXTAUTH_URL ?? process.env.APP_URL ?? "").replace(/\/$/, "");
+  const verifyUrl = cert.verificationUrl || (cert.certificateId ? `${baseUrl}/certificates/verify/${cert.certificateId}` : "");
+  // Google Charts QR API — no server-side dependency needed
+  const qrUrl = verifyUrl ? `https://chart.googleapis.com/chart?chs=120x120&cht=qr&chl=${encodeURIComponent(verifyUrl)}&choe=UTF-8` : "";
 
   // Parse signature snapshots
   let signaturesHtml = "";
@@ -243,7 +247,12 @@ export async function GET(
       <div class="cert-meta">
         <div><strong>Issue Date:</strong> ${escapeHtml(issuedDate)}</div>
         <div style="margin-top: 4px; font-family: monospace; font-size: 12px; font-weight: bold; color: #064e3b;">ID: ${certId}</div>
+        ${verifyUrl ? `<div style="margin-top: 6px; font-size: 10px; color: #718096;">Verify at: ilm-platform.com/verify</div>` : ""}
       </div>
+      ${qrUrl ? `<div style="text-align:center; flex-shrink:0;">
+        <img src="${qrUrl}" width="80" height="80" alt="Verify QR" style="border-radius:6px;" />
+        <div style="font-size:9px; color:#718096; margin-top:2px;">Scan to verify</div>
+      </div>` : ""}
     </div>
   </div>
 

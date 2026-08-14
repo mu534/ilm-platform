@@ -7,6 +7,13 @@ import { Providers } from "@/app/components/Providers";
 import { Navbar } from "@/app/components/NavBar";
 import { Footer } from "@/app/components/Footer";
 
+// Pre-generate locale segments at build time.
+// This eliminates the dynamic async timing window that triggers the
+// Turbopack "negative timestamp" performance.measure() error in development.
+export function generateStaticParams() {
+  return locales.map((locale) => ({ locale }));
+}
+
 export const metadata: Metadata = {
   title: {
     default: "Ilm Platform – Authentic Islamic Learning",

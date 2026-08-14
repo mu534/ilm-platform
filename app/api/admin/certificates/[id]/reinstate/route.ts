@@ -2,15 +2,10 @@ import { NextRequest } from "next/server";
 import { prisma } from "../../../../../lib/prism";
 import { requireAdmin } from "../../../../../lib/authorization";
 import { successResponse, errorResponse, handleApiError } from "../../../../../utils/api";
-import { z } from "zod";
 
-const schema = z.object({
-  reason: z.string().min(1, "Reason is required").max(500),
-});
-
-// POST /api/admin/certificates/[id]/revoke
+// POST /api/admin/certificates/[id]/reinstate
 export async function POST(
-  req: NextRequest,
+  _req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
@@ -22,45 +17,41 @@ export async function POST(
       select: { id: true, isRevoked: true, userId: true, certificateId: true },
     });
     if (!cert) return errorResponse("Certificate not found", 404);
-    if (cert.isRevoked) return errorResponse("Certificate is already revoked", 409);
-
-    const body = (await req.json()) as unknown;
-    const { reason } = schema.parse(body);
+    if (!cert.isRevoked) return errorResponse("Certificate is not revoked", 409);
 
     await prisma.$transaction(async (tx) => {
       await tx.certificate.update({
         where: { id },
         data: {
-          isRevoked:        true,
-          revokedAt:        new Date(),
-          revokedById:      admin.id,
-          revocationReason: reason,
+          isRevoked:        false,
+          revokedAt:        null,
+          revokedById:      null,
+          revocationReason: null,
         },
       });
 
       await tx.certificateAudit.create({
         data: {
           certificateId: id,
-          action:        "REVOKED",
+          action:        "REINSTATED",
           performedById: admin.id,
-          reason,
+          reason:        "Reinstated by administrator",
           metadata: { certificateId: cert.certificateId },
         },
       });
 
-      // Notify the student
       await tx.notification.create({
         data: {
           userId:  cert.userId,
           type:    "ANNOUNCEMENT" as const,
-          title:   "Certificate Revoked",
-          message: `Your certificate has been revoked by an administrator. Reason: ${reason}`,
+          title:   "Certificate Reinstated",
+          message: "Your certificate has been reinstated and is now valid.",
           link:    "/dashboard/certificates",
         },
       });
     });
 
-    return successResponse({ message: "Certificate revoked" });
+    return successResponse({ message: "Certificate reinstated" });
   } catch (error) {
     return handleApiError(error);
   }

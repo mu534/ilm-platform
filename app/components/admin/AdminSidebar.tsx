@@ -19,6 +19,7 @@ import {
   FiSettings,
   FiLogOut,
   FiChevronRight,
+  FiAward,
 } from "react-icons/fi";
 import { LuPanelLeftClose, LuPanelLeftOpen } from "react-icons/lu";
 import { GiMoon } from "react-icons/gi";
@@ -46,6 +47,11 @@ const learningNav: NavItem[] = [
 
 const moderationNav: NavItem[] = [
   { href: "/admin/reports", label: "Reports", icon: <FiFlag size={18} /> },
+];
+
+const certificateNav: NavItem[] = [
+  { href: "/admin/certificates", label: "Certificates", icon: <FiAward size={18} /> },
+  { href: "/admin/certificate-settings", label: "Cert Settings", icon: <FiSettings size={18} /> },
 ];
 
 const systemNav: NavItem[] = [
@@ -247,19 +253,44 @@ export function AdminSidebar({
                       : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-hover)]"
                   } ${collapsed && !isMobile ? "justify-center px-0" : ""}`}
                 >
-                  <span
-                    className={`flex-shrink-0 transition-colors ${
-                      active ? "text-[var(--accent)]" : "text-[var(--text-muted)] group-hover:text-[var(--text-primary)]"
-                    }`}
-                  >
+                  <span className={`flex-shrink-0 transition-colors ${active ? "text-[var(--accent)]" : "text-[var(--text-muted)] group-hover:text-[var(--text-primary)]"}`}>
                     {item.icon}
                   </span>
-                  {(!collapsed || isMobile) && (
-                    <span className="truncate flex-1">{item.label}</span>
-                  )}
-                  {active && (!collapsed || isMobile) && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]" />
-                  )}
+                  {(!collapsed || isMobile) && <span className="truncate flex-1">{item.label}</span>}
+                  {active && (!collapsed || isMobile) && <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]" />}
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
+
+        {/* Certificates Section */}
+        <div>
+          {(!collapsed || isMobile) && (
+            <p className="px-3 text-[10px] uppercase tracking-widest font-semibold text-[var(--text-muted)] mb-2">
+              Certificates
+            </p>
+          )}
+          <nav className="space-y-1">
+            {certificateNav.map((item) => {
+              const active = isLinkActive(item);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={handleLinkClick}
+                  title={collapsed && !isMobile ? item.label : undefined}
+                  className={`flex items-center gap-3.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group relative ${
+                    active
+                      ? "bg-[var(--accent-dim)] text-[var(--accent)] border border-[var(--border-strong)] font-semibold shadow-sm"
+                      : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-hover)]"
+                  } ${collapsed && !isMobile ? "justify-center px-0" : ""}`}
+                >
+                  <span className={`flex-shrink-0 transition-colors ${active ? "text-[var(--accent)]" : "text-[var(--text-muted)] group-hover:text-[var(--text-primary)]"}`}>
+                    {item.icon}
+                  </span>
+                  {(!collapsed || isMobile) && <span className="truncate flex-1">{item.label}</span>}
+                  {active && (!collapsed || isMobile) && <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]" />}
                 </Link>
               );
             })}

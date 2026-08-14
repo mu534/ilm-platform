@@ -8,6 +8,7 @@ import { isLectureLocked } from "../../../../lib/sequentialLearning";
 import { LikeButton } from "../../../../components/lectures/LikeButton";
 import { LectureResources } from "../../../../components/lectures/LectureResources";
 import { LectureVideoPlayer } from "../../../../components/lectures/LectureVideoPlayer";
+import { LecturePdfViewer } from "../../../../components/lectures/LecturePdfViewer";
 import { LectureTopBar, LectureBottomBar } from "../../../../components/lectures/LectureNavigation";
 import { sanitizeHtml } from "../../../../utils/sanitize";
 import type { SessionUser } from "../../../../types/auth.types";
@@ -238,26 +239,7 @@ export default async function ClassroomLecturePage({ params }: Props) {
 
           {/* ── PDF ── */}
           {lecture.type === "PDF" && lecture.mediaUrl && (
-            <div className="mb-8 border border-[var(--border)] rounded-xl overflow-hidden">
-              <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)] bg-[var(--bg-secondary)]">
-                <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide font-semibold">
-                  PDF Document
-                </p>
-                <a
-                  href={lecture.mediaUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-[var(--accent)] hover:text-[var(--accent-light)] transition-colors"
-                >
-                  Open in new tab →
-                </a>
-              </div>
-              <iframe
-                src={lecture.mediaUrl}
-                className="w-full h-[600px]"
-                title={lecture.title}
-              />
-            </div>
+            <LecturePdfViewer url={lecture.mediaUrl} title={lecture.title} />
           )}
 
           {/* ── Thumbnail (non-video) ── */}

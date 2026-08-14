@@ -127,7 +127,7 @@ export default function AdminCertificateDetailPage() {
           <div className="flex items-center gap-2">
             {cert.certificateId && (
               <Link
-                href={`/certificates/verify/${cert.certificateId}`}
+                href={`/verify-certificate/${cert.certificateId}`}
                 target="_blank"
                 className="btn-secondary text-xs flex items-center gap-1.5"
               >

@@ -226,7 +226,7 @@ export default function AdminCertificatesPage() {
                         </Link>
                         {cert.certificateId && (
                           <Link
-                            href={`/certificates/verify/${cert.certificateId}`}
+                            href={`/verify-certificate/${cert.certificateId}`}
                             target="_blank"
                             className="p-1.5 text-[var(--text-muted)] hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition-colors"
                             title="Public verification"

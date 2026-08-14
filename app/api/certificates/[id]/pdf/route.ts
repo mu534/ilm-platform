@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../../lib/prism";
 import { requireUserFresh } from "../../../../lib/authorization";
 import { errorResponse } from "../../../../utils/api";
+import { generateQrSvg } from "../../../../lib/qr";
 
 function escapeHtml(value: string): string {
   return value
@@ -51,8 +52,9 @@ export async function GET(
   const certId = escapeHtml(cert.certificateId || cert.id.slice(0, 12).toUpperCase());
   const baseUrl = (process.env.NEXTAUTH_URL ?? process.env.APP_URL ?? "").replace(/\/$/, "");
   const verifyUrl = cert.verificationUrl || (cert.certificateId ? `${baseUrl}/verify-certificate/${cert.certificateId}` : "");
-  // Google Charts QR API — no server-side dependency needed
-  const qrUrl = verifyUrl ? `https://chart.googleapis.com/chart?chs=120x120&cht=qr&chl=${encodeURIComponent(verifyUrl)}&choe=UTF-8` : "";
+
+  // Generate QR code server-side (no external network call)
+  const qrSvg = verifyUrl ? await generateQrSvg(verifyUrl, 120) : "";
 
   // Parse signature snapshots
   let signaturesHtml = "";
@@ -249,8 +251,10 @@ export async function GET(
         <div style="margin-top: 4px; font-family: monospace; font-size: 12px; font-weight: bold; color: #064e3b;">ID: ${certId}</div>
         ${verifyUrl ? `<div style="margin-top: 6px; font-size: 10px; color: #718096;">Verify at: ilm-platform.com/verify</div>` : ""}
       </div>
-      ${qrUrl ? `<div style="text-align:center; flex-shrink:0;">
-        <img src="${qrUrl}" width="80" height="80" alt="Verify QR" style="border-radius:6px;" />
+      ${qrSvg ? `<div style="text-align:center; flex-shrink:0;">
+        <div style="width:80px;height:80px;border-radius:6px;overflow:hidden;display:inline-block;">
+          ${qrSvg}
+        </div>
         <div style="font-size:9px; color:#718096; margin-top:2px;">Scan to verify</div>
       </div>` : ""}
     </div>

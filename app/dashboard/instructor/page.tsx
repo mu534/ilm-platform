@@ -129,6 +129,12 @@ export default async function InstructorDashboardPage() {
         </div>
         <div className="flex gap-3">
           <Link
+            href="/admin/courses/new"
+            className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-gold-500 to-gold-600 hover:from-gold-400 hover:to-gold-500 text-white rounded-xl text-sm font-semibold transition-all hover:scale-105"
+          >
+            <FiPlus size={14} /> New Course
+          </Link>
+          <Link
             href="/dashboard/instructor/students"
             className="flex items-center gap-2 px-4 py-2 border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent)] rounded-xl text-sm transition-colors"
           >

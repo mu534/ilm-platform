@@ -192,7 +192,7 @@ export default async function AdminPage() {
   const session = await getServerSession(authOptions);
   const user = session?.user as SessionUser | null;
 
-  if (user?.role !== "ADMIN") redirect("/admin/courses");
+  if (user?.role !== "ADMIN") redirect("/dashboard");
 
   const stats = await getDashboardStats();
 

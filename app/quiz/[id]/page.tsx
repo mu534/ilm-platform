@@ -51,9 +51,11 @@ export default function QuizPage() {
   const [started,   setStarted]   = useState(false);
   const timerRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
-  // Redirect if not logged in
+  // Redirect if definitely not logged in (after session finished loading)
   useEffect(() => {
-    if (status === "unauthenticated") router.push(`/login?callbackUrl=/quiz/${id}`);
+    if (status === "unauthenticated") {
+      router.push(`/login?callbackUrl=/quiz/${id}`);
+    }
   }, [status, router, id]);
 
   // Load quiz
@@ -62,13 +64,18 @@ export default function QuizPage() {
     fetch(`/api/quizzes/${id}`)
       .then((r) => r.json())
       .then((d) => {
-        if (d.success) {
+        if (d.success && d.data) {
+          // If the quiz belongs to a course, redirect to the classroom learning experience
+          if (d.data.module?.course?.slug) {
+            router.replace(`/courses/${d.data.module.course.slug}/learn/quiz/${id}`);
+            return;
+          }
           setQuiz(d.data);
           if (d.data.timeLimit) setTimeLeft(d.data.timeLimit * 60);
         }
       })
       .finally(() => setLoading(false));
-  }, [id]);
+  }, [id, router]);
 
   const handleSubmit = async () => {
     if (submitting || !quiz) return;

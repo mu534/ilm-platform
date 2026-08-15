@@ -72,10 +72,18 @@ export function CourseSidebar({
   onProgressChange,
 }: CourseSidebarProps) {
   const pathname = usePathname();
-  // Active lecture is derived from the URL itself (…/learn/{lectureSlug}),
-  // so the sidebar never needs the page to hand it a prop, and never
-  // needs to remount when navigating between lectures.
-  const activeLectureSlug = useMemo(() => pathname.split("/").filter(Boolean).pop() ?? "", [pathname]);
+  const isQuizRoute = pathname.includes("/learn/quiz/");
+  const activeQuizId = useMemo(() => {
+    if (pathname.includes("/learn/quiz/")) {
+      return pathname.split("/learn/quiz/")[1]?.split("/")[0] ?? "";
+    }
+    return "";
+  }, [pathname]);
+
+  const activeLectureSlug = useMemo(() => {
+    if (isQuizRoute) return "";
+    return pathname.split("/").filter(Boolean).pop() ?? "";
+  }, [pathname, isQuizRoute]);
 
   const [data,      setData]      = useState<CurriculumData | null>(null);
   const [loading,   setLoading]   = useState(true);
@@ -86,10 +94,6 @@ export function CourseSidebar({
   const [openModules, setOpenModules] = useState<Set<string>>(new Set());
 
   // Fetch curriculum once per course — NOT on every lecture navigation.
-  // Re-fetching on every lecture change was causing the whole sidebar to
-  // flash back to its loading skeleton each time a student clicked
-  // Next/Previous, which is exactly the "leaving the classroom" feeling
-  // this redesign is meant to remove.
   const load = useCallback(async () => {
     try {
       const res  = await fetch(`/api/courses/${courseId}/curriculum`);
@@ -102,18 +106,17 @@ export function CourseSidebar({
 
   useEffect(() => { void load(); }, [load]);
 
-  // Auto-open (and keep open) whichever module contains the active lecture.
-  // This runs on every pathname change, but only touches which section is
-  // expanded — it never resets `data`/`loading`, so there's no flicker.
+  // Auto-open (and keep open) whichever module contains the active lecture or quiz.
   useEffect(() => {
     if (!data) return;
     const activeModule = data.modules.find((m) =>
-      m.lectures.some((l) => l.slug === activeLectureSlug),
+      (activeLectureSlug && m.lectures.some((l) => l.slug === activeLectureSlug)) ||
+      (activeQuizId && m.quizzes?.some((q) => q.id === activeQuizId))
     );
     if (activeModule) {
       setOpenModules((prev) => new Set(prev).add(activeModule.id));
     }
-  }, [data, activeLectureSlug]);
+  }, [data, activeLectureSlug, activeQuizId]);
 
   // Re-fetch when a lecture is marked complete (so % and checkmarks update)
   const refresh = useCallback(() => { void load(); onProgressChange?.(); }, [load, onProgressChange]);
@@ -326,23 +329,37 @@ export function CourseSidebar({
                   })}
 
                   {/* Quiz links — shown at the bottom of each module */}
-                  {mod.quizzes && mod.quizzes.length > 0 && mod.quizzes.map((quiz) => (
-                    <Link
-                      key={quiz.id}
-                      href={`/quiz/${quiz.id}`}
-                      className="flex items-center gap-2.5 px-4 py-3 border-b border-[var(--border-subtle)] hover:bg-[var(--bg-card-hover)] transition-colors group"
-                    >
-                      <span className="w-5 h-5 rounded-full bg-purple-500/15 border border-purple-400/50 flex items-center justify-center flex-shrink-0">
-                        <FiHelpCircle size={10} className="text-purple-400" />
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs text-purple-400 font-medium leading-snug truncate group-hover:text-purple-300 transition-colors">
-                          {quiz.title}
-                        </p>
-                        <p className="text-[10px] text-[var(--text-muted)] mt-0.5">Module Quiz</p>
-                      </div>
-                    </Link>
-                  ))}
+                  {mod.quizzes && mod.quizzes.length > 0 && mod.quizzes.map((quiz) => {
+                    const isQuizActive = quiz.id === activeQuizId;
+                    return (
+                      <Link
+                        key={quiz.id}
+                        href={`/courses/${data?.courseSlug || courseSlug}/learn/quiz/${quiz.id}`}
+                        className={`flex items-center gap-2.5 px-4 py-3 border-b border-[var(--border-subtle)] transition-colors group ${
+                          isQuizActive
+                            ? "bg-purple-500/10 border-l-2 border-l-purple-500"
+                            : "hover:bg-[var(--bg-card-hover)]"
+                        }`}
+                        aria-current={isQuizActive ? "page" : undefined}
+                      >
+                        <span className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${
+                          isQuizActive
+                            ? "bg-purple-600 text-white"
+                            : "bg-purple-500/15 border border-purple-400/50 text-purple-400"
+                        }`}>
+                          <FiHelpCircle size={10} />
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-xs font-medium leading-snug truncate transition-colors ${
+                            isQuizActive ? "text-purple-400 font-bold" : "text-purple-400/90 group-hover:text-purple-300"
+                          }`}>
+                            {quiz.title}
+                          </p>
+                          <p className="text-[10px] text-[var(--text-muted)] mt-0.5">Module Quiz</p>
+                        </div>
+                      </Link>
+                    );
+                  })}
                 </div>
               )}
             </div>

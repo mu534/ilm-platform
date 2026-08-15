@@ -47,11 +47,11 @@ export function CourseProgress({
   const isCompleted = enrollment.status === "COMPLETED" || percent >= 100;
 
   // For completed courses: nextLectureSlug is pre-set to the first lecture (see course page).
-  // Fallback to dashboard if somehow no lecture exists — never loop back to the course page.
+  // Fallback to course overview or dashboard if somehow no lecture exists.
   const continueHref = nextLectureSlug
-    ? `/lectures/${nextLectureSlug}`
+    ? (courseSlug ? `/courses/${courseSlug}/learn/${nextLectureSlug}` : `/lectures/${nextLectureSlug}`)
     : isCompleted
-    ? "/dashboard"
+    ? (courseSlug ? `/courses/${courseSlug}` : "/dashboard")
     : courseSlug
     ? `/courses/${courseSlug}`
     : "/dashboard";

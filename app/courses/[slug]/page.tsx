@@ -36,6 +36,9 @@ async function getCourse(slug: string) {
             where:   { published: true },
             select:  { id: true, title: true, slug: true, type: true, duration: true, order: true },
           },
+          quizzes: {
+            select: { id: true, title: true },
+          },
           _count: { select: { lectures: true, quizzes: true } },
         },
       },
@@ -579,6 +582,7 @@ interface CurriculumSectionProps {
       duration: number | null;
       order:    number;
     }[];
+    quizzes?:    { id: string; title: string }[];
     _count: { lectures: number; quizzes: number };
   };
   modIdx:     number;
@@ -622,8 +626,8 @@ function CurriculumSection({ module, modIdx, canAccess, courseSlug }: Curriculum
         </span>
       </summary>
 
-      {/* Lesson rows */}
-      {module.lectures.length > 0 && (
+      {/* Lesson & Quiz rows */}
+      {(module.lectures.length > 0 || (module.quizzes && module.quizzes.length > 0)) && (
         <div className="divide-y divide-[var(--border-subtle)] bg-[var(--bg-card)]">
           {module.lectures.map((lecture, lIdx) => {
             const typeConf = lectureTypeConfig[lecture.type] ?? lectureTypeConfig.TEXT;
@@ -646,7 +650,7 @@ function CurriculumSection({ module, modIdx, canAccess, courseSlug }: Curriculum
                 <span className="flex-1 text-sm text-[var(--text-secondary)] min-w-0">
                   {canAccess ? (
                     <Link
-                      href={`/lectures/${lecture.slug}`}
+                      href={`/courses/${courseSlug}/learn/${lecture.slug}`}
                       className="hover:text-[var(--accent)] transition-colors line-clamp-1 focus-visible:underline"
                     >
                       {lecture.title}
@@ -676,6 +680,33 @@ function CurriculumSection({ module, modIdx, canAccess, courseSlug }: Curriculum
               </div>
             );
           })}
+
+          {/* Module Quizzes */}
+          {module.quizzes && module.quizzes.length > 0 && module.quizzes.map((quiz) => (
+            <div
+              key={quiz.id}
+              className="flex items-center gap-3 px-5 py-3 bg-purple-500/[0.03] group/row hover:bg-purple-500/[0.07] transition-colors"
+            >
+              <span className="w-5 h-5 rounded-full bg-purple-500/15 border border-purple-400/40 text-purple-400 flex items-center justify-center text-[10px] flex-shrink-0 font-bold">
+                Q
+              </span>
+              <span className="flex-1 text-sm text-purple-400 font-medium min-w-0">
+                {canAccess ? (
+                  <Link
+                    href={`/courses/${courseSlug}/learn/quiz/${quiz.id}`}
+                    className="hover:text-purple-300 transition-colors line-clamp-1"
+                  >
+                    {quiz.title}
+                  </Link>
+                ) : (
+                  <span className="line-clamp-1">{quiz.title}</span>
+                )}
+              </span>
+              <span className="text-[10px] text-purple-400/80 font-medium bg-purple-500/10 px-2 py-0.5 rounded-full border border-purple-500/20">
+                Quiz
+              </span>
+            </div>
+          ))}
         </div>
       )}
     </details>

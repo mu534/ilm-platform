@@ -70,17 +70,15 @@ function LoginForm() {
         setError("Invalid email or password. Please try again.");
       }
     } else {
-      // Login successful — go to home page.
-      // New users without onboarding will be caught by middleware → /onboarding.
-      // Returning users can navigate to dashboard from the home page CTA.
-      router.push("/");
+      // Login successful — go to requested callbackUrl (or dashboard/home)
+      router.push(callbackUrl);
       router.refresh();
     }
   };
 
   const handleGoogle = async () => {
     setGoogleLoading(true);
-    await signIn("google", { callbackUrl: "/" });
+    await signIn("google", { callbackUrl });
     // Google redirects — no need to reset loading
   };
 

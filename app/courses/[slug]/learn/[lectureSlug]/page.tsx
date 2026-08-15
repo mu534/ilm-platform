@@ -9,7 +9,7 @@ import { LikeButton } from "../../../../components/lectures/LikeButton";
 import { LectureResources } from "../../../../components/lectures/LectureResources";
 import { LectureVideoPlayer } from "../../../../components/lectures/LectureVideoPlayer";
 import { LecturePdfViewer } from "../../../../components/lectures/LecturePdfViewer";
-import { LectureTopBar, LectureBottomBar } from "../../../../components/lectures/LectureNavigation";
+import { LectureTopBar, LectureBottomBar, LectureInPageNav } from "../../../../components/lectures/LectureNavigation";
 import { sanitizeHtml } from "../../../../utils/sanitize";
 import type { SessionUser } from "../../../../types/auth.types";
 
@@ -40,6 +40,9 @@ async function getLecture(courseSlug: string, lectureSlug: string) {
           title: true,
           order: true,
           courseId: true,
+          quizzes: {
+            select: { id: true, title: true },
+          },
           course: {
             select: {
               id: true, title: true, slug: true, categoryId: true, sequentialLearning: true,
@@ -47,6 +50,9 @@ async function getLecture(courseSlug: string, lectureSlug: string) {
                 orderBy: { order: "asc" },
                 select: {
                   id: true, title: true, order: true,
+                  quizzes: {
+                    select: { id: true, title: true },
+                  },
                   lectures: {
                     orderBy: { order: "asc" },
                     where:   { published: true },
@@ -69,6 +75,8 @@ interface NavInfo {
   prevTitle:        string | null;
   nextSlug:         string | null;
   nextTitle:        string | null;
+  nextQuizId:       string | null;
+  nextQuizTitle:    string | null;
   isLastLecture:    boolean;
   isNextSection:    boolean;
   nextSectionTitle: string | null;
@@ -78,20 +86,27 @@ interface NavInfo {
 
 function buildNavInfo(
   lectureId: string,
-  modules: { id: string; title: string; lectures: { id: string; title: string; slug: string }[] }[],
+  modules: {
+    id: string;
+    title: string;
+    quizzes?: { id: string; title: string }[];
+    lectures: { id: string; title: string; slug: string }[];
+  }[],
 ): NavInfo {
-  const all: { id: string; title: string; slug: string; moduleId: string; moduleTitle: string }[] = [];
-  for (const mod of modules) {
+  const all: { id: string; title: string; slug: string; moduleId: string; moduleTitle: string; moduleIndex: number }[] = [];
+  
+  modules.forEach((mod, mIdx) => {
     for (const lec of mod.lectures) {
-      all.push({ ...lec, moduleId: mod.id, moduleTitle: mod.title });
+      all.push({ ...lec, moduleId: mod.id, moduleTitle: mod.title, moduleIndex: mIdx });
     }
-  }
+  });
 
   const idx = all.findIndex((l) => l.id === lectureId);
   if (idx === -1) {
     return {
       prevSlug: null, prevTitle: null,
       nextSlug: null, nextTitle: null,
+      nextQuizId: null, nextQuizTitle: null,
       isLastLecture: false, isNextSection: false,
       nextSectionTitle: null,
       lectureNumber: 1, totalLectures: all.length,
@@ -102,6 +117,13 @@ function buildNavInfo(
   const next = idx < all.length - 1 ? all[idx + 1] : null;
   const curr = all[idx];
 
+  // Check if current module has a quiz and this is the last lecture of this module
+  const currentMod = modules[curr.moduleIndex];
+  const isLastInCurrentModule = currentMod && currentMod.lectures[currentMod.lectures.length - 1]?.id === lectureId;
+  const moduleQuiz = isLastInCurrentModule && currentMod.quizzes && currentMod.quizzes.length > 0
+    ? currentMod.quizzes[0]
+    : null;
+
   const isNextSection = !!(next && next.moduleId !== curr.moduleId);
 
   return {
@@ -109,6 +131,8 @@ function buildNavInfo(
     prevTitle:        prev?.title ?? null,
     nextSlug:         next?.slug  ?? null,
     nextTitle:        next?.title ?? null,
+    nextQuizId:       moduleQuiz?.id ?? null,
+    nextQuizTitle:    moduleQuiz?.title ?? null,
     isLastLecture:    idx === all.length - 1,
     isNextSection,
     nextSectionTitle: isNextSection ? next!.moduleTitle : null,
@@ -193,11 +217,12 @@ export default async function ClassroomLecturePage({ params }: Props) {
         totalLectures={navInfo.totalLectures}
         prevSlug={navInfo.prevSlug}
         nextSlug={navInfo.nextSlug}
+        nextQuizId={navInfo.nextQuizId}
       />
 
       {/* Scrollable content */}
       <div className="flex-1 overflow-auto">
-        <article className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-4">
+        <article className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-8">
 
           {/* Section label */}
           <p className="text-xs font-semibold text-[var(--accent)] uppercase tracking-wider mb-3">
@@ -320,10 +345,30 @@ export default async function ClassroomLecturePage({ params }: Props) {
             </div>
           )}
 
+          {/* ── Prominent In-Page Completion & Navigation Card ── */}
+          <LectureInPageNav
+            lectureId={lecture.id}
+            courseId={courseId}
+            courseSlug={course.slug}
+            courseTitle={course.title}
+            sectionTitle={section.title}
+            lectureNumber={navInfo.lectureNumber}
+            totalLectures={navInfo.totalLectures}
+            prevSlug={navInfo.prevSlug}
+            prevTitle={navInfo.prevTitle}
+            nextSlug={navInfo.nextSlug}
+            nextTitle={navInfo.nextTitle}
+            nextQuizId={navInfo.nextQuizId}
+            nextQuizTitle={navInfo.nextQuizTitle}
+            isLastLecture={navInfo.isLastLecture}
+            isNextSection={navInfo.isNextSection}
+            nextSectionTitle={navInfo.nextSectionTitle}
+          />
+
         </article>
       </div>
 
-      {/* Bottom navigation bar */}
+      {/* Bottom sticky navigation bar */}
       <LectureBottomBar
         lectureId={lecture.id}
         courseId={courseId}
@@ -336,6 +381,8 @@ export default async function ClassroomLecturePage({ params }: Props) {
         prevTitle={navInfo.prevTitle}
         nextSlug={navInfo.nextSlug}
         nextTitle={navInfo.nextTitle}
+        nextQuizId={navInfo.nextQuizId}
+        nextQuizTitle={navInfo.nextQuizTitle}
         isLastLecture={navInfo.isLastLecture}
         isNextSection={navInfo.isNextSection}
         nextSectionTitle={navInfo.nextSectionTitle}

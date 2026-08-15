@@ -266,7 +266,7 @@ export function Navbar() {
                   {user?.role === "ADMIN" && (
                     <Link href={localHref("/admin")}    onClick={() => setMobileOpen(false)} className="block px-3 py-2.5 rounded-xl text-sm text-[var(--accent)] hover:bg-[var(--accent-dim)] transition-all">{t("admin")}</Link>
                   )}
-                  <button onClick={() => signOut()} className="block w-full text-left px-3 py-2.5 rounded-xl text-sm text-red-400 hover:bg-red-500/10 transition-all">
+                  <button onClick={() => signOut({ callbackUrl: "/" })} className="block w-full text-left px-3 py-2.5 rounded-xl text-sm text-red-400 hover:bg-red-500/10 transition-all">
                     {t("signOut")}
                   </button>
                 </>

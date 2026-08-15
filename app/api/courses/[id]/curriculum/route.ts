@@ -38,6 +38,9 @@ export async function GET(
                 type: true, duration: true, order: true,
               },
             },
+            quizzes: {
+              select: { id: true, title: true },
+            },
             _count: { select: { lectures: true, quizzes: true } },
           },
         },

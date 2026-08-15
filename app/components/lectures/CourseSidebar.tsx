@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   FiChevronLeft, FiChevronDown, FiCheckCircle,
   FiPlayCircle, FiFileText, FiHeadphones, FiFile,
-  FiLock, FiX, FiMenu, FiLoader,
+  FiLock, FiX, FiMenu, FiHelpCircle,
 } from "react-icons/fi";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -28,6 +28,7 @@ interface ModuleNav {
   order:          number;
   lectures:       LectureNav[];
   completedCount: number;
+  quizzes:        { id: string; title: string }[];
   _count:         { lectures: number; quizzes: number };
 }
 
@@ -323,6 +324,25 @@ export function CourseSidebar({
                       </Link>
                     );
                   })}
+
+                  {/* Quiz links — shown at the bottom of each module */}
+                  {mod.quizzes && mod.quizzes.length > 0 && mod.quizzes.map((quiz) => (
+                    <Link
+                      key={quiz.id}
+                      href={`/quiz/${quiz.id}`}
+                      className="flex items-center gap-2.5 px-4 py-3 border-b border-[var(--border-subtle)] hover:bg-[var(--bg-card-hover)] transition-colors group"
+                    >
+                      <span className="w-5 h-5 rounded-full bg-purple-500/15 border border-purple-400/50 flex items-center justify-center flex-shrink-0">
+                        <FiHelpCircle size={10} className="text-purple-400" />
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-purple-400 font-medium leading-snug truncate group-hover:text-purple-300 transition-colors">
+                          {quiz.title}
+                        </p>
+                        <p className="text-[10px] text-[var(--text-muted)] mt-0.5">Module Quiz</p>
+                      </div>
+                    </Link>
+                  ))}
                 </div>
               )}
             </div>

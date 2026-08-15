@@ -51,7 +51,7 @@ export async function GET(
   const instructor = escapeHtml(cert.instructorName || "Ilm Academic Faculty");
   const certId = escapeHtml(cert.certificateId || cert.id.slice(0, 12).toUpperCase());
   const baseUrl = (process.env.NEXTAUTH_URL ?? process.env.APP_URL ?? "").replace(/\/$/, "");
-  const verifyUrl = cert.verificationUrl || (cert.certificateId ? `${baseUrl}/verify-certificate/${cert.certificateId}` : "");
+  const verifyUrl = cert.verificationUrl || (cert.certificateId ? `${baseUrl}/certificates/verify/${cert.certificateId}` : "");
 
   // Generate QR code server-side (no external network call)
   const qrSvg = verifyUrl ? await generateQrSvg(verifyUrl, 120) : "";

@@ -59,19 +59,32 @@ export default withAuth(
   function middleware(req: NextRequest) {
     const token = (req as NextRequest & { nextauth?: { token?: { role?: string; onboardingCompleted?: boolean } } }).nextauth?.token;
     const pathname = req.nextUrl.pathname;
+
+    // ── Hard bypass for all API and static routes ─────────────────────────
+    // withAuth can run middleware even for /api/* in some Next.js versions.
+    // Never locale-redirect or gate API routes — NextAuth session fetches
+    // (/api/auth/session, /api/auth/csrf) must reach the handler directly.
+    if (
+      pathname.startsWith("/api/") ||
+      pathname.startsWith("/_next/") ||
+      pathname.startsWith("/favicon") ||
+      pathname.includes(".")
+    ) {
+      return NextResponse.next();
+    }
+
     const pathnameWithoutLocale = getPathnameWithoutLocale(pathname);
     const currentLocale = getLocale(pathname);
+    const localeMatch = pathname.match(/^\/(en|om|ar|am)(?=\/|$)/);
 
     // Handle root path - redirect to default locale
     if (pathname === '/') {
       return NextResponse.redirect(new URL(`/${defaultLocale}`, req.url));
     }
 
-    // Handle paths without locale prefix
-    const localeMatch = pathname.match(/^\/(en|om|ar|am)(?=\/|$)/);
+    // Handle paths without locale prefix.
+    // (API routes already returned early above.)
     if (!localeMatch) {
-      // Check if it's a valid path without locale
-      // Redirect to add locale prefix
       return NextResponse.redirect(new URL(`/${defaultLocale}${pathname}`, req.url));
     }
 
@@ -125,6 +138,21 @@ export default withAuth(
         const pathname = req.nextUrl.pathname;
         const pathnameWithoutLocale = getPathnameWithoutLocale(pathname);
 
+        // Never block auth pages, API routes, or static assets
+        if (
+          pathnameWithoutLocale.startsWith("/login") ||
+          pathnameWithoutLocale.startsWith("/register") ||
+          pathnameWithoutLocale.startsWith("/forgot-password") ||
+          pathnameWithoutLocale.startsWith("/reset-password") ||
+          pathnameWithoutLocale.startsWith("/verify-email") ||
+          pathnameWithoutLocale.startsWith("/verify-certificate") ||
+          pathnameWithoutLocale.startsWith("/certificates/verify") ||
+          pathname.startsWith("/api/") ||
+          pathname.startsWith("/_next/")
+        ) {
+          return true;
+        }
+
         // /admin requires ADMIN or INSTRUCTOR role
         if (pathnameWithoutLocale.startsWith("/admin")) {
           return token?.role === "ADMIN" || token?.role === "INSTRUCTOR";
@@ -144,7 +172,7 @@ export default withAuth(
       },
     },
     pages: {
-      signIn: "/login",
+      signIn: "/en/login",
     },
   }
 );

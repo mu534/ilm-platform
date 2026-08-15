@@ -284,7 +284,7 @@ export async function issueCertificate(
   const certificateId = generateCertificateId();
   const baseUrl =
     process.env.NEXTAUTH_URL || process.env.APP_URL || "http://localhost:3000";
-  const verificationUrl = `${baseUrl}/verify-certificate/${certificateId}`;
+  const verificationUrl = `${baseUrl}/certificates/verify/${certificateId}`;
 
   // Issue certificate record with immutable snapshot
   const certificate = await db.certificate.create({

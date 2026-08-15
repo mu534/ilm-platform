@@ -158,12 +158,12 @@ export function LectureBottomBar(props: LectureNavigationProps) {
   };
 
   const handleNext = async () => {
-    // Mark complete first if not already done
-    if (!completed && session) {
-      await markComplete();
+    if (!completed && session) await markComplete();
+    if (nextSlug) {
+      router.push(courseSlug ? `/courses/${courseSlug}/learn/${nextSlug}` : `/lectures/${nextSlug}`);
+    } else if (isLastLecture) {
+      router.push(`/courses/${courseSlug}`);
     }
-    if (nextSlug) router.push(`/lectures/${nextSlug}`);
-    else if (isLastLecture) router.push(`/courses/${courseSlug}`);
   };
 
   if (!session) return null;
@@ -222,7 +222,7 @@ export function LectureBottomBar(props: LectureNavigationProps) {
         {/* Prev */}
         {prevSlug && (
           <Link
-            href={`/lectures/${prevSlug}`}
+            href={courseSlug ? `/courses/${courseSlug}/learn/${prevSlug}` : `/lectures/${prevSlug}`}
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card)] border border-[var(--border)] transition-colors flex-shrink-0"
             title={prevTitle ?? "Previous lesson"}
           >

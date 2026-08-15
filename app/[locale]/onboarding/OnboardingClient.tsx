@@ -33,13 +33,8 @@ export default function OnboardingClient() {
       const profile = profileResponse.data;
 
       if (profile?.onboardingCompleted) {
-        // Use role-based redirect for proper routing
-        fetch("/api/auth/redirect")
-          .then(res => res.json())
-          .then(data => {
-            router.replace(data.destination || `/${locale}/dashboard`);
-          })
-          .catch(() => router.replace(`/${locale}/dashboard`));
+        // Onboarding done — go to home
+        router.replace(`/`);
         return;
       }
 
@@ -68,10 +63,8 @@ export default function OnboardingClient() {
         if (form.accountIntention === "TEACH") { 
           router.push(`/${locale}/scholar-application`); 
         } else { 
-          // Use the role-based redirect API for proper routing
-          const redirectResponse = await fetch("/api/auth/redirect"); 
-          const redirectData = await redirectResponse.json(); 
-          router.push(redirectData.destination || `/${locale}/dashboard`); 
+          // Onboarding done — go to home page so user can explore freely
+          router.push(`/`); 
         } 
       } else setStep(nextStep); 
     } finally { 

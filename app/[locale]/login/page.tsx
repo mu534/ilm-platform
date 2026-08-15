@@ -70,26 +70,17 @@ function LoginForm() {
         setError("Invalid email or password. Please try again.");
       }
     } else {
-      // Get the correct destination from server-side API
-      try {
-        const response = await fetch("/api/auth/redirect");
-        const data = await response.json();
-        if (data.destination) {
-          router.push(data.destination);
-        } else {
-          router.push("/dashboard");
-        }
-      } catch {
-        // Fallback to dashboard if API fails
-        router.push("/dashboard");
-      }
+      // Login successful — go to home page.
+      // New users without onboarding will be caught by middleware → /onboarding.
+      // Returning users can navigate to dashboard from the home page CTA.
+      router.push("/");
       router.refresh();
     }
   };
 
   const handleGoogle = async () => {
     setGoogleLoading(true);
-    await signIn("google", { callbackUrl: "/auth/callback" });
+    await signIn("google", { callbackUrl: "/" });
     // Google redirects — no need to reset loading
   };
 

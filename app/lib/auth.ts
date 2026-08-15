@@ -91,8 +91,8 @@ function applyDbUserToToken(token: JWT, dbUser: DbTokenUser) {
 export const authOptions: NextAuthOptions = {
   session: { strategy: "jwt" },
   pages: {
-    signIn: "/login",
-    error: "/login",
+    signIn: "/en/login",
+    error:  "/en/login",
   },
 
   providers: [
@@ -188,9 +188,25 @@ export const authOptions: NextAuthOptions = {
     },
 
     async redirect({ url, baseUrl }) {
-      // Always redirect to our callback page for role-based routing after sign-in
-      // This ensures server-side security for role determination
-      return `${baseUrl}/auth/callback`;
+      // After sign-out → home
+      if (url.includes("/signout") || url === baseUrl || url === `${baseUrl}/`) {
+        return `${baseUrl}/en`;
+      }
+
+      // After sign-in → home page (not dashboard)
+      // Users can navigate to dashboard, courses, etc. from there.
+      // Onboarding is still enforced by the middleware for new users.
+      if (url.includes("/auth/callback") || url.includes("/api/auth")) {
+        return `${baseUrl}/en`;
+      }
+
+      // If a specific callbackUrl was requested (e.g. from a protected page),
+      // honour it so users land where they intended.
+      if (url.startsWith(baseUrl)) {
+        return url;
+      }
+
+      return `${baseUrl}/en`;
     },
 
     async jwt({ token, user, account, trigger }) {

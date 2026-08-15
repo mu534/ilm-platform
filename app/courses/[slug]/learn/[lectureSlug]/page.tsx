@@ -178,19 +178,45 @@ export default async function ClassroomLecturePage({ params }: Props) {
   if (course.sequentialLearning && !isStaff) {
     const orderedLectures  = course.modules.flatMap((m) => m.lectures);
     const orderedLectureIds = orderedLectures.map((l) => l.id);
+    const allQuizIds = course.modules.flatMap((m) => (m.quizzes ?? []).map((q) => q.id));
 
     let completedIds = new Set<string>();
+    let passedQuizIds = new Set<string>();
+
     if (user) {
-      const progress = await prisma.lectureProgress.findMany({
-        where:  { userId: user.id, lectureId: { in: orderedLectureIds }, completed: true },
-        select: { lectureId: true },
-      });
+      const [progress, passedAttempts] = await Promise.all([
+        prisma.lectureProgress.findMany({
+          where:  { userId: user.id, lectureId: { in: orderedLectureIds }, completed: true },
+          select: { lectureId: true },
+        }),
+        allQuizIds.length > 0
+          ? prisma.quizAttempt.findMany({
+              where:  { userId: user.id, quizId: { in: allQuizIds }, passed: true },
+              select: { quizId: true },
+              distinct: ["quizId"],
+            })
+          : Promise.resolve([]),
+      ]);
       completedIds = new Set(progress.map((p) => p.lectureId));
+      passedQuizIds = new Set(passedAttempts.map((a) => a.quizId));
     }
 
-    if (isLectureLocked(lecture.id, orderedLectureIds, completedIds, true)) {
-      const firstIncomplete = orderedLectures.find((l) => !completedIds.has(l.id));
-      redirect(firstIncomplete ? `/courses/${course.slug}/learn/${firstIncomplete.slug}` : `/courses/${course.slug}`);
+    if (isLectureLocked(lecture.id, orderedLectureIds, completedIds, true, course.modules, passedQuizIds)) {
+      // Find the first blocking item (incomplete lecture or unpassed module quiz)
+      let redirectUrl: string | null = null;
+      for (const mod of course.modules) {
+        const incompleteLecture = mod.lectures.find((l) => !completedIds.has(l.id));
+        if (incompleteLecture) {
+          redirectUrl = `/courses/${course.slug}/learn/${incompleteLecture.slug}`;
+          break;
+        }
+        const unpassedQuiz = (mod.quizzes ?? []).find((q) => !passedQuizIds.has(q.id));
+        if (unpassedQuiz) {
+          redirectUrl = `/courses/${course.slug}/learn/quiz/${unpassedQuiz.id}`;
+          break;
+        }
+      }
+      redirect(redirectUrl || `/courses/${course.slug}`);
     }
   }
 

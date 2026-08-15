@@ -3,13 +3,13 @@ import { prisma } from "../../../../lib/prism";
 import { requireUserFresh } from "../../../../lib/authorization";
 import { requireCourseLearnAccess } from "../../../../lib/courseAccess";
 import { successResponse, handleApiError } from "../../../../utils/api";
-import { computeLockedLectureIds } from "../../../../lib/sequentialLearning";
+import { computeLockedLectureIds, isQuizLocked } from "../../../../lib/sequentialLearning";
 
 /**
  * GET /api/courses/[id]/curriculum
  *
  * Returns the full curriculum for a course with per-lecture completion
- * status for the authenticated user. Used by the learning sidebar.
+ * and per-quiz pass/lock status for the authenticated user. Used by the learning sidebar.
  * Requires enrollment (or staff preview).
  */
 export async function GET(
@@ -39,7 +39,7 @@ export async function GET(
               },
             },
             quizzes: {
-              select: { id: true, title: true },
+              select: { id: true, title: true, passingScore: true },
             },
             _count: { select: { lectures: true, quizzes: true } },
           },
@@ -53,17 +53,32 @@ export async function GET(
     }
 
     let completedSet = new Set<string>();
-    let totalCompleted = 0;
+    let passedQuizIds = new Set<string>();
+    let totalCompletedLectures = 0;
     const totalLectures = course.modules.reduce((s, m) => s + m.lectures.length, 0);
+    const allQuizIds = course.modules.flatMap((m) => m.quizzes.map((q) => q.id));
 
-    const allIds = course.modules.flatMap((m) => m.lectures.map((l) => l.id));
-    if (allIds.length > 0) {
-      const progress = await prisma.lectureProgress.findMany({
-        where:  { userId: user.id, lectureId: { in: allIds }, completed: true },
-        select: { lectureId: true },
-      });
-      completedSet   = new Set(progress.map((p) => p.lectureId));
-      totalCompleted = progress.length;
+    const allLectureIds = course.modules.flatMap((m) => m.lectures.map((l) => l.id));
+    if (allLectureIds.length > 0 || allQuizIds.length > 0) {
+      const [progress, passedAttempts] = await Promise.all([
+        allLectureIds.length > 0
+          ? prisma.lectureProgress.findMany({
+              where:  { userId: user.id, lectureId: { in: allLectureIds }, completed: true },
+              select: { lectureId: true },
+            })
+          : Promise.resolve([]),
+        allQuizIds.length > 0
+          ? prisma.quizAttempt.findMany({
+              where:  { userId: user.id, quizId: { in: allQuizIds }, passed: true },
+              select: { quizId: true },
+              distinct: ["quizId"],
+            })
+          : Promise.resolve([]),
+      ]);
+
+      completedSet = new Set(progress.map((p) => p.lectureId));
+      totalCompletedLectures = progress.length;
+      passedQuizIds = new Set(passedAttempts.map((a) => a.quizId));
     }
 
     const orderedLectureIds = course.modules.flatMap((m) => m.lectures.map((l) => l.id));
@@ -71,6 +86,8 @@ export async function GET(
       orderedLectureIds,
       completedSet,
       accessCourse.sequentialLearning,
+      course.modules,
+      passedQuizIds,
     );
 
     const modules = course.modules.map((mod) => ({
@@ -80,8 +97,31 @@ export async function GET(
         completed: completedSet.has(lec.id),
         locked:    lockedSet.has(lec.id),
       })),
+      quizzes: mod.quizzes.map((quiz) => {
+        const passed = passedQuizIds.has(quiz.id);
+        const locked = isQuizLocked(
+          quiz.id,
+          course.modules,
+          completedSet,
+          passedQuizIds,
+          accessCourse.sequentialLearning,
+        );
+        return {
+          ...quiz,
+          passed,
+          locked,
+        };
+      }),
       completedCount: mod.lectures.filter((l) => completedSet.has(l.id)).length,
     }));
+
+    const totalSteps = totalLectures + allQuizIds.length;
+    const completedSteps = totalCompletedLectures + passedQuizIds.size;
+    const percent = totalSteps > 0
+      ? Math.round((completedSteps / totalSteps) * 100)
+      : totalLectures > 0
+      ? Math.round((totalCompletedLectures / totalLectures) * 100)
+      : 0;
 
     return successResponse({
       courseId:           course.id,
@@ -90,10 +130,10 @@ export async function GET(
       sequentialLearning: accessCourse.sequentialLearning,
       modules,
       totalLectures,
-      totalCompleted,
-      percent: totalLectures > 0
-        ? Math.round((totalCompleted / totalLectures) * 100)
-        : 0,
+      totalCompleted:     totalCompletedLectures,
+      passedQuizzesCount: passedQuizIds.size,
+      totalQuizzesCount:  allQuizIds.length,
+      percent,
     });
   } catch (error) {
     return handleApiError(error);

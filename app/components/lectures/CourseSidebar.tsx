@@ -28,7 +28,7 @@ interface ModuleNav {
   order:          number;
   lectures:       LectureNav[];
   completedCount: number;
-  quizzes:        { id: string; title: string }[];
+  quizzes:        { id: string; title: string; passed?: boolean; locked?: boolean }[];
   _count:         { lectures: number; quizzes: number };
 }
 
@@ -40,6 +40,8 @@ interface CurriculumData {
   modules:            ModuleNav[];
   totalLectures:      number;
   totalCompleted:     number;
+  passedQuizzesCount?: number;
+  totalQuizzesCount?:  number;
   percent:            number;
 }
 
@@ -331,6 +333,69 @@ export function CourseSidebar({
                   {/* Quiz links — shown at the bottom of each module */}
                   {mod.quizzes && mod.quizzes.length > 0 && mod.quizzes.map((quiz) => {
                     const isQuizActive = quiz.id === activeQuizId;
+                    const isLocked = quiz.locked;
+                    const isPassed = quiz.passed;
+
+                    const quizContent = (
+                      <div className="flex items-center gap-2.5 w-full">
+                        <span className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${
+                          isPassed
+                            ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                            : isLocked
+                            ? "bg-[var(--bg-secondary)] border border-[var(--border)] text-[var(--text-muted)]"
+                            : isQuizActive
+                            ? "bg-purple-600 text-white"
+                            : "bg-purple-500/15 border border-purple-400/50 text-purple-400"
+                        }`}>
+                          {isPassed ? (
+                            <FiCheckCircle size={11} />
+                          ) : isLocked ? (
+                            <FiLock size={9} />
+                          ) : (
+                            <FiHelpCircle size={10} />
+                          )}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-xs font-medium leading-snug truncate transition-colors ${
+                            isLocked
+                              ? "text-[var(--text-muted)] opacity-60"
+                              : isPassed
+                              ? "text-emerald-400 font-medium"
+                              : isQuizActive
+                              ? "text-purple-400 font-bold"
+                              : "text-purple-400/90 group-hover:text-purple-300"
+                          }`}>
+                            {quiz.title}
+                          </p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-[10px] text-[var(--text-muted)]">Module Quiz</span>
+                            {isPassed && (
+                              <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/15 px-1.5 py-0.2 rounded">
+                                Passed
+                              </span>
+                            )}
+                            {isLocked && (
+                              <span className="text-[9px] text-[var(--text-muted)]">
+                                Locked
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+
+                    if (isLocked) {
+                      return (
+                        <div
+                          key={quiz.id}
+                          className="px-4 py-3 border-b border-[var(--border-subtle)] bg-[var(--bg-secondary)]/30 opacity-60 cursor-not-allowed select-none"
+                          title="Complete all lessons in this section to unlock quiz"
+                        >
+                          {quizContent}
+                        </div>
+                      );
+                    }
+
                     return (
                       <Link
                         key={quiz.id}
@@ -342,21 +407,7 @@ export function CourseSidebar({
                         }`}
                         aria-current={isQuizActive ? "page" : undefined}
                       >
-                        <span className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${
-                          isQuizActive
-                            ? "bg-purple-600 text-white"
-                            : "bg-purple-500/15 border border-purple-400/50 text-purple-400"
-                        }`}>
-                          <FiHelpCircle size={10} />
-                        </span>
-                        <div className="flex-1 min-w-0">
-                          <p className={`text-xs font-medium leading-snug truncate transition-colors ${
-                            isQuizActive ? "text-purple-400 font-bold" : "text-purple-400/90 group-hover:text-purple-300"
-                          }`}>
-                            {quiz.title}
-                          </p>
-                          <p className="text-[10px] text-[var(--text-muted)] mt-0.5">Module Quiz</p>
-                        </div>
+                        {quizContent}
                       </Link>
                     );
                   })}

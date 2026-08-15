@@ -2,6 +2,7 @@ import { prisma } from "../prism";
 import { HttpError } from "../httpError";
 import { requireQuizLearningAccess } from "../courseAccess";
 import { issueCompletionCertificate } from "../certificates";
+import { recalculateCourseProgress } from "../courseProgress";
 import type { SessionUser } from "../../types/auth.types";
 
 export interface SubmitAnswerInput {
@@ -110,6 +111,11 @@ export class QuizService {
 
       return createdAttempt;
     });
+
+    // Recalculate progress, enrollment status, and certificate issuance
+    if (access.courseId) {
+      await recalculateCourseProgress(user.id, access.courseId);
+    }
 
     return {
       attemptId: attempt.id,

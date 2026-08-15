@@ -179,10 +179,14 @@ async function assertLectureNotSequentiallyLocked(
     where: { courseId },
     orderBy: { order: "asc" },
     select: {
+      id: true,
       lectures: {
         where: { published: true },
         orderBy: { order: "asc" },
         select: { id: true },
+      },
+      quizzes: {
+        select: { id: true, isOptional: true },
       },
     },
   });
@@ -192,18 +196,35 @@ async function assertLectureNotSequentiallyLocked(
     throw new HttpError("Lecture is not part of this course curriculum", 403);
   }
 
-  const completed = await prisma.lectureProgress.findMany({
-    where: {
-      userId,
-      lectureId: { in: orderedLectureIds },
-      completed: true,
-    },
-    select: { lectureId: true },
-  });
-  const completedIds = new Set(completed.map((p) => p.lectureId));
+  const allQuizIds = modules.flatMap((m) => m.quizzes.map((q) => q.id));
 
-  if (isLectureLocked(lectureId, orderedLectureIds, completedIds, true)) {
-    throw new HttpError("Complete previous lectures before accessing this one", 403);
+  const [completed, passedAttempts] = await Promise.all([
+    prisma.lectureProgress.findMany({
+      where: {
+        userId,
+        lectureId: { in: orderedLectureIds },
+        completed: true,
+      },
+      select: { lectureId: true },
+    }),
+    allQuizIds.length > 0
+      ? prisma.quizAttempt.findMany({
+          where: {
+            userId,
+            quizId: { in: allQuizIds },
+            passed: true,
+          },
+          select: { quizId: true },
+          distinct: ["quizId"],
+        })
+      : Promise.resolve([]),
+  ]);
+
+  const completedIds = new Set(completed.map((p) => p.lectureId));
+  const passedQuizIds = new Set(passedAttempts.map((a) => a.quizId));
+
+  if (isLectureLocked(lectureId, orderedLectureIds, completedIds, true, modules, passedQuizIds)) {
+    throw new HttpError("Complete previous lectures and pass earlier module quizzes before accessing this lesson", 403);
   }
 }
 
@@ -215,7 +236,7 @@ type QuizLearningArgs = {
 
 /**
  * Quiz access mirrors lecture learning access: enrollment (or staff) required.
- * Also enforces sequential learning against the module's lectures when enabled.
+ * Also enforces sequential learning against earlier lectures and quizzes when enabled.
  */
 export async function requireQuizLearningAccess(args: QuizLearningArgs) {
   const { userId, role, quizId } = args;
@@ -234,12 +255,21 @@ export async function requireQuizLearningAccess(args: QuizLearningArgs) {
               id: true,
               authorId: true,
               sequentialLearning: true,
+              modules: {
+                orderBy: { order: "asc" },
+                select: {
+                  id: true,
+                  lectures: {
+                    where: { published: true },
+                    orderBy: { order: "asc" },
+                    select: { id: true },
+                  },
+                  quizzes: {
+                    select: { id: true, isOptional: true },
+                  },
+                },
+              },
             },
-          },
-          lectures: {
-            where: { published: true },
-            orderBy: { order: "asc" },
-            select: { id: true },
           },
         },
       },
@@ -254,15 +284,33 @@ export async function requireQuizLearningAccess(args: QuizLearningArgs) {
   if (!isStaff) {
     await requireEnrollment(userId, course.id);
 
-    // When sequential learning is on, require all lectures in this module completed
-    // before the quiz is attemptable (mirrors typical LMS quiz gating).
-    if (course.sequentialLearning && quiz.module.lectures.length > 0) {
-      const lectureIds = quiz.module.lectures.map((l) => l.id);
-      const completedCount = await prisma.lectureProgress.count({
-        where: { userId, lectureId: { in: lectureIds }, completed: true },
-      });
-      if (completedCount < lectureIds.length) {
-        throw new HttpError("Complete this module's lectures before taking the quiz", 403);
+    // When sequential learning is on, require all prior lectures & quizzes completed/passed
+    if (course.sequentialLearning) {
+      const allLectureIds = course.modules.flatMap((m) => m.lectures.map((l) => l.id));
+      const allQuizIds = course.modules.flatMap((m) => m.quizzes.map((q) => q.id));
+
+      const [completed, passedAttempts] = await Promise.all([
+        allLectureIds.length > 0
+          ? prisma.lectureProgress.findMany({
+              where: { userId, lectureId: { in: allLectureIds }, completed: true },
+              select: { lectureId: true },
+            })
+          : Promise.resolve([]),
+        allQuizIds.length > 0
+          ? prisma.quizAttempt.findMany({
+              where: { userId, quizId: { in: allQuizIds }, passed: true },
+              select: { quizId: true },
+              distinct: ["quizId"],
+            })
+          : Promise.resolve([]),
+      ]);
+
+      const completedIds = new Set(completed.map((p) => p.lectureId));
+      const passedQuizIds = new Set(passedAttempts.map((a) => a.quizId));
+
+      const { isQuizLocked } = await import("./sequentialLearning");
+      if (isQuizLocked(quizId, course.modules, completedIds, passedQuizIds, true)) {
+        throw new HttpError("Complete previous lessons and pass earlier module quizzes before taking this quiz", 403);
       }
     }
   }

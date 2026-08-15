@@ -69,27 +69,34 @@ export async function GET(req: NextRequest) {
         }),
       ]);
 
-      const completed  = progressRecords.filter((p) => p.completed).length;
-      const total      = lectureIds.length;
-      const percent    = total > 0 ? Math.round((completed / total) * 100) : 0;
+      const completedLectures  = progressRecords.filter((p) => p.completed).length;
+      const totalLectures      = lectureIds.length;
+      const passedQuizIds      = new Set(passedAttempts.map((a) => a.quizId));
 
-      const passedQuizIds = new Set(passedAttempts.map((a) => a.quizId));
+      const totalSteps = totalLectures + allQuizIds.length;
+      const completedSteps = completedLectures + passedAttempts.length;
+      const percent = totalSteps > 0
+        ? Math.round((completedSteps / totalSteps) * 100)
+        : totalLectures > 0
+        ? Math.round((completedLectures / totalLectures) * 100)
+        : 0;
+
       const quizSummary   = course.modules.flatMap((m) =>
         m.quizzes.map((q) => ({
-          quizId:  q.id,
-          passed:  passedQuizIds.has(q.id),
+          quizId:   q.id,
+          passed:   passedQuizIds.has(q.id),
           required: true,
         })),
       );
 
       const quizzesRemaining  = quizSummary.filter((q) => !q.passed).length;
-      const certificateReady  = percent >= 100 && quizzesRemaining === 0;
+      const certificateReady  = (completedLectures >= totalLectures) && (quizzesRemaining === 0);
 
       return successResponse({
         lectureIds,
         progress:          progressRecords,
-        completedCount:    completed,
-        totalCount:        total,
+        completedCount:    completedLectures,
+        totalCount:        totalLectures,
         percent,
         // Quiz completion — separate from lecture progress so UI can clearly
         // distinguish "all lectures done" from "course fully complete"
@@ -127,6 +134,8 @@ export async function GET(req: NextRequest) {
   }
 }
 
+import { recalculateCourseProgress } from "../../lib/courseProgress";
+
 // POST /api/progress — upsert progress for a lecture
 export async function POST(req: NextRequest) {
   try {
@@ -136,7 +145,7 @@ export async function POST(req: NextRequest) {
     const { lectureId, completed, watchedSeconds } = progressSchema.parse(body);
 
     // Enrollment + lecture→course chain + sequential lock (when completing)
-    await requireLectureLearningAccess({
+    const access = await requireLectureLearningAccess({
       userId: user.id,
       role: user.role,
       lectureId,
@@ -163,58 +172,12 @@ export async function POST(req: NextRequest) {
       update: data,
     });
 
-    if (completed) {
-      await recalculateCourseProgress(user.id, lectureId);
+    if (completed !== undefined && access.courseId) {
+      await recalculateCourseProgress(user.id, access.courseId);
     }
 
     return successResponse(progress);
   } catch (error) {
     return handleApiError(error);
-  }
-}
-
-async function recalculateCourseProgress(userId: string, lectureId: string) {
-  try {
-    const lecture = await prisma.lecture.findUnique({
-      where: { id: lectureId },
-      select: { module: { select: { courseId: true } } },
-    });
-    const courseId = lecture?.module?.courseId;
-    if (!courseId) return;
-
-    const enrollment = await prisma.enrollment.findUnique({
-      where: { userId_courseId: { userId, courseId } },
-    });
-    if (!enrollment) return;
-
-    const course = await prisma.course.findUnique({
-      where: { id: courseId },
-      select: { modules: { select: { lectures: { where: { published: true }, select: { id: true } } } } },
-    });
-    if (!course) return;
-
-    const allLectureIds = course.modules.flatMap((m) => m.lectures.map((l) => l.id));
-    const completedCount = await prisma.lectureProgress.count({
-      where: { userId, lectureId: { in: allLectureIds }, completed: true },
-    });
-
-    const percent = allLectureIds.length > 0
-      ? Math.round((completedCount / allLectureIds.length) * 100)
-      : 0;
-
-    // Progress % is lecture-based; COMPLETED + certificate require all
-    // lectures AND quizzes (enforced inside issueCompletionCertificate).
-    await prisma.enrollment.update({
-      where: { userId_courseId: { userId, courseId } },
-      data: { progress: percent },
-    });
-
-    if (percent >= 100) {
-      await prisma.$transaction(async (tx) => {
-        await issueCompletionCertificate(tx, userId, courseId);
-      });
-    }
-  } catch {
-    // Non-critical — don't throw
   }
 }

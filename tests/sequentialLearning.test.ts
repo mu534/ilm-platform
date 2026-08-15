@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { computeLockedLectureIds, isLectureLocked } from "../app/lib/sequentialLearning";
+import { computeLockedLectureIds, isLectureLocked, isQuizLocked } from "../app/lib/sequentialLearning";
 
 const LECTURES = ["l1", "l2", "l3", "l4"];
 
@@ -67,4 +67,36 @@ describe("isLectureLocked", () => {
   it("never locks anything when sequentialLearning is off", () => {
     expect(isLectureLocked("l4", LECTURES, new Set(), false)).toBe(false);
   });
+
+  it("locks subsequent module lectures if previous module quiz is not passed", () => {
+    const modules = [
+      { id: "m1", lectures: [{ id: "l1" }, { id: "l2" }], quizzes: [{ id: "q1" }] },
+      { id: "m2", lectures: [{ id: "l3" }, { id: "l4" }], quizzes: [{ id: "q2" }] },
+    ];
+    // l1 and l2 are done, but q1 is NOT passed
+    const isLocked = isLectureLocked("l3", ["l1", "l2", "l3", "l4"], new Set(["l1", "l2"]), true, modules, new Set());
+    expect(isLocked).toBe(true);
+
+    // q1 is passed -> l3 is now unlocked!
+    const isUnlocked = isLectureLocked("l3", ["l1", "l2", "l3", "l4"], new Set(["l1", "l2"]), true, modules, new Set(["q1"]));
+    expect(isUnlocked).toBe(false);
+  });
 });
+
+describe("isQuizLocked", () => {
+  const modules = [
+    { id: "m1", lectures: [{ id: "l1" }, { id: "l2" }], quizzes: [{ id: "q1" }] },
+    { id: "m2", lectures: [{ id: "l3" }, { id: "l4" }], quizzes: [{ id: "q2" }] },
+  ];
+
+  it("locks module quiz until all lectures in that module are complete", () => {
+    expect(isQuizLocked("q1", modules, new Set(["l1"]), new Set(), true)).toBe(true);
+    expect(isQuizLocked("q1", modules, new Set(["l1", "l2"]), new Set(), true)).toBe(false);
+  });
+
+  it("locks next module quiz if previous module quiz is not passed", () => {
+    expect(isQuizLocked("q2", modules, new Set(["l1", "l2", "l3", "l4"]), new Set(), true)).toBe(true);
+    expect(isQuizLocked("q2", modules, new Set(["l1", "l2", "l3", "l4"]), new Set(["q1"]), true)).toBe(false);
+  });
+});
+

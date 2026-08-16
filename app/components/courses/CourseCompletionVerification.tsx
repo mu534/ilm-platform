@@ -21,6 +21,8 @@ interface Props {
   totalRequired:      number;
   passedQuizzes:      number;
   totalQuizzes:       number;
+  /** Slug of the first lecture — used for the "Relearn" button */
+  firstLectureSlug:   string | null;
 }
 
 export function CourseCompletionVerification({
@@ -36,6 +38,7 @@ export function CourseCompletionVerification({
   totalRequired,
   passedQuizzes,
   totalQuizzes,
+  firstLectureSlug,
 }: Props) {
   const [name,      setName]      = useState(currentName);
   const [editing,   setEditing]   = useState(!currentName.trim());
@@ -169,6 +172,17 @@ export function CourseCompletionVerification({
                   <FiShare2 size={13} /> Share / Verify Certificate
                 </Link>
               )}
+
+              {/* Relearn — go back to first lecture */}
+              {firstLectureSlug && (
+                <Link
+                  href={`/courses/${courseSlug}/learn/${firstLectureSlug}`}
+                  className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:border-[var(--border-strong)] text-sm transition-colors"
+                >
+                  <FiBookOpen size={13} /> Relearn Course from Beginning
+                </Link>
+              )}
+
               <Link
                 href={`/courses/${courseSlug}#reviews`}
                 className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-primary)] text-sm transition-colors"
@@ -179,7 +193,7 @@ export function CourseCompletionVerification({
                 href="/dashboard"
                 className="flex items-center justify-center gap-2 w-full py-2.5 text-sm text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors"
               >
-                <FiBookOpen size={13} /> Back to Dashboard
+                <FiArrowRight size={13} /> Back to Dashboard
               </Link>
             </div>
           </div>

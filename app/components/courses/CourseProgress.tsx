@@ -108,6 +108,16 @@ export function CourseProgress({
         {isCompleted ? "View Certificate 🏆" : "Continue Learning"}
         <FiArrowRight size={14} />
       </Link>
+
+      {/* Relearn button for completed students */}
+      {isCompleted && nextLectureSlug && courseSlug && (
+        <Link
+          href={`/courses/${courseSlug}/learn/${nextLectureSlug}`}
+          className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:border-[var(--border-strong)] text-xs transition-colors"
+        >
+          <FiBookOpen size={12} /> Relearn from Beginning
+        </Link>
+      )}
     </div>
   );
 }

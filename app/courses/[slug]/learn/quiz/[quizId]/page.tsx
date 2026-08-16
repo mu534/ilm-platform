@@ -28,6 +28,7 @@ interface Quiz {
   module: {
     id:     string;
     title:  string;
+    order:  number;
     course: { id: string; title: string; slug: string };
   };
 }
@@ -45,14 +46,16 @@ export default function ClassroomQuizPage() {
   const slug   = params?.slug as string;
   const quizId = (params?.quizId ?? params?.id) as string;
 
-  const [quiz,       setQuiz]       = useState<Quiz | null>(null);
-  const [loading,    setLoading]    = useState(true);
-  const [error,      setError]      = useState<string | null>(null);
-  const [answers,    setAnswers]    = useState<Record<string, string>>({});
-  const [submitting, setSubmitting] = useState(false);
-  const [result,     setResult]     = useState<AttemptResult | null>(null);
-  const [timeLeft,   setTimeLeft]   = useState<number | null>(null);
-  const [started,    setStarted]    = useState(false);
+  const [quiz,        setQuiz]        = useState<Quiz | null>(null);
+  const [loading,     setLoading]     = useState(true);
+  const [error,       setError]       = useState<string | null>(null);
+  const [answers,     setAnswers]     = useState<Record<string, string>>({});
+  const [submitting,  setSubmitting]  = useState(false);
+  const [result,      setResult]      = useState<AttemptResult | null>(null);
+  const [timeLeft,    setTimeLeft]    = useState<number | null>(null);
+  const [started,     setStarted]     = useState(false);
+  const [nextHref,    setNextHref]    = useState<string | null>(null);
+  const [nextLabel,   setNextLabel]   = useState<string>("Continue Learning");
   const timerRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   // Load quiz data
@@ -74,6 +77,45 @@ export default function ClassroomQuizPage() {
       .catch(() => setError("Network error loading quiz"))
       .finally(() => setLoading(false));
   }, [quizId]);
+
+  // After quiz is loaded, resolve what comes after it
+  useEffect(() => {
+    if (!quiz) return;
+    const courseSlug = slug || quiz.module.course.slug;
+    const courseId   = quiz.module.course.id;
+
+    // Ask the curriculum API what the next step is after this quiz's module
+    fetch(`/api/courses/${courseId}/curriculum`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (!d.success || !d.data) return;
+        const modules: {
+          id: string; order: number;
+          lectures: { slug: string; title: string }[];
+          quizzes:  { id: string }[];
+        }[] = d.data.modules;
+
+        // Find the module that owns this quiz
+        const modIndex = modules.findIndex((m) =>
+          m.quizzes?.some((q) => q.id === quizId)
+        );
+
+        if (modIndex === -1) return;
+
+        // Look for the NEXT module that has lectures
+        const nextModule = modules.slice(modIndex + 1).find((m) => m.lectures.length > 0);
+
+        if (nextModule && nextModule.lectures[0]) {
+          setNextHref(`/courses/${courseSlug}/learn/${nextModule.lectures[0].slug}`);
+          setNextLabel(`Continue to Next Module`);
+        } else if (!nextModule) {
+          // This was the last module's quiz — go to completion page
+          setNextHref(`/courses/${courseSlug}/complete`);
+          setNextLabel("Finish Course & Claim Certificate");
+        }
+      })
+      .catch(() => {/* silent — fallback to course hub */});
+  }, [quiz, quizId, slug]);
 
   const handleSubmit = useCallback(async () => {
     if (submitting || !quiz) return;
@@ -226,8 +268,8 @@ export default function ClassroomQuizPage() {
 
               <p className="text-sm text-[var(--text-muted)] max-w-md mx-auto mb-8">
                 {result.passed
-                  ? `Congratulations! You scored ${Math.round(result.score)}% and exceeded the required ${quiz.passingScore}% passing mark.`
-                  : `You scored ${Math.round(result.score)}%. You need ${quiz.passingScore}% to pass this module quiz. Review the lesson material and give it another try.`}
+                  ? `You scored ${Math.round(result.score)}% and exceeded the ${quiz.passingScore}% passing mark. ${nextHref?.includes("/complete") ? "You've completed all modules!" : "You can now continue to the next module."}`
+                  : `You scored ${Math.round(result.score)}%. You need ${quiz.passingScore}% to pass. Review the lesson material and try again.`}
               </p>
 
               {/* Score breakdown metrics */}
@@ -254,17 +296,33 @@ export default function ClassroomQuizPage() {
 
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-                <Link
-                  href={`/courses/${courseSlug}`}
-                  className={`w-full sm:w-auto px-6 py-3 rounded-xl text-white text-sm font-semibold transition-all flex items-center justify-center gap-2 shadow-md ${
-                    result.passed
-                      ? "bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500"
-                      : "bg-[var(--accent)] hover:bg-[var(--accent-light)]"
-                  }`}
-                >
-                  {result.passed ? <FiAward size={16} /> : <FiBookOpen size={16} />}
-                  <span>{result.passed ? "Finish Course & Return to Course Hub" : "Back to Course"}</span>
-                </Link>
+                {result.passed && nextHref ? (
+                  /* PRIMARY: go to next module or completion page */
+                  <Link
+                    href={nextHref}
+                    className="w-full sm:w-auto px-6 py-3 rounded-xl text-white text-sm font-bold transition-all flex items-center justify-center gap-2 shadow-md bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500"
+                  >
+                    {nextHref.includes("/complete") ? <FiAward size={16} /> : <FiArrowRight size={16} />}
+                    <span>{nextLabel}</span>
+                  </Link>
+                ) : result.passed ? (
+                  /* Fallback if curriculum not resolved yet */
+                  <Link
+                    href={`/courses/${courseSlug}`}
+                    className="w-full sm:w-auto px-6 py-3 rounded-xl text-white text-sm font-bold transition-all flex items-center justify-center gap-2 shadow-md bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500"
+                  >
+                    <FiBookOpen size={16} /> Back to Course Hub
+                  </Link>
+                ) : (
+                  /* FAILED — back to course to review */
+                  <Link
+                    href={`/courses/${courseSlug}`}
+                    className="w-full sm:w-auto px-6 py-3 rounded-xl text-white text-sm font-semibold transition-all flex items-center justify-center gap-2 shadow-md bg-[var(--accent)] hover:bg-[var(--accent-light)]"
+                  >
+                    <FiBookOpen size={16} />
+                    <span>Back to Course</span>
+                  </Link>
+                )}
 
                 {!result.passed && (
                   <button

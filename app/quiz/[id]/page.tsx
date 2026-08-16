@@ -186,7 +186,7 @@ export default function QuizPage() {
               href={`/courses/${quiz.module.course.slug}`}
               className="px-5 py-2.5 bg-[var(--accent)] hover:bg-[var(--accent-light)] text-white rounded-xl text-sm font-medium transition-colors"
             >
-              Back to Course
+              {result.passed ? "Continue Learning →" : "Back to Course"}
             </Link>
             {!result.passed && (
               <button

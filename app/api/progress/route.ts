@@ -1,10 +1,36 @@
 import { NextRequest } from "next/server";
 import { prisma } from "../../lib/prism";
 import { requireUserFresh } from "../../lib/authorization";
-import { requireEnrollment, requireLectureLearningAccess } from "../../lib/courseAccess";
-import { issueCompletionCertificate } from "../../lib/certificates";
+import { requireEnrollment } from "../../lib/courseAccess";
 import { successResponse, handleApiError } from "../../utils/api";
 import { z } from "zod";
+
+/**
+ * Lightweight progress-specific lecture access check.
+ * Only verifies the lecture exists and the user is enrolled — does NOT
+ * block on lecture.approvalStatus so enrolled students can always
+ * read/write their own progress regardless of admin approval state.
+ */
+async function requireProgressAccess(userId: string, role: string, lectureId: string) {
+  const lecture = await prisma.lecture.findUnique({
+    where: { id: lectureId },
+    select: {
+      id: true,
+      authorId: true,
+      module: { select: { course: { select: { id: true, authorId: true } } } },
+    },
+  });
+  if (!lecture) throw Object.assign(new Error("Lecture not found"), { statusCode: 404 });
+
+  const course = lecture.module?.course ?? null;
+  if (!course) return { courseId: null as string | null };
+
+  const isStaff = role === "ADMIN" || course.authorId === userId || lecture.authorId === userId;
+  if (!isStaff) {
+    await requireEnrollment(userId, course.id);
+  }
+  return { courseId: course.id };
+}
 
 const progressSchema = z.object({
   lectureId:      z.string().min(1),
@@ -22,11 +48,7 @@ export async function GET(req: NextRequest) {
     const lectureId = searchParams.get("lectureId");
 
     if (lectureId) {
-      await requireLectureLearningAccess({
-        userId: user.id,
-        role: user.role,
-        lectureId,
-      });
+      await requireProgressAccess(user.id, user.role, lectureId);
       const progress = await prisma.lectureProgress.findUnique({
         where: { userId_lectureId: { userId: user.id, lectureId } },
       });
@@ -144,13 +166,8 @@ export async function POST(req: NextRequest) {
     const body = (await req.json()) as unknown;
     const { lectureId, completed, watchedSeconds } = progressSchema.parse(body);
 
-    // Enrollment + lecture→course chain + sequential lock (when completing)
-    const access = await requireLectureLearningAccess({
-      userId: user.id,
-      role: user.role,
-      lectureId,
-      enforceSequential: completed === true,
-    });
+    // Verify enrollment (progress tracking does not re-gate on lecture approval status)
+    const access = await requireProgressAccess(user.id, user.role, lectureId);
 
     const now = new Date();
     const data: {

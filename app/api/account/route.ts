@@ -5,10 +5,43 @@ import { requireUserFresh } from "../../lib/authorization";
 import { successResponse, errorResponse, handleApiError } from "../../utils/api";
 import { z } from "zod";
 
-const schema = z.object({
+const deleteSchema = z.object({
   password: z.string().optional(),
   confirm:  z.literal(true, { message: "Confirmation is required" }),
 });
+
+const patchSchema = z.object({
+  name:            z.string().min(1).max(200).optional(),
+  certificateName: z.string().min(2).max(200).optional(),
+  bio:             z.string().max(2000).optional(),
+  country:         z.string().max(100).optional(),
+});
+
+/**
+ * PATCH /api/account
+ * Update profile fields (name, certificateName, bio, country).
+ */
+export async function PATCH(req: NextRequest) {
+  try {
+    const sessionUser = await requireUserFresh();
+    const body = patchSchema.parse(await req.json());
+
+    const updated = await prisma.user.update({
+      where: { id: sessionUser.id },
+      data: {
+        ...(body.name            !== undefined && { name: body.name }),
+        ...(body.certificateName !== undefined && { certificateName: body.certificateName }),
+        ...(body.bio             !== undefined && { bio: body.bio }),
+        ...(body.country         !== undefined && { country: body.country }),
+      },
+      select: { id: true, name: true, certificateName: true, bio: true, country: true },
+    });
+
+    return successResponse(updated);
+  } catch (error) {
+    return handleApiError(error);
+  }
+}
 
 /**
  * DELETE /api/account
@@ -19,7 +52,7 @@ export async function DELETE(req: NextRequest) {
   try {
     const sessionUser = await requireUserFresh();
 
-    const body = schema.parse(await req.json());
+    const body = deleteSchema.parse(await req.json());
 
     const user = await prisma.user.findUnique({
       where:  { id: sessionUser.id },

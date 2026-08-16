@@ -224,13 +224,10 @@ export async function issueCertificate(
 ) {
   const db = tx || prisma;
 
-  // Rule 1: Course approval state
-  await validateCourseCertificateEligibility(courseId, db);
-
-  // Rule 2 & 3 & 4: Enrollment, required lectures & quizzes
+  // Rule 1: Enrollment, required lectures & quizzes — no admin approval needed
   await validateStudentCompletion(userId, courseId, db);
 
-  // Rule 5: Student full name validation
+  // Rule 2: Student full name validation
   const studentName = await validateStudentName(userId, db);
 
   // Rule 6: Check existing certificate (Idempotency)

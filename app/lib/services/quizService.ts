@@ -122,6 +122,8 @@ export class QuizService {
       score: scorePercentage,
       passed,
       passingScore: quiz.passingScore,
+      earnedPoints: totalPointsEarned,
+      totalPoints: totalPossiblePoints,
       totalQuestions: quiz.questions.length,
       correctCount: processedAnswers.filter((a) => a.isCorrect).length,
     };

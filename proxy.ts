@@ -147,6 +147,9 @@ export default withAuth(
           pathnameWithoutLocale.startsWith("/verify-email") ||
           pathnameWithoutLocale.startsWith("/verify-certificate") ||
           pathnameWithoutLocale.startsWith("/certificates/verify") ||
+          pathnameWithoutLocale.startsWith("/courses") ||
+          pathnameWithoutLocale.startsWith("/lectures") ||
+          pathnameWithoutLocale.startsWith("/scholars") ||
           pathname.startsWith("/api/") ||
           pathname.startsWith("/_next/")
         ) {
@@ -163,7 +166,8 @@ export default withAuth(
           pathnameWithoutLocale.startsWith("/dashboard") ||
           pathnameWithoutLocale.startsWith("/profile") ||
           pathnameWithoutLocale.startsWith("/onboarding") ||
-          pathnameWithoutLocale.startsWith("/scholar-application")
+          pathnameWithoutLocale.startsWith("/scholar-application") ||
+          pathnameWithoutLocale.startsWith("/quiz")
         ) {
           return !!token;
         }

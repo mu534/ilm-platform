@@ -48,7 +48,8 @@ interface CheckResult { valid: boolean; errors: string[] }
 
 // ─── Status badge ─────────────────────────────────────────────────────────────
 
-function StatusBadge({ status }: { status: string }) {
+function StatusBadge({ status }: { status?: string | null }) {
+  const s = status || "DRAFT";
   const styles: Record<string, string> = {
     PUBLISHED:      "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
     DRAFT:          "bg-[var(--bg-secondary)] text-[var(--text-muted)] border-[var(--border)]",
@@ -58,8 +59,8 @@ function StatusBadge({ status }: { status: string }) {
     ARCHIVED:       "bg-[var(--bg-secondary)] text-[var(--text-muted)] border-[var(--border)]",
   };
   return (
-    <span className={`text-xs px-2.5 py-1 rounded-full border font-medium ${styles[status] ?? styles.DRAFT}`}>
-      {status.replace("_", " ")}
+    <span className={`text-xs px-2.5 py-1 rounded-full border font-medium ${styles[s] ?? styles.DRAFT}`}>
+      {s.replace(/_/g, " ")}
     </span>
   );
 }
@@ -561,11 +562,11 @@ export default function CourseReviewPage() {
                     ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
                     : "bg-[var(--bg-secondary)] text-[var(--text-muted)] border-[var(--border)]"
                 }`}>
-                  {course.certificateApprovalStatus === "DRAFT" || course.certificateApprovalStatus === "NOT_REQUESTED"
+                  {course.certificateApprovalStatus === "DRAFT" || course.certificateApprovalStatus === "NOT_REQUESTED" || !course.certificateApprovalStatus
                     ? "Not Requested"
                     : course.certificateApprovalStatus === "PENDING_REVIEW"
                     ? "Pending Review"
-                    : course.certificateApprovalStatus.replace("_", " ")}
+                    : (course.certificateApprovalStatus || "NOT_REQUESTED").replace(/_/g, " ")}
                 </span>
               </div>
               <div className="flex items-center justify-between">

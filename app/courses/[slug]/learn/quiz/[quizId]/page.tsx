@@ -256,9 +256,14 @@ export default function ClassroomQuizPage() {
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                 <Link
                   href={`/courses/${courseSlug}`}
-                  className="w-full sm:w-auto px-6 py-3 rounded-xl bg-[var(--accent)] hover:bg-[var(--accent-light)] text-white text-sm font-semibold transition-all flex items-center justify-center gap-2 shadow-md"
+                  className={`w-full sm:w-auto px-6 py-3 rounded-xl text-white text-sm font-semibold transition-all flex items-center justify-center gap-2 shadow-md ${
+                    result.passed
+                      ? "bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500"
+                      : "bg-[var(--accent)] hover:bg-[var(--accent-light)]"
+                  }`}
                 >
-                  <FiBookOpen size={16} /> Course Overview
+                  {result.passed ? <FiAward size={16} /> : <FiBookOpen size={16} />}
+                  <span>{result.passed ? "Finish Course & Return to Course Hub" : "Back to Course"}</span>
                 </Link>
 
                 {!result.passed && (

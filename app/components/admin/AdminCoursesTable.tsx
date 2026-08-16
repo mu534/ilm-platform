@@ -194,8 +194,8 @@ export function AdminCoursesTable({ courses }: { courses: Course[] }) {
                     {difficultyLabels[course.difficulty] ?? course.difficulty}
                   </td>
                   <td className="px-4 py-3">
-                    <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${statusStyles[course.status] ?? statusStyles.DRAFT}`}>
-                      {course.status.replace("_", " ")}
+                    <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${statusStyles[course.status || "DRAFT"] ?? statusStyles.DRAFT}`}>
+                      {(course.status || "DRAFT").replace(/_/g, " ")}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-xs text-[var(--text-muted)]">

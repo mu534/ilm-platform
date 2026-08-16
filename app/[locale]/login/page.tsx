@@ -35,9 +35,11 @@ function LoginForm() {
   const router       = useRouter();
   const searchParams = useSearchParams();
   const requestedCallbackUrl = searchParams?.get("callbackUrl");
-  // Onboarding is enforced server-side in proxy.ts from the database, so the
-  // sign-in destination is always the dashboard for a completed learner.
-  const callbackUrl  = requestedCallbackUrl && requestedCallbackUrl.startsWith("/") ? requestedCallbackUrl : "/dashboard";
+  // If a specific callbackUrl was requested (e.g. from a protected link), honour it.
+  // Otherwise, default destination after login is the home page "/".
+  const callbackUrl  = requestedCallbackUrl && requestedCallbackUrl.startsWith("/")
+    ? requestedCallbackUrl
+    : "/";
   const urlError     = searchParams?.get("error");
 
   const [form,         setForm]         = useState({ email: "", password: "" });

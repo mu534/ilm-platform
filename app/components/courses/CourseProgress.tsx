@@ -46,12 +46,12 @@ export function CourseProgress({
   const percent     = data?.percent ?? Math.round(enrollment.progress ?? 0);
   const isCompleted = enrollment.status === "COMPLETED" || percent >= 100;
 
-  // For completed courses: nextLectureSlug is pre-set to the first lecture (see course page).
-  // Fallback to course overview or dashboard if somehow no lecture exists.
-  const continueHref = nextLectureSlug
+  // For completed courses: send to completion/certificate page.
+  // For active students: continue where they left off.
+  const continueHref = isCompleted
+    ? (courseSlug ? `/courses/${courseSlug}/complete` : "/dashboard/certificates")
+    : nextLectureSlug
     ? (courseSlug ? `/courses/${courseSlug}/learn/${nextLectureSlug}` : `/lectures/${nextLectureSlug}`)
-    : isCompleted
-    ? (courseSlug ? `/courses/${courseSlug}` : "/dashboard")
     : courseSlug
     ? `/courses/${courseSlug}`
     : "/dashboard";
@@ -105,7 +105,7 @@ export function CourseProgress({
         href={continueHref}
         className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-[var(--accent)] hover:bg-[var(--accent-light)] text-white font-semibold text-sm transition-colors"
       >
-        {isCompleted ? "Review Course" : "Continue Learning"}
+        {isCompleted ? "View Certificate 🏆" : "Continue Learning"}
         <FiArrowRight size={14} />
       </Link>
     </div>

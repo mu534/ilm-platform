@@ -115,10 +115,10 @@ export function LectureTopBar({
             <Link
               href={nextHref}
               className="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card)] rounded-lg transition-colors flex items-center gap-1 text-xs"
-              title={nextQuizId ? "Module quiz" : "Next lesson"}
-              aria-label={nextQuizId ? "Module quiz" : "Next lesson"}
+              title="Next lesson"
+              aria-label="Next lesson"
             >
-              <span className="hidden sm:inline">{nextQuizId ? "Quiz" : "Next"}</span>
+              <span className="hidden sm:inline">Next</span>
               <FiChevronRight size={16} />
             </Link>
           ) : (
@@ -190,11 +190,15 @@ export function LectureInPageNav(props: LectureNavigationProps) {
       finally { setLoading(false); }
     }
 
-    if (nextSlug) {
-      router.push(`/courses/${courseSlug}/learn/${nextSlug}`);
-    } else if (nextQuizId) {
+    if (nextQuizId) {
+      // Must pass module quiz before moving to next module
       router.push(`/courses/${courseSlug}/learn/quiz/${nextQuizId}`);
+    } else if (nextSlug) {
+      router.push(`/courses/${courseSlug}/learn/${nextSlug}`);
     } else if (isLastLecture) {
+      // Last lecture in the course — go to completion page
+      router.push(`/courses/${courseSlug}/complete`);
+    } else {
       router.push(`/courses/${courseSlug}`);
     }
   };
@@ -203,12 +207,14 @@ export function LectureInPageNav(props: LectureNavigationProps) {
 
   let nextLabel = "Continue to Next Lesson";
   let nextSub = nextTitle ?? "";
-  if (nextQuizId) {
-    nextLabel = "Take Module Quiz";
-    nextSub = nextQuizTitle ?? "Test your knowledge";
-  } else if (isLastLecture) {
-    nextLabel = "Finish Course";
-    nextSub = "Complete your course journey";
+  if (isLastLecture || !nextSlug) {
+    if (nextQuizId) {
+      nextLabel = "Take Module Quiz";
+      nextSub = nextQuizTitle ?? "Complete the quiz before continuing";
+    } else {
+      nextLabel = "Finish Course";
+      nextSub = "Complete your course journey";
+    }
   } else if (isNextSection) {
     nextLabel = "Continue to Next Section";
     nextSub = nextSectionTitle ?? nextTitle ?? "";
@@ -283,16 +289,20 @@ export function LectureInPageNav(props: LectureNavigationProps) {
             onClick={() => void handleNextAction()}
             disabled={loading}
             className={`flex items-center justify-between p-4 rounded-xl text-left text-white transition-all shadow-md group ${
-              nextQuizId
-                ? "bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500"
-                : isLastLecture
+              nextQuizId && (isLastLecture || !nextSlug)
+                ? "bg-gradient-to-r from-purple-700 to-purple-500 hover:from-purple-600 hover:to-purple-400"
+                : isLastLecture || !nextSlug
                 ? "bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500"
                 : "bg-gradient-to-r from-[var(--accent)] to-[var(--accent-light)] hover:opacity-95"
             }`}
           >
             <div className="min-w-0 flex-1 pr-3">
               <div className="flex items-center gap-1.5">
-                {nextQuizId ? <FiHelpCircle size={12} /> : isLastLecture ? <FiAward size={12} /> : null}
+                {nextQuizId && (isLastLecture || !nextSlug)
+                  ? <FiHelpCircle size={12} />
+                  : (isLastLecture || !nextSlug)
+                  ? <FiAward size={12} />
+                  : null}
                 <span className="text-[10px] font-bold uppercase tracking-wider text-white/90">
                   {nextLabel}
                 </span>
@@ -325,7 +335,6 @@ export function LectureBottomBar(props: LectureNavigationProps) {
     lectureId, courseSlug,
     prevSlug, prevTitle,
     nextSlug, nextTitle,
-    nextQuizId,
     isLastLecture, isNextSection, nextSectionTitle,
   } = props;
 
@@ -367,21 +376,27 @@ export function LectureBottomBar(props: LectureNavigationProps) {
       finally { setLoading(false); }
     }
 
-    if (nextSlug) {
-      router.push(`/courses/${courseSlug}/learn/${nextSlug}`);
-    } else if (nextQuizId) {
+    const { nextQuizId } = props;
+    if (nextQuizId) {
+      // Must pass module quiz before moving to next module
       router.push(`/courses/${courseSlug}/learn/quiz/${nextQuizId}`);
+    } else if (nextSlug) {
+      router.push(`/courses/${courseSlug}/learn/${nextSlug}`);
     } else if (isLastLecture) {
+      // Last lecture in the course — go to completion/certificate page
+      router.push(`/courses/${courseSlug}/complete`);
+    } else {
       router.push(`/courses/${courseSlug}`);
     }
   };
 
   // ── Next button label ──────────────────────────────────────────────────────
+  const { nextQuizId: bottomQuizId } = props;
   let nextLabel = "Next Lesson";
-  if (nextQuizId) {
-    nextLabel = "Module Quiz";
-  } else if (isLastLecture) {
-    nextLabel = "Complete Course";
+  if (bottomQuizId && !nextSlug) {
+    nextLabel = "Take Quiz";
+  } else if (isLastLecture || !nextSlug) {
+    nextLabel = "Finish Course 🎉";
   } else if (isNextSection) {
     nextLabel = nextSectionTitle ? `Next: ${nextSectionTitle}` : "Next Section";
   }
@@ -433,9 +448,9 @@ export function LectureBottomBar(props: LectureNavigationProps) {
           onClick={() => void handleNext()}
           disabled={loading}
           className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-white transition-colors flex-shrink-0 ${
-            nextQuizId
+            bottomQuizId && !nextSlug
               ? "bg-purple-600 hover:bg-purple-500"
-              : isLastLecture
+              : isLastLecture || !nextSlug
               ? "bg-emerald-600 hover:bg-emerald-500"
               : "bg-[var(--accent)] hover:bg-[var(--accent-light)]"
           }`}

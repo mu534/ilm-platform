@@ -10,13 +10,14 @@ type Form = { accountIntention: "LEARN" | "TEACH"; preferredLanguage: string; pr
 const defaultForm: Form = { accountIntention: "LEARN", preferredLanguage: "en", preferredDifficulty: "BEGINNER", categoryIds: [], goals: [] };
 
 export default function OnboardingClient() {
-  const { status } = useSession();
+  const { status, update: updateSession } = useSession();
   const router = useRouter();
   const locale = useLocale();
   const [step, setStep] = useState(1);
   const [categories, setCategories] = useState<Category[]>([]);
   const [saving, setSaving] = useState(false);
   const [ready, setReady] = useState(false);
+  const [saveError, setSaveError] = useState("");
   const [form, setForm] = useState<Form>(defaultForm);
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -52,24 +53,45 @@ export default function OnboardingClient() {
       setReady(true);
     }).catch(() => setReady(true));
   }, [status, router, locale]);
-  const toggle = (key: "categoryIds" | "goals", value: string) => setForm((current) => ({ ...current, [key]: current[key].includes(value) ? current[key].filter((item) => item !== value) : [...current[key], value] }));
-  const saveStep = async (nextStep: number, complete = false) => { 
-    setSaving(true); 
-    try { 
-      const response = await fetch("/api/learner-profile", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...form, onboardingStep: complete ? 3 : nextStep, onboardingCompleted: complete }) }); 
-      const data = await response.json(); 
-      if (!data.success) throw new Error(data.error ?? "Unable to save progress"); 
-      if (complete) { 
-        if (form.accountIntention === "TEACH") { 
-          router.push(`/${locale}/scholar-application`); 
-        } else { 
-          // Onboarding done — go to home page so user can explore freely
-          router.push(`/`); 
-        } 
-      } else setStep(nextStep); 
-    } finally { 
-      setSaving(false); 
-    } 
+
+  const toggle = (key: "categoryIds" | "goals", value: string) => {
+    setSaveError("");
+    setForm((current) => ({ ...current, [key]: current[key].includes(value) ? current[key].filter((item) => item !== value) : [...current[key], value] }));
+  };
+
+  const saveStep = async (nextStep: number, complete = false) => {
+    setSaving(true);
+    setSaveError("");
+    try {
+      const response = await fetch("/api/learner-profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...form, onboardingStep: complete ? 3 : nextStep, onboardingCompleted: complete }),
+      });
+      const data = await response.json() as { success: boolean; error?: string };
+      if (!data.success) {
+        setSaveError(data.error ?? "Unable to save. Please try again.");
+        return;
+      }
+      if (complete) {
+        if (form.accountIntention === "TEACH") {
+          // Scholar application page is protected but exempt from onboarding gate
+          router.push(`/${locale}/scholar-application`);
+        } else {
+          // Force the JWT to refresh so it picks up onboardingCompleted=true.
+          // Without this the middleware still sees onboardingCompleted=false
+          // and immediately redirects the user back to /onboarding.
+          await updateSession();
+          router.push(`/${locale}`);
+        }
+      } else {
+        setStep(nextStep);
+      }
+    } catch {
+      setSaveError("Something went wrong. Please check your connection and try again.");
+    } finally {
+      setSaving(false);
+    }
   };
   if (status === "loading" || !ready) return (
     <div className="flex items-center justify-center min-h-screen">
@@ -116,6 +138,11 @@ export default function OnboardingClient() {
           <button className="btn-primary w-full" disabled={saving} onClick={() => void saveStep(2)}>
             {saving ? "Saving…" : "Continue →"}
           </button>
+          {saveError && (
+            <p className="text-xs text-red-400 text-center bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+              {saveError}
+            </p>
+          )}
         </section>
       )}
       
@@ -149,6 +176,11 @@ export default function OnboardingClient() {
             <button className="btn-secondary flex-1" disabled={saving} onClick={() => void saveStep(1)}>← Back</button>
             <button className="btn-primary flex-1" disabled={saving} onClick={() => void saveStep(3)}>Continue →</button>
           </div>
+          {saveError && (
+            <p className="text-xs text-red-400 text-center mt-2 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+              {saveError}
+            </p>
+          )}
         </section>
       )}
       
@@ -218,6 +250,11 @@ export default function OnboardingClient() {
               {saving ? "Saving…" : form.accountIntention === "TEACH" ? "Continue to Application →" : "Finish Setup →"}
             </button>
           </div>
+          {saveError && (
+            <p className="text-xs text-red-400 text-center mt-2 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+              {saveError}
+            </p>
+          )}
         </section>
       )}
     </main>

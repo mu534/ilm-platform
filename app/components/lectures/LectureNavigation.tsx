@@ -49,9 +49,10 @@ export function LectureTopBar({
   prevSlug,
   nextSlug,
   nextQuizId,
+  isLastLecture,
 }: Pick<
   LectureNavigationProps,
-  "courseTitle" | "courseSlug" | "sectionTitle" | "lectureNumber" | "totalLectures" | "prevSlug" | "nextSlug" | "nextQuizId"
+  "courseTitle" | "courseSlug" | "sectionTitle" | "lectureNumber" | "totalLectures" | "prevSlug" | "nextSlug" | "nextQuizId" | "isLastLecture"
 >) {
   const prevHref = prevSlug ? `/courses/${courseSlug}/learn/${prevSlug}` : null;
   const nextHref = nextSlug
@@ -59,6 +60,11 @@ export function LectureTopBar({
     : nextQuizId
     ? `/courses/${courseSlug}/learn/quiz/${nextQuizId}`
     : null;
+
+  // When there's no next lecture/quiz, the "Done" button destination
+  const doneHref = isLastLecture
+    ? `/courses/${courseSlug}/complete`
+    : `/courses/${courseSlug}`;
 
   return (
     <div className="sticky top-0 z-30 bg-[var(--bg-secondary)] border-b border-[var(--border)] px-4 sm:px-6">
@@ -123,11 +129,11 @@ export function LectureTopBar({
             </Link>
           ) : (
             <Link
-              href={`/courses/${courseSlug}`}
+              href={doneHref}
               className="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card)] rounded-lg transition-colors flex items-center gap-1 text-xs"
-              title="Course overview"
+              title={isLastLecture ? "Claim certificate" : "Course overview"}
             >
-              <span className="hidden sm:inline">Done</span>
+              <span className="hidden sm:inline">{isLastLecture ? "Finish" : "Done"}</span>
               <FiCheckCircle size={14} className="text-emerald-400" />
             </Link>
           )}
@@ -177,6 +183,19 @@ export function LectureInPageNav(props: LectureNavigationProps) {
   };
 
   const handleNextAction = async () => {
+    // Determine destination first
+    let destination: string;
+    if (nextQuizId) {
+      destination = `/courses/${courseSlug}/learn/quiz/${nextQuizId}`;
+    } else if (nextSlug) {
+      destination = `/courses/${courseSlug}/learn/${nextSlug}`;
+    } else if (isLastLecture) {
+      destination = `/courses/${courseSlug}/complete`;
+    } else {
+      destination = `/courses/${courseSlug}`;
+    }
+
+    // Mark lecture complete if not already
     if (!completed) {
       setLoading(true);
       try {
@@ -186,21 +205,12 @@ export function LectureInPageNav(props: LectureNavigationProps) {
           body:    JSON.stringify({ lectureId, completed: true }),
         });
         setCompleted(true);
-      } catch { /* silent */ }
+      } catch { /* silent — still navigate */ }
       finally { setLoading(false); }
     }
 
-    if (nextQuizId) {
-      // Must pass module quiz before moving to next module
-      router.push(`/courses/${courseSlug}/learn/quiz/${nextQuizId}`);
-    } else if (nextSlug) {
-      router.push(`/courses/${courseSlug}/learn/${nextSlug}`);
-    } else if (isLastLecture) {
-      // Last lecture in the course — go to completion page
-      router.push(`/courses/${courseSlug}/complete`);
-    } else {
-      router.push(`/courses/${courseSlug}`);
-    }
+    // Navigate to the pre-computed destination
+    router.push(destination);
   };
 
   const prevHref = prevSlug ? `/courses/${courseSlug}/learn/${prevSlug}` : `/courses/${courseSlug}`;
@@ -363,6 +373,20 @@ export function LectureBottomBar(props: LectureNavigationProps) {
   };
 
   const handleNext = async () => {
+    // Determine destination first
+    const { nextQuizId } = props;
+    let destination: string;
+    if (nextQuizId) {
+      destination = `/courses/${courseSlug}/learn/quiz/${nextQuizId}`;
+    } else if (nextSlug) {
+      destination = `/courses/${courseSlug}/learn/${nextSlug}`;
+    } else if (isLastLecture) {
+      destination = `/courses/${courseSlug}/complete`;
+    } else {
+      destination = `/courses/${courseSlug}`;
+    }
+
+    // Mark lecture complete if not already
     if (!completed) {
       setLoading(true);
       try {
@@ -372,22 +396,12 @@ export function LectureBottomBar(props: LectureNavigationProps) {
           body:    JSON.stringify({ lectureId, completed: true }),
         });
         setCompleted(true);
-      } catch { /* silent */ }
+      } catch { /* silent — still navigate */ }
       finally { setLoading(false); }
     }
 
-    const { nextQuizId } = props;
-    if (nextQuizId) {
-      // Must pass module quiz before moving to next module
-      router.push(`/courses/${courseSlug}/learn/quiz/${nextQuizId}`);
-    } else if (nextSlug) {
-      router.push(`/courses/${courseSlug}/learn/${nextSlug}`);
-    } else if (isLastLecture) {
-      // Last lecture in the course — go to completion/certificate page
-      router.push(`/courses/${courseSlug}/complete`);
-    } else {
-      router.push(`/courses/${courseSlug}`);
-    }
+    // Navigate to the pre-computed destination
+    router.push(destination);
   };
 
   // ── Next button label ──────────────────────────────────────────────────────

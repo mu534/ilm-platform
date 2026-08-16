@@ -233,7 +233,7 @@ export default function ScholarApplicationPage() {
         setMessageType("error");
         return;
       }
-
+   
       setAppState((data as { data?: { status?: string } }).data?.status ?? appState);
       setMessage(submitNow ? "Application submitted for review!" : "Draft saved.");
       setMessageType("success");

@@ -244,6 +244,7 @@ export default async function ClassroomLecturePage({ params }: Props) {
         prevSlug={navInfo.prevSlug}
         nextSlug={navInfo.nextSlug}
         nextQuizId={navInfo.nextQuizId}
+        isLastLecture={navInfo.isLastLecture}
       />
 
       {/* Scrollable content */}

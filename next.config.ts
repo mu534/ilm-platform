@@ -5,6 +5,9 @@ import createNextIntlPlugin from 'next-intl/plugin';
 const withNextIntl = createNextIntlPlugin('./app/lib/i18n.ts');
 
 const nextConfig: NextConfig = {
+  // Allow the local network IP to access the dev server (e.g. from a phone or another PC)
+  allowedDevOrigins: ["192.168.219.1", "192.168.219.*", "localhost"],
+
   turbopack: {
     root: __dirname,
   },

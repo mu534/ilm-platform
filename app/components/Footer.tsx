@@ -35,12 +35,13 @@ export function Footer() {
 
   const localHref = (href: string) => href === "/" ? `/${locale}` : `/${locale}${href}`;
   const exploreLinks = [
-    { href: "/", label: nav("home") },
+    { href: "/",        label: nav("home") },
     { href: "/courses", label: nav("courses") },
     { href: "/lectures", label: t("lectures") },
     { href: "/scholars", label: nav("scholars") },
-    { href: "/forum", label: nav("forum") },
+    { href: "/forum",   label: nav("forum") },
     { href: "/activity", label: t("activity") },
+    { href: "/contact", label: "Contact Us" },
   ];
   const accountLinks = [
     { href: "/login", label: nav("login") },
@@ -150,13 +151,13 @@ export function Footer() {
             {t("forUmmah")}
           </p>
           <div className="flex items-center gap-3">
-            
-             <a href="mailto:info@ilmplatform.com"
+            <Link
+              href="/contact"
               className="p-2 rounded-lg text-[var(--text-muted)] hover:text-[var(--accent)] hover:bg-[var(--accent-dim)] transition-all duration-200 hover:scale-110"
-              aria-label="Email"
+              aria-label="Contact us"
             >
               <FiMail size={15} />
-            </a>
+            </Link>
             
              <a href="https://github.com/mu534/ilm-platform"
               target="_blank"

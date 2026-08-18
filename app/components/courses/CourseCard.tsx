@@ -129,7 +129,7 @@ export function CourseCard({ course }: CourseCardProps) {
               {skills.map((tag) => (
                 <span
                   key={tag}
-                  className="text-[10px] px-2 py-0.5 rounded-md bg-[var(--accent-dim)] text-[var(--accent)] border border-[var(--border-subtle)] truncate max-w-[110px]"
+                  className="text-[10px] px-2 py-0.5 rounded-md bg-[var(--accent-dim)] text-[var(--accent-light)] border border-[var(--border-strong)] truncate max-w-[110px] font-medium"
                 >
                   {tag}
                 </span>
@@ -196,10 +196,10 @@ export function CourseCard({ course }: CourseCardProps) {
           className="absolute inset-x-0 bottom-0 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out bg-[var(--bg-elevated)] border-t border-[var(--border-strong)] p-4 shadow-[var(--shadow-lg)] hidden sm:block"
           aria-hidden="true"
         >
-          <p className="text-[12px] text-[var(--text-secondary)] leading-relaxed line-clamp-3 mb-3">
+          <p className="text-[12px] text-[var(--text-primary)] leading-relaxed line-clamp-3 mb-3 opacity-80">
             {course.subtitle ?? summary}
           </p>
-          <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[var(--accent)]">
+          <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[var(--accent-light)]">
             <FiBookOpen size={12} />
             {action}
             <FiArrowRight size={12} className="transition-transform group-hover:translate-x-0.5" />

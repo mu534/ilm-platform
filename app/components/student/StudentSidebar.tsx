@@ -136,7 +136,7 @@ export function StudentSidebar({
         {/* Primary Learning Section */}
         <div>
           {(!collapsed || isMobile) && (
-            <p className="px-3 text-[10px] uppercase tracking-widest font-semibold text-[var(--text-muted)] mb-2">
+            <p className="px-3 text-[11px] uppercase tracking-widest font-bold text-[var(--text-secondary)] mb-2">
               Learning
             </p>
           )}
@@ -177,7 +177,7 @@ export function StudentSidebar({
         {/* Account Section */}
         <div>
           {(!collapsed || isMobile) && (
-            <p className="px-3 text-[10px] uppercase tracking-widest font-semibold text-[var(--text-muted)] mb-2">
+            <p className="px-3 text-[11px] uppercase tracking-widest font-bold text-[var(--text-secondary)] mb-2">
               Account
             </p>
           )}

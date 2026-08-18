@@ -59,7 +59,7 @@ function StarRow({
             interactive
               ? "cursor-pointer hover:scale-110"
               : "cursor-default"
-          } ${i <= display ? "text-[var(--accent-light)]" : "text-[var(--bg-secondary)]"}`}
+          } ${i <= display ? "text-[var(--accent-light)]" : "text-[var(--border-strong)]"}`}
           aria-label={interactive ? `Rate ${i} star${i !== 1 ? "s" : ""}` : undefined}
         >
           <FiStar size={size} className={i <= display ? "fill-current" : ""} />
@@ -158,16 +158,16 @@ export function CourseRatingWidget({
               const count = data?.ratings.filter((r) => r.rating === star).length ?? 0;
               const pct   = total > 0 ? (count / total) * 100 : 0;
               return (
-                <div key={star} className="flex items-center gap-2 text-xs text-[var(--text-muted)]">
-                  <span className="w-3 tabular-nums">{star}</span>
-                  <FiStar size={11} className="text-[var(--accent-light)] flex-shrink-0" />
-                  <div className="flex-1 h-1.5 bg-[var(--bg-secondary)] rounded-full overflow-hidden">
+                <div key={star} className="flex items-center gap-2 text-xs">
+                  <span className="w-3 tabular-nums text-[var(--text-secondary)] font-medium">{star}</span>
+                  <FiStar size={11} className="text-[var(--accent-light)] flex-shrink-0 fill-current" />
+                  <div className="flex-1 h-2 bg-[var(--bg-elevated)] rounded-full overflow-hidden border border-[var(--border)]">
                     <div
-                      className="h-full bg-gradient-to-r from-gold-600 to-gold-400 rounded-full transition-all duration-500"
+                      className="h-full bg-gradient-to-r from-[var(--accent)] to-[var(--accent-light)] rounded-full transition-all duration-500"
                       style={{ width: `${pct}%` }}
                     />
                   </div>
-                  <span className="w-5 text-right tabular-nums">{count}</span>
+                  <span className="w-5 text-right tabular-nums text-[var(--text-secondary)] font-medium">{count}</span>
                 </div>
               );
             })}
@@ -304,12 +304,21 @@ export function CourseRatingWidget({
       {data && data.ratings.length > 0 && (
         <div className="space-y-3">
           {data.ratings.slice(0, 10).map((r) => (
-            <div key={r.id} className="glass-card rounded-xl p-4">
+            <div
+              key={r.id}
+              className="rounded-xl p-5 border border-[var(--border-strong)] bg-[var(--bg-card)]"
+            >
               <div className="flex items-start gap-3">
                 {/* Avatar */}
-                <div className="w-9 h-9 rounded-full flex-shrink-0 overflow-hidden bg-[var(--accent-dim)] border border-[var(--border)]">
+                <div className="w-10 h-10 rounded-full flex-shrink-0 overflow-hidden bg-[var(--accent-dim)] border border-[var(--border-strong)]">
                   {r.user.image ? (
-                    <Image src={r.user.image} alt={r.user.name} width={36} height={36} className="object-cover w-full h-full" />
+                    <Image
+                      src={r.user.image}
+                      alt={r.user.name}
+                      width={40}
+                      height={40}
+                      className="object-cover w-full h-full"
+                    />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-[var(--accent)] text-sm font-bold">
                       {r.user.name[0]?.toUpperCase()}
@@ -318,17 +327,22 @@ export function CourseRatingWidget({
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    <span className="text-sm font-medium text-[var(--text-primary)]">
-                      {r.user.name}
-                    </span>
-                    <StarRow value={r.rating} interactive={false} size={13} />
-                    <span className="text-xs text-[var(--text-muted)] ml-auto">
+                  {/* Name + stars + date row */}
+                  <div className="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold text-[var(--text-primary)]">
+                        {r.user.name}
+                      </span>
+                      <StarRow value={r.rating} interactive={false} size={12} />
+                    </div>
+                    <span className="text-xs text-[var(--text-muted)]">
                       {formatDate(r.createdAt)}
                     </span>
                   </div>
+
+                  {/* Review body — use text-primary for max readability */}
                   {r.review && (
-                    <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
+                    <p className="text-sm text-[var(--text-primary)] leading-relaxed opacity-90">
                       {r.review}
                     </p>
                   )}
@@ -340,10 +354,10 @@ export function CourseRatingWidget({
       )}
 
       {data && data.ratings.length === 0 && (
-        <div className="glass-card rounded-xl p-8 text-center">
+        <div className="rounded-xl p-8 text-center border border-[var(--border)] bg-[var(--bg-card)]">
           <FiStar size={24} className="text-[var(--text-muted)] mx-auto mb-3" />
-          <p className="text-sm font-medium text-[var(--text-primary)] mb-1">No reviews yet</p>
-          <p className="text-xs text-[var(--text-muted)]">
+          <p className="text-sm font-semibold text-[var(--text-primary)] mb-1">No reviews yet</p>
+          <p className="text-sm text-[var(--text-muted)]">
             Be the first to review this course after completing it.
           </p>
         </div>

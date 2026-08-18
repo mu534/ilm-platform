@@ -8,6 +8,20 @@ const nextConfig: NextConfig = {
   // Allow the local network IP to access the dev server (e.g. from a phone or another PC)
   allowedDevOrigins: ["192.168.219.1", "192.168.219.*", "localhost"],
 
+  // Ensure TipTap ESM packages are transpiled correctly by Turbopack/webpack
+  transpilePackages: [
+    "@tiptap/react",
+    "@tiptap/pm",
+    "@tiptap/core",
+    "@tiptap/starter-kit",
+    "@tiptap/extension-text-style",
+    "@tiptap/extension-color",
+    "@tiptap/extension-underline",
+    "@tiptap/extension-text-align",
+    "@tiptap/extension-link",
+    "@tiptap/extension-placeholder",
+  ],
+
   turbopack: {
     root: __dirname,
   },

@@ -6,8 +6,6 @@ import Underline from "@tiptap/extension-underline";
 import TextAlign from "@tiptap/extension-text-align";
 import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
-import TextStyle from "@tiptap/extension-text-style";
-import Color from "@tiptap/extension-color";
 import { useCallback, useEffect } from "react";
 import {
   FiBold, FiItalic, FiUnderline, FiList,
@@ -75,8 +73,10 @@ export default function RichTextEditor({ value, onChange, placeholder = "Write y
         horizontalRule: {},
       }),
       Underline,
-      TextStyle,
-      Color,
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      (require("@tiptap/extension-text-style") as { TextStyle: unknown }).TextStyle as import("@tiptap/core").AnyExtension,
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      (require("@tiptap/extension-text-style") as { Color: unknown }).Color as import("@tiptap/core").AnyExtension,
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       Link.configure({ openOnClick: false, HTMLAttributes: { class: "text-[var(--accent)] underline cursor-pointer" } }),
       Placeholder.configure({ placeholder }),

@@ -381,11 +381,10 @@ export default async function InstructorDashboardPage() {
               <h3 className="font-semibold text-sm text-[var(--text-primary)]">Quick Actions</h3>
               <div className="space-y-1.5">
                 {[
-                  { href: "/admin/courses/new",  icon: <FiPlus size={13} />,        label: "Create New Course",   highlight: true },
-                  { href: "/admin/lectures/new", icon: <FiPlus size={13} />,        label: "Add New Lecture" },
-                  { href: "/admin/courses",      icon: <FiBookOpen size={13} />,    label: "Manage All Courses" },
-                  { href: "/admin/my-analytics", icon: <FiTrendingUp size={13} />,  label: "View My Analytics" },
-                  { href: "/dashboard/instructor/students", icon: <FiUsers size={13} />,       label: "My Students" },
+                  { href: "/admin/courses/new",  icon: <FiPlus size={13} />,       label: "Create New Course",  highlight: true },
+                  { href: "/admin/lectures/new", icon: <FiPlus size={13} />,       label: "Add New Lecture" },
+                  { href: "/admin/my-analytics", icon: <FiTrendingUp size={13} />, label: "View My Analytics" },
+                  { href: "/dashboard/instructor/students", icon: <FiUsers size={13} />, label: "My Students" },
                 ].map((link) => (
                   <Link
                     key={link.href}

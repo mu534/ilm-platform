@@ -9,6 +9,7 @@ const cormorant = Cormorant_Garamond({
   style: ["normal", "italic"],
   variable: "--font-display",
   display: "swap",
+  preload: false,
 });
 
 const dmSans = DM_Sans({
@@ -16,6 +17,7 @@ const dmSans = DM_Sans({
   weight: ["300", "400", "500", "600"],
   variable: "--font-body",
   display: "swap",
+  preload: false,
 });
 
 const amiri = Amiri({
@@ -24,6 +26,7 @@ const amiri = Amiri({
   style: ["normal", "italic"],
   variable: "--font-arabic",
   display: "swap",
+  preload: false,
 });
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

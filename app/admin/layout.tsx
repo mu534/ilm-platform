@@ -16,9 +16,9 @@ export default async function AdminLayoutWrapper({
     redirect("/login?callbackUrl=/admin");
   }
 
-  // Only ADMIN and SCHOLAR can access /admin
-  if (!["ADMIN", "SCHOLAR"].includes(user.role)) {
-    redirect("/login?callbackUrl=/admin");
+  // Only ADMIN, INSTRUCTOR, and SCHOLAR can access /admin
+  if (!["ADMIN", "INSTRUCTOR", "SCHOLAR"].includes(user.role)) {
+    redirect("/dashboard");
   }
 
   return <AdminLayout>{children}</AdminLayout>;

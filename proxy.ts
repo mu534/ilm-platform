@@ -90,12 +90,13 @@ export default withAuth(
 
     // Onboarding gate — the flag is copied onto the JWT from the database
     // (LearnerProfile.onboardingCompleted) and never from client storage.
-    // Admins and instructors are not learners and are never gated.
-    const isLearner = !token?.role || token.role === "USER";
+    // Admins, instructors, and scholars are never gated by onboarding.
+    const staffRoles = ["ADMIN", "INSTRUCTOR", "SCHOLAR"];
+    const isLearner = !token?.role || !staffRoles.includes(token.role);
     const onboardingCompleted = token?.onboardingCompleted === true;
 
     if (pathnameWithoutLocale.startsWith("/onboarding")) {
-      if (onboardingCompleted) {
+      if (onboardingCompleted || !isLearner) {
         return NextResponse.redirect(new URL(`/${currentLocale}/dashboard`, req.url));
       }
     } else if (token && isLearner && !onboardingCompleted) {
@@ -158,17 +159,32 @@ export default withAuth(
         }
 
         // /admin requires ADMIN or INSTRUCTOR role
+        // Also allow SCHOLAR (legacy role name used during application approval transition)
         if (pathnameWithoutLocale.startsWith("/admin")) {
-          return token?.role === "ADMIN" || token?.role === "INSTRUCTOR";
+          return (
+            token?.role === "ADMIN" ||
+            token?.role === "INSTRUCTOR" ||
+            token?.role === "SCHOLAR"
+          );
         }
 
-        // /dashboard, /profile and /onboarding require any authenticated user
+        // /dashboard requires any authenticated user
+        // /dashboard/instructor is accessible to INSTRUCTOR and ADMIN
+        if (pathnameWithoutLocale.startsWith("/dashboard")) {
+          if (!token) return false;
+          if (pathnameWithoutLocale.startsWith("/dashboard/instructor")) {
+            return token.role === "INSTRUCTOR" || token.role === "ADMIN" || token.role === "SCHOLAR";
+          }
+          return true;
+        }
+
+        // Other protected routes — any authenticated user
         if (
-          pathnameWithoutLocale.startsWith("/dashboard") ||
           pathnameWithoutLocale.startsWith("/profile") ||
           pathnameWithoutLocale.startsWith("/onboarding") ||
           pathnameWithoutLocale.startsWith("/scholar-application") ||
-          pathnameWithoutLocale.startsWith("/quiz")
+          pathnameWithoutLocale.startsWith("/quiz") ||
+          pathnameWithoutLocale.startsWith("/settings")
         ) {
           return !!token;
         }

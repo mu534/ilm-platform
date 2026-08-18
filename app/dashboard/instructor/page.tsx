@@ -60,10 +60,10 @@ async function getInstructorStats(userId: string) {
     prisma.course.groupBy({ by: ["status"], where: { authorId: userId }, _count: { _all: true } }),
     prisma.enrollment.findMany({
       where: { course: { authorId: userId } },
-      orderBy: { createdAt: "desc" },
+      orderBy: { enrolledAt: "desc" },
       take: 5,
       select: {
-        id: true, createdAt: true, status: true,
+        id: true, enrolledAt: true, status: true,
         user: { select: { name: true, image: true } },
         course: { select: { title: true, slug: true } },
       },
@@ -329,7 +329,7 @@ export default async function InstructorDashboardPage() {
                         </div>
                         <div className="text-right flex-shrink-0">
                           <span className="text-[10px] text-[var(--text-muted)]">
-                            {formatDate(enrollment.createdAt)}
+                            {formatDate(enrollment.enrolledAt)}
                           </span>
                           <div className={`text-[9px] font-semibold mt-0.5 text-right ${
                             enrollment.status === "COMPLETED" ? "text-emerald-400" : "text-[var(--text-muted)]"

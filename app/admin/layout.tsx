@@ -16,8 +16,11 @@ export default async function AdminLayoutWrapper({
     redirect("/login?callbackUrl=/admin");
   }
 
-  // Only ADMIN, INSTRUCTOR, and SCHOLAR can access /admin
-  if (!["ADMIN", "INSTRUCTOR", "SCHOLAR"].includes(user.role)) {
+  const isAdmin      = user.role === "ADMIN";
+  const isInstructor = user.role === "INSTRUCTOR" || user.role === "SCHOLAR";
+
+  // Students and guests go to student dashboard
+  if (!isAdmin && !isInstructor) {
     redirect("/dashboard");
   }
 

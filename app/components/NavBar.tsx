@@ -8,7 +8,7 @@ import * as Avatar from "@radix-ui/react-avatar";
 import type { SessionUser } from "../types/auth.types";
 import {
   FiMenu, FiX, FiChevronDown, FiUser,
-  FiLogOut, FiSettings, FiBookOpen, FiActivity,
+  FiLogOut, FiSettings, FiBookOpen, FiActivity, FiLayout,
 } from "react-icons/fi";
 import { GiMoon, GiSun } from "react-icons/gi";
 import { useTheme } from "./ThemeProvider";
@@ -191,17 +191,24 @@ export function Navbar() {
                         <FiActivity size={14} className="text-[var(--accent)]" /> {t("myLearning")}
                       </Link>
                     </DropdownMenu.Item>
-                    {["ADMIN", "INSTRUCTOR"].includes(user?.role ?? "") && (
+                    {user?.role === "INSTRUCTOR" && (
                       <DropdownMenu.Item asChild>
-                      <Link href={localHref("/admin/courses")} className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-dim)] rounded-xl cursor-pointer transition-colors">
-                        <FiBookOpen size={14} className="text-[var(--accent)]" /> {t("manageCourses")}
+                        <Link href={localHref("/dashboard/instructor")} className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-dim)] rounded-xl cursor-pointer transition-colors">
+                          <FiLayout size={14} className="text-[var(--accent)]" /> Instructor Portal
                         </Link>
                       </DropdownMenu.Item>
                     )}
                     {user?.role === "ADMIN" && (
                       <DropdownMenu.Item asChild>
-                      <Link href={localHref("/admin")} className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-[var(--accent)] hover:bg-[var(--accent-dim)] rounded-xl cursor-pointer transition-colors">
-                        <FiSettings size={14} /> {t("admin")} {t("dashboard")}
+                        <Link href={localHref("/admin/courses")} className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-dim)] rounded-xl cursor-pointer transition-colors">
+                          <FiBookOpen size={14} className="text-[var(--accent)]" /> {t("manageCourses")}
+                        </Link>
+                      </DropdownMenu.Item>
+                    )}
+                    {user?.role === "ADMIN" && (
+                      <DropdownMenu.Item asChild>
+                        <Link href={localHref("/admin")} className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-[var(--accent)] hover:bg-[var(--accent-dim)] rounded-xl cursor-pointer transition-colors">
+                          <FiSettings size={14} /> {t("admin")} {t("dashboard")}
                         </Link>
                       </DropdownMenu.Item>
                     )}
@@ -264,6 +271,12 @@ export function Navbar() {
                   <Link href={localHref("/profile")}    onClick={() => setMobileOpen(false)} className="block px-3 py-2.5 rounded-xl text-sm text-[var(--text-secondary)] hover:bg-[var(--accent-dim)] transition-all">{t("profile")}</Link>
                   <Link href={localHref("/settings")}   onClick={() => setMobileOpen(false)} className="block px-3 py-2.5 rounded-xl text-sm text-[var(--text-secondary)] hover:bg-[var(--accent-dim)] transition-all">{t("settings")}</Link>
                   <Link href={localHref("/dashboard")}  onClick={() => setMobileOpen(false)} className="block px-3 py-2.5 rounded-xl text-sm text-[var(--text-secondary)] hover:bg-[var(--accent-dim)] transition-all">{t("myLearning")}</Link>
+                  {user?.role === "INSTRUCTOR" && (
+                    <Link href={localHref("/dashboard/instructor")} onClick={() => setMobileOpen(false)} className="block px-3 py-2.5 rounded-xl text-sm text-[var(--text-secondary)] hover:bg-[var(--accent-dim)] transition-all">Instructor Portal</Link>
+                  )}
+                  {user?.role === "ADMIN" && (
+                    <Link href={localHref("/admin/courses")} onClick={() => setMobileOpen(false)} className="block px-3 py-2.5 rounded-xl text-sm text-[var(--text-secondary)] hover:bg-[var(--accent-dim)] transition-all">{t("manageCourses")}</Link>
+                  )}
                   {user?.role === "ADMIN" && (
                     <Link href={localHref("/admin")}    onClick={() => setMobileOpen(false)} className="block px-3 py-2.5 rounded-xl text-sm text-[var(--accent)] hover:bg-[var(--accent-dim)] transition-all">{t("admin")}</Link>
                   )}

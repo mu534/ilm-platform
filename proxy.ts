@@ -103,17 +103,56 @@ export default withAuth(
       return NextResponse.redirect(new URL(`/${currentLocale}/onboarding`, req.url));
     }
 
-    // Block non-admin/scholar from admin-only pages
+    // ── Role-based access inside /admin ──────────────────────────────────
+    // ADMIN  → full access to everything
+    // INSTRUCTOR / SCHOLAR → course builder paths only
+    // Everyone else → blocked at the authorized() callback below
+    if (pathnameWithoutLocale.startsWith("/admin")) {
+      const role = token?.role;
+      const isAdmin      = role === "ADMIN";
+      const isInstructor = role === "INSTRUCTOR" || role === "SCHOLAR";
+
+      // Paths instructors are allowed to access
+      const instructorAllowed = [
+        "/admin/courses",
+        "/admin/lectures",
+        "/admin/modules",
+        "/admin/my-analytics",
+      ];
+
+      if (!isAdmin && isInstructor) {
+        const allowed = instructorAllowed.some((p) =>
+          pathnameWithoutLocale.startsWith(p)
+        );
+        if (!allowed) {
+          // Redirect instructors away from admin-only pages to their course list
+          return NextResponse.redirect(
+            new URL("/admin/courses", req.url)
+          );
+        }
+      }
+    }
+
+    // Block non-admin from legacy admin-only sub-pages (belt-and-suspenders)
     const adminOnlyPaths = [
       "/admin/users",
       "/admin/analytics",
       "/admin/reports",
       "/admin/categories",
+      "/admin/certificates",
+      "/admin/certificate-settings",
+      "/admin/audit-log",
+      "/admin/enrollments",
+      "/admin/scholar-applications",
+      "/admin/scholars",
+      "/admin/instructors",
+      "/admin/cms",
     ];
-    const isAdminOnlyPath = adminOnlyPaths.some((p) => pathnameWithoutLocale.startsWith(p));
-
+    const isAdminOnlyPath = adminOnlyPaths.some((p) =>
+      pathnameWithoutLocale.startsWith(p)
+    );
     if (isAdminOnlyPath && token?.role !== "ADMIN") {
-      return NextResponse.redirect(new URL(`/${currentLocale}/admin/courses`, req.url));
+      return NextResponse.redirect(new URL("/admin/courses", req.url));
     }
 
     // Most feature pages have not yet moved beneath app/[locale]. Keep the
@@ -158,13 +197,20 @@ export default withAuth(
           return true;
         }
 
-        // /admin requires ADMIN or INSTRUCTOR role
-        // Also allow SCHOLAR (legacy role name used during application approval transition)
+        // /admin — ADMIN has full access; INSTRUCTOR/SCHOLAR limited to course builder
         if (pathnameWithoutLocale.startsWith("/admin")) {
+          if (!token) return false;
+          if (token.role === "ADMIN") return true;
+          // Instructors may only reach course-builder paths
+          const instructorAllowed = [
+            "/admin/courses",
+            "/admin/lectures",
+            "/admin/modules",
+            "/admin/my-analytics",
+          ];
           return (
-            token?.role === "ADMIN" ||
-            token?.role === "INSTRUCTOR" ||
-            token?.role === "SCHOLAR"
+            (token.role === "INSTRUCTOR" || token.role === "SCHOLAR") &&
+            instructorAllowed.some((p) => pathnameWithoutLocale.startsWith(p))
           );
         }
 

@@ -78,18 +78,23 @@ export function AdminSidebar({
   const pathname = usePathname();
   const [isHeaderHovered, setIsHeaderHovered] = useState(false);
 
+  const isAdmin      = user?.role === "ADMIN";
+  const isInstructor = user?.role === "INSTRUCTOR" || user?.role === "SCHOLAR";
+
   const isLinkActive = (item: NavItem) => {
-    if (item.href === "/admin") {
-      return pathname === "/admin";
-    }
+    if (item.href === "/admin") return pathname === "/admin";
     return pathname === item.href || pathname.startsWith(`${item.href}/`);
   };
 
   const handleLinkClick = () => {
-    if (isMobile && onCloseMobile) {
-      onCloseMobile();
-    }
+    if (isMobile && onCloseMobile) onCloseMobile();
   };
+
+  // Instructor sees only their relevant nav items
+  const instructorNav: NavItem[] = [
+    { href: "/admin/courses",      label: "My Courses",    icon: <FiLayout size={18} /> },
+    { href: "/admin/my-analytics", label: "My Analytics",  icon: <FiBarChart2 size={18} /> },
+  ];
 
   return (
     <aside
@@ -149,6 +154,45 @@ export function AdminSidebar({
 
       {/* ── Nav Links Container ── */}
       <div className="flex-1 overflow-y-auto px-3 py-4 space-y-6 scrollbar-thin">
+
+        {/* ── INSTRUCTOR view — simplified ── */}
+        {isInstructor && !isAdmin && (
+          <div>
+            {(!collapsed || isMobile) && (
+              <p className="px-3 text-[11px] uppercase tracking-widest font-bold text-[var(--text-secondary)] mb-2">
+                Instructor
+              </p>
+            )}
+            <nav className="space-y-1">
+              {instructorNav.map((item) => {
+                const active = isLinkActive(item);
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={handleLinkClick}
+                    title={collapsed && !isMobile ? item.label : undefined}
+                    className={`flex items-center gap-3.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group ${
+                      active
+                        ? "bg-[var(--accent-dim)] text-[var(--accent)] border border-[var(--border-strong)] font-semibold"
+                        : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-hover)]"
+                    } ${collapsed && !isMobile ? "justify-center px-0" : ""}`}
+                  >
+                    <span className={`flex-shrink-0 ${active ? "text-[var(--accent)]" : "text-[var(--text-muted)] group-hover:text-[var(--text-primary)]"}`}>
+                      {item.icon}
+                    </span>
+                    {(!collapsed || isMobile) && <span className="truncate flex-1">{item.label}</span>}
+                    {active && (!collapsed || isMobile) && <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]" />}
+                  </Link>
+                );
+              })}
+            </nav>
+          </div>
+        )}
+
+        {/* ── ADMIN view — full panel ── */}
+        {isAdmin && (
+          <>
         {/* Management Section */}
         <div>
           {(!collapsed || isMobile) && (
@@ -364,15 +408,44 @@ export function AdminSidebar({
                 collapsed && !isMobile ? "justify-center px-0" : ""
               }`}
             >
-              <span className="flex-shrink-0">
-                <FiLogOut size={18} />
-              </span>
-              {(!collapsed || isMobile) && (
-                <span className="truncate flex-1 text-left">Sign Out</span>
-              )}
+              <span className="flex-shrink-0"><FiLogOut size={18} /></span>
+              {(!collapsed || isMobile) && <span className="truncate flex-1 text-left">Sign Out</span>}
             </button>
           </nav>
         </div>
+          </>
+        )}
+
+        {/* ── Shared: Back to Site + Sign Out (instructor only) ── */}
+        {isInstructor && !isAdmin && (
+          <div>
+            <nav className="space-y-1">
+              <Link
+                href="/dashboard/instructor"
+                onClick={handleLinkClick}
+                className={`flex items-center gap-3.5 px-3 py-2.5 rounded-xl text-sm font-medium text-[var(--accent)] hover:bg-[var(--accent-dim)] transition-all ${collapsed && !isMobile ? "justify-center px-0" : ""}`}
+              >
+                <span className="flex-shrink-0"><FiChevronRight size={18} /></span>
+                {(!collapsed || isMobile) && <span className="truncate flex-1">Instructor Dashboard</span>}
+              </Link>
+              <Link
+                href="/"
+                onClick={handleLinkClick}
+                className={`flex items-center gap-3.5 px-3 py-2.5 rounded-xl text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-hover)] transition-all ${collapsed && !isMobile ? "justify-center px-0" : ""}`}
+              >
+                <span className="flex-shrink-0"><FiChevronRight size={18} /></span>
+                {(!collapsed || isMobile) && <span className="truncate flex-1">Back to Site</span>}
+              </Link>
+              <button
+                onClick={() => { handleLinkClick(); signOut({ callbackUrl: "/" }); }}
+                className={`w-full flex items-center gap-3.5 px-3 py-2.5 rounded-xl text-sm font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all ${collapsed && !isMobile ? "justify-center px-0" : ""}`}
+              >
+                <span className="flex-shrink-0"><FiLogOut size={18} /></span>
+                {(!collapsed || isMobile) && <span className="truncate flex-1 text-left">Sign Out</span>}
+              </button>
+            </nav>
+          </div>
+        )}
       </div>
 
       {/* ── Footer / User Mini Profile ── */}
@@ -393,7 +466,7 @@ export function AdminSidebar({
                   {user.name}
                 </p>
                 <p className="text-[10px] text-[var(--text-muted)] truncate">
-                  Administrator
+                  {isAdmin ? "Administrator" : "Instructor"}
                 </p>
               </div>
             )}

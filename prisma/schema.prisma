@@ -115,7 +115,34 @@ enum CertificateApprovalStatus {
   DISABLED
 }
 
-// ─── Auth Tokens ─────────────────────────────────────────────────────────────
+// ─── Contact Messages ─────────────────────────────────────────────────────────
+
+enum ContactMessageType {
+  GENERAL
+  SUPPORT
+  PARTNERSHIP
+  REPORT
+  OTHER
+}
+
+model ContactMessage {
+  id        String             @id @default(cuid())
+  name      String
+  email     String
+  subject   String
+  message   String
+  type      ContactMessageType @default(GENERAL)
+  userId    String?
+  user      User?              @relation(fields: [userId], references: [id], onDelete: SetNull)
+  read      Boolean            @default(false)
+  createdAt DateTime           @default(now())
+
+  @@index([email])
+  @@index([read, createdAt])
+  @@map("contact_messages")
+}
+
+
 
 model VerificationToken {
   id        String   @id @default(cuid())
@@ -194,6 +221,7 @@ model User {
   preferredLanguage String            @default("en")
   stripeCustomerId  String?
   payments          Payment[]
+  contactMessages   ContactMessage[]
   // Notification preferences — gate which in-app notifications get created.
   // Transactional ones (course approval, quiz results, certificates) are
   // always sent regardless, same as you can't turn off "your order shipped".

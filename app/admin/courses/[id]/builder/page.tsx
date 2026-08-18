@@ -11,6 +11,7 @@ import {
 } from "react-icons/fi";
 import { FileUploader } from "../../../../components/FileUploader";
 import { LectureResourceManager } from "../../../../components/lectures/LectureResourceManager";
+import RichTextEditor from "../../../../components/admin/RichTextEditor";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -263,22 +264,21 @@ function LectureForm({
           value={form.description}
           onChange={(e) => setForm({ ...form, description: e.target.value })}
           className={inputClass}
-          rows={2}
-          placeholder="Brief description of this lesson"
+          rows={3}
+          placeholder="Brief description of this lesson — shown on the course page"
         />
       </div>
 
       {form.type === "TEXT" && (
         <div>
           <label className="block text-xs text-[var(--text-muted)] font-medium mb-1">
-            Content <span className="font-normal">(HTML supported)</span>
+            Content <span className="font-normal text-[var(--text-muted)]">— rich text editor</span>
           </label>
-          <textarea
+          <RichTextEditor
             value={form.content}
-            onChange={(e) => setForm({ ...form, content: e.target.value })}
-            className={inputClass}
-            rows={8}
-            placeholder="<p>Write the full lesson content here…</p>"
+            onChange={(html) => setForm({ ...form, content: html })}
+            placeholder="Write your full lesson content here. Use headings, lists, quotes and more…"
+            minHeight="320px"
           />
         </div>
       )}

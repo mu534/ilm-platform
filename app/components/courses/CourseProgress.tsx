@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FiCheckCircle, FiLoader, FiArrowRight } from "react-icons/fi";
+import { FiCheckCircle, FiLoader, FiArrowRight, FiBookOpen } from "react-icons/fi";
 import { useQuery } from "@tanstack/react-query";
 
 interface Enrollment {

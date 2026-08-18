@@ -79,7 +79,7 @@ export function FileUploader({
   }, [accept, maxSize]);
 
   // ── XHR upload with real progress ─────────────────────────────────────────
-  const handleFile = useCallback((file: File) => {
+  const handleFile = useCallback(async (file: File) => {
     const validationError = validate(file);
     if (validationError) { setError(validationError); return; }
 
@@ -87,60 +87,99 @@ export function FileUploader({
     setTotalBytes(file.size); setSpeedKBs(0); setUploading(true);
     startRef.current = Date.now();
 
-    const formData = new FormData();
-    formData.append("file",   file);
-    formData.append("folder", folder);
+    try {
+      // ── Step 1: Get a signed upload URL from our server ──────────────────
+      const resourceType = file.type.startsWith("video/") ? "video"
+        : file.type.startsWith("image/") ? "image"
+        : file.type.startsWith("audio/") ? "auto"
+        : "raw";
 
-    const xhr = new XMLHttpRequest();
-    xhrRef.current = xhr;
+      const sigRes = await fetch("/api/upload-signature", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ folder, resourceType }),
+      });
 
-    // Real upload progress
-    xhr.upload.addEventListener("progress", (e) => {
-      if (!e.lengthComputable) return;
-      const pct     = Math.round((e.loaded / e.total) * 100);
-      const elapsed = (Date.now() - startRef.current) / 1000;
-      const speed   = elapsed > 0 ? Math.round(e.loaded / 1024 / elapsed) : 0;
-      setProgress(pct);
-      setBytesLoaded(e.loaded);
-      setSpeedKBs(speed);
-    });
-
-    xhr.addEventListener("load", () => {
-      setUploading(false);
-      if (xhr.status >= 200 && xhr.status < 300) {
-        try {
-          const data = JSON.parse(xhr.responseText) as {
-            success?: boolean;
-            data?: { url: string; publicId?: string };
-            error?: string;
-          };
-          if (!data.success || !data.data?.url) {
-            setError(data.error ?? "Upload failed — server returned no URL");
-            return;
-          }
-          setPreview(data.data.url);
-          setDone(true);
-          onUpload(data.data.url, data.data.publicId);
-        } catch {
-          setError("Upload failed — invalid server response");
-        }
-      } else {
-        setError(`Upload failed (HTTP ${xhr.status})`);
+      if (!sigRes.ok) {
+        const errData = await sigRes.json() as { error?: string };
+        throw new Error(errData.error ?? "Failed to get upload signature");
       }
-    });
 
-    xhr.addEventListener("error", () => {
+      const sigData = await sigRes.json() as {
+        success: boolean;
+        data: {
+          signature: string; timestamp: number;
+          cloudName: string; apiKey: string;
+          folder: string; resourceType: string;
+          eager?: string | null; eager_async?: number | null;
+          quality?: string | null; fetch_format?: string | null;
+        };
+      };
+
+      if (!sigData.success) throw new Error("Failed to get upload signature");
+      const sig = sigData.data;
+
+      // ── Step 2: Upload directly to Cloudinary from the browser ──────────
+      const cloudUrl = `https://api.cloudinary.com/v1_1/${sig.cloudName}/${sig.resourceType}/upload`;
+      const formData = new FormData();
+      formData.append("file",        file);
+      formData.append("api_key",     sig.apiKey);
+      formData.append("timestamp",   String(sig.timestamp));
+      formData.append("signature",   sig.signature);
+      formData.append("folder",      sig.folder);
+      if (sig.eager)        formData.append("eager",        sig.eager);
+      if (sig.eager_async)  formData.append("eager_async",  String(sig.eager_async));
+      if (sig.quality)      formData.append("quality",      sig.quality);
+      if (sig.fetch_format) formData.append("fetch_format", sig.fetch_format);
+
+      const xhr = new XMLHttpRequest();
+      xhrRef.current = xhr;
+
+      xhr.upload.addEventListener("progress", (e) => {
+        if (!e.lengthComputable) return;
+        const pct     = Math.round((e.loaded / e.total) * 100);
+        const elapsed = (Date.now() - startRef.current) / 1000;
+        const speed   = elapsed > 0 ? Math.round(e.loaded / 1024 / elapsed) : 0;
+        setProgress(pct);
+        setBytesLoaded(e.loaded);
+        setSpeedKBs(speed);
+      });
+
+      xhr.addEventListener("load", () => {
+        setUploading(false);
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            const result = JSON.parse(xhr.responseText) as {
+              secure_url?: string; public_id?: string; error?: { message?: string };
+            };
+            if (result.error) { setError(result.error.message ?? "Upload failed"); return; }
+            if (!result.secure_url) { setError("Upload failed — no URL returned"); return; }
+            setPreview(result.secure_url);
+            setDone(true);
+            onUpload(result.secure_url, result.public_id);
+          } catch { setError("Upload failed — invalid response"); }
+        } else {
+          setError(`Upload failed (HTTP ${xhr.status})`);
+        }
+      });
+
+      xhr.addEventListener("error", () => {
+        setUploading(false);
+        setError("Network error — check your connection and try again");
+      });
+
+      xhr.addEventListener("abort", () => {
+        setUploading(false);
+        setProgress(0);
+      });
+
+      xhr.open("POST", cloudUrl);
+      xhr.send(formData);
+
+    } catch (err) {
       setUploading(false);
-      setError("Network error — please check your connection and try again");
-    });
-
-    xhr.addEventListener("abort", () => {
-      setUploading(false);
-      setProgress(0);
-    });
-
-    xhr.open("POST", "/api/upload");
-    xhr.send(formData);
+      setError(err instanceof Error ? err.message : "Upload failed");
+    }
   }, [folder, onUpload, validate]);
 
   const cancelUpload = () => {
@@ -151,7 +190,7 @@ export function FileUploader({
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     const file = e.dataTransfer.files[0];
-    if (file) handleFile(file);
+    if (file) void handleFile(file);
   };
 
   const clear = () => {
@@ -177,7 +216,7 @@ export function FileUploader({
       vid.src = url;
     }
 
-    handleFile(file);
+    void handleFile(file);
   };
 
   const etaSec = speedKBs > 0 && totalBytes > bytesLoaded

@@ -56,10 +56,11 @@ export function Navbar() {
   const user = session?.user as SessionUser | undefined;
   const localHref = (href: string) => href === "/" ? `/${locale}` : `/${locale}${href}`;
   const navLinks = [
-    { href: "/", label: t("home") },
+    { href: "/",        label: t("home") },
     { href: "/courses", label: t("courses") },
     { href: "/scholars", label: t("scholars") },
-    { href: "/forum", label: t("forum") },
+    { href: "/forum",   label: t("forum") },
+    { href: "/contact", label: "Contact" },
   ];
 
   // Hide public navigation inside the LMS shells. Routes are locale-prefixed

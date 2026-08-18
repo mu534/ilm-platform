@@ -296,31 +296,23 @@ export default function ClassroomQuizPage() {
 
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-                {result.passed && nextHref ? (
+                {result.passed ? (
                   /* PRIMARY: go to next module or completion page */
                   <Link
-                    href={nextHref}
+                    href={nextHref ?? `/courses/${courseSlug}`}
                     className="w-full sm:w-auto px-6 py-3 rounded-xl text-white text-sm font-bold transition-all flex items-center justify-center gap-2 shadow-md bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500"
                   >
-                    {nextHref.includes("/complete") ? <FiAward size={16} /> : <FiArrowRight size={16} />}
+                    {nextHref?.includes("/complete") ? <FiAward size={16} /> : <FiArrowRight size={16} />}
                     <span>{nextLabel}</span>
                   </Link>
-                ) : result.passed ? (
-                  /* Fallback if curriculum not resolved yet */
-                  <Link
-                    href={`/courses/${courseSlug}`}
-                    className="w-full sm:w-auto px-6 py-3 rounded-xl text-white text-sm font-bold transition-all flex items-center justify-center gap-2 shadow-md bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500"
-                  >
-                    <FiBookOpen size={16} /> Back to Course Hub
-                  </Link>
                 ) : (
-                  /* FAILED — back to course to review */
+                  /* FAILED — back to course to review the relevant module */
                   <Link
                     href={`/courses/${courseSlug}`}
                     className="w-full sm:w-auto px-6 py-3 rounded-xl text-white text-sm font-semibold transition-all flex items-center justify-center gap-2 shadow-md bg-[var(--accent)] hover:bg-[var(--accent-light)]"
                   >
                     <FiBookOpen size={16} />
-                    <span>Back to Course</span>
+                    <span>Review Course Material</span>
                   </Link>
                 )}
 

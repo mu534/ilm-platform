@@ -249,7 +249,7 @@ export default async function ClassroomLecturePage({ params }: Props) {
 
       {/* Scrollable content */}
       <div className="flex-1 overflow-auto">
-        <article className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-8">
+        <article className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-8 classroom-content">
 
           {/* Section label */}
           <p className="text-xs font-semibold text-[var(--accent)] uppercase tracking-wider mb-3">

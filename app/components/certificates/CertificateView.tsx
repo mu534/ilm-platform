@@ -43,8 +43,10 @@ export function CertificateView({ certificate, signature }: CertificateViewProps
     signaturesList = [signature];
   }
 
-  const verificationUrl = certificate.verificationUrl || 
-    (typeof window !== "undefined" ? `${window.location.origin}/certificates/verify/${certificate.certificateId}` : null);
+  // Use the immutable verificationUrl stored at issuance time (canonical)
+  // Fall back only if the snapshot is missing (legacy certs before the URL field was added)
+  const verificationUrl = certificate.verificationUrl ||
+    `${typeof window !== "undefined" ? window.location.origin : ""}/en/verify/${certificate.certificateId}`;
 
   useEffect(() => {
     if (verificationUrl) {
@@ -52,10 +54,10 @@ export function CertificateView({ certificate, signature }: CertificateViewProps
         width: 140,
         margin: 1,
         color: {
-          dark: "#064e3b", // Deep emerald green
+          dark: "#064e3b",
           light: "#ffffff",
         },
-      }).then(setQrCodeUrl);
+      }).then(setQrCodeUrl).catch(() => {});
     }
   }, [verificationUrl]);
 

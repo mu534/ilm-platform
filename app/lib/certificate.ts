@@ -224,13 +224,18 @@ export async function issueCertificate(
 ) {
   const db = tx || prisma;
 
-  // Rule 1: Enrollment, required lectures & quizzes — no admin approval needed
+  // Rule 1: Enrollment, required lectures & quizzes
   await validateStudentCompletion(userId, courseId, db);
 
   // Rule 2: Student full name validation
   const studentName = await validateStudentName(userId, db);
 
-  // Rule 6: Check existing certificate (Idempotency)
+  // Rule 3: Course must be approved and certificate enabled by admin
+  // This MUST run before idempotency check so the error is surfaced even
+  // if a stale/invalid certificate somehow exists.
+  await validateCourseCertificateEligibility(courseId, db);
+
+  // Rule 4 (Idempotency): return existing certificate if already issued
   const existing = await checkExistingCertificate(userId, courseId, db);
   if (existing) {
     return existing;

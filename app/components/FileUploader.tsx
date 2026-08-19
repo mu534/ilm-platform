@@ -111,8 +111,6 @@ export function FileUploader({
           signature: string; timestamp: number;
           cloudName: string; apiKey: string;
           folder: string; resourceType: string;
-          eager?: string | null; eager_async?: number | null;
-          quality?: string | null; fetch_format?: string | null;
         };
       };
 
@@ -127,10 +125,6 @@ export function FileUploader({
       formData.append("timestamp",   String(sig.timestamp));
       formData.append("signature",   sig.signature);
       formData.append("folder",      sig.folder);
-      if (sig.eager)        formData.append("eager",        sig.eager);
-      if (sig.eager_async)  formData.append("eager_async",  String(sig.eager_async));
-      if (sig.quality)      formData.append("quality",      sig.quality);
-      if (sig.fetch_format) formData.append("fetch_format", sig.fetch_format);
 
       const xhr = new XMLHttpRequest();
       xhrRef.current = xhr;

@@ -100,7 +100,7 @@ export default function RichTextEditor({ value, onChange, placeholder = "Write y
     if (!editor) return;
     const current = editor.getHTML();
     if (value !== current && value !== "<p></p>" && value !== "") {
-      editor.commands.setContent(value, false);
+      editor.commands.setContent(value, { emitUpdate: false });
     }
   }, [value, editor]);
 

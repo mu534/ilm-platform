@@ -44,7 +44,7 @@ export async function POST(req: NextRequest, { params }: Params) {
       return errorResponse(error.message, 422);
     }
     if (error instanceof HttpError) {
-      return errorResponse(error.message, error.statusCode);
+      return errorResponse(error.message, error.status);
     }
     return handleApiError(error);
   }

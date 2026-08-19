@@ -110,7 +110,7 @@ export default withAuth(
     if (pathnameWithoutLocale.startsWith("/admin")) {
       const role = token?.role;
       const isAdmin      = role === "ADMIN";
-      const isInstructor = role === "INSTRUCTOR" || role === "SCHOLAR";
+      const isInstructor = role === "INSTRUCTOR" || (role as string) === "SCHOLAR";
 
       // Paths instructors are allowed to access
       const instructorAllowed = [
@@ -210,7 +210,7 @@ export default withAuth(
             "/admin/my-analytics",
           ];
           return (
-            (token.role === "INSTRUCTOR" || token.role === "SCHOLAR") &&
+            (token.role === "INSTRUCTOR" || (token.role as string) === "SCHOLAR") &&
             instructorAllowed.some((p) => pathnameWithoutLocale.startsWith(p))
           );
         }
@@ -220,7 +220,7 @@ export default withAuth(
         if (pathnameWithoutLocale.startsWith("/dashboard")) {
           if (!token) return false;
           if (pathnameWithoutLocale.startsWith("/dashboard/instructor")) {
-            return token.role === "INSTRUCTOR" || token.role === "ADMIN" || token.role === "SCHOLAR";
+            return token.role === "INSTRUCTOR" || token.role === "ADMIN" || (token.role as string) === "SCHOLAR";
           }
           return true;
         }

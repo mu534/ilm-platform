@@ -11,20 +11,24 @@ const schema = z.object({
 
 /**
  * POST /api/upload-signature
- * Returns a signed upload signature so the browser can upload directly to
- * Cloudinary — bypassing the Next.js serverless request body limit (4.5 MB
- * on Vercel). The file never passes through this server.
  *
- * The client should POST the file directly to:
- *   https://api.cloudinary.com/v1_1/{cloud_name}/{resource_type}/upload
- * with the params returned here.
+ * Returns a Cloudinary signed-upload signature so the browser can POST
+ * files DIRECTLY to Cloudinary — bypassing the Next.js 4.5 MB body limit.
+ *
+ * CRITICAL: Every parameter included in the Cloudinary upload request MUST
+ * be included in the params passed to api_sign_request, otherwise Cloudinary
+ * returns 401 "signature mismatch".
+ *
+ * We keep the signed params minimal (folder + timestamp) to avoid any
+ * mismatch. Post-upload transformations are handled by the Cloudinary
+ * upload preset or via the existing server-side upload route for small files.
  */
 export async function POST(req: NextRequest) {
   try {
     const user = await requireUserFresh();
     const body = schema.parse(await req.json());
 
-    // Only admins/instructors can upload course media
+    // Only admins/instructors can upload course media; anyone can upload avatars
     const isAvatarUpload = body.folder.includes("avatars");
     if (!isAvatarUpload && !["ADMIN", "INSTRUCTOR"].includes(user.role)) {
       return errorResponse("Forbidden", 403);
@@ -32,23 +36,12 @@ export async function POST(req: NextRequest) {
 
     const timestamp = Math.round(Date.now() / 1000);
 
-    // Params to sign — must match exactly what the browser sends
+    // ONLY sign the params that the browser will actually send.
+    // Any param sent but not signed causes a 401.
     const paramsToSign: Record<string, string | number> = {
       folder:    body.folder,
       timestamp,
     };
-
-    // Add eager transformation for videos (HLS + mp4 fallback)
-    if (body.resourceType === "video") {
-      paramsToSign.eager = "sp_hd/m3u8|f_mp4,vc_auto,q_auto";
-      paramsToSign.eager_async = 1;
-      paramsToSign.quality = "auto";
-    }
-
-    if (body.resourceType === "image") {
-      paramsToSign.quality = "auto";
-      paramsToSign.fetch_format = "auto";
-    }
 
     const signature = cloudinary.utils.api_sign_request(
       paramsToSign,
@@ -58,15 +51,10 @@ export async function POST(req: NextRequest) {
     return successResponse({
       signature,
       timestamp,
-      cloudName:  process.env.CLOUDINARY_CLOUD_NAME,
-      apiKey:     process.env.CLOUDINARY_API_KEY,
-      folder:     body.folder,
+      cloudName:    process.env.CLOUDINARY_CLOUD_NAME ?? "",
+      apiKey:       process.env.CLOUDINARY_API_KEY ?? "",
+      folder:       body.folder,
       resourceType: body.resourceType,
-      // Extra params the browser must include in its Cloudinary POST
-      eager: paramsToSign.eager ?? null,
-      eager_async: paramsToSign.eager_async ?? null,
-      quality: paramsToSign.quality ?? null,
-      fetch_format: paramsToSign.fetch_format ?? null,
     });
   } catch (error) {
     return handleApiError(error);

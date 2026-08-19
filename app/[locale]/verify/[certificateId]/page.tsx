@@ -1,9 +1,6 @@
-import PublicCertificateVerificationPage from "../../../certificates/verify/[certificateId]/page";
-
-interface Props {
-  params: Promise<{ certificateId: string }>;
-}
-
-export default async function CertificateVerificationPage({ params }: Props) {
-  return <PublicCertificateVerificationPage params={params} />;
-}
+/**
+ * Locale-prefixed canonical verification route.
+ * /en/verify/[certId], /ar/verify/[certId], etc.
+ * Re-exports the single canonical verification page component.
+ */
+export { default } from "../../../certificates/verify/[certificateId]/page";

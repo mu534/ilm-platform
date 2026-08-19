@@ -79,7 +79,7 @@ export function AdminSidebar({
   const [isHeaderHovered, setIsHeaderHovered] = useState(false);
 
   const isAdmin      = user?.role === "ADMIN";
-  const isInstructor = user?.role === "INSTRUCTOR" || user?.role === "SCHOLAR";
+  const isInstructor = user?.role === "INSTRUCTOR";
 
   const isLinkActive = (item: NavItem) => {
     if (item.href === "/admin") return pathname === "/admin";

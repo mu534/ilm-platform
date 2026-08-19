@@ -841,3 +841,113 @@ select:disabled {
   float: left;
   height: 0;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   RTL SUPPORT — Arabic (ar)
+   Applies when dir="rtl" is set on <html> by DirectionProvider.
+   Uses logical CSS properties where possible so layouts flip automatically.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+[dir="rtl"] {
+  /* Text direction */
+  text-align: start;
+
+  /* Reverse flex rows so navbars/sidebars don't reverse content manually */
+  /* We target specific components rather than globally reversing all flex */
+}
+
+/* Sidebar — swap border side */
+[dir="rtl"] aside {
+  border-right: none;
+  border-left: 1px solid var(--border);
+}
+
+/* Chevron icons that imply direction */
+[dir="rtl"] .rtl-flip {
+  transform: scaleX(-1);
+}
+
+/* Inputs / textareas — align right */
+[dir="rtl"] input,
+[dir="rtl"] textarea,
+[dir="rtl"] select {
+  text-align: right;
+  direction: rtl;
+}
+
+/* Nav links in sidebar — swap padding */
+[dir="rtl"] nav a,
+[dir="rtl"] nav button {
+  text-align: right;
+}
+
+/* Breadcrumb separator swap */
+[dir="rtl"] .breadcrumb-sep {
+  transform: scaleX(-1);
+}
+
+/* Progress bars fill from right */
+[dir="rtl"] [role="progressbar"] > div {
+  margin-right: 0;
+  margin-left: auto;
+}
+
+/* Card hover lift stays the same */
+
+/* Lecture prose */
+[dir="rtl"] .lecture-prose {
+  direction: rtl;
+  text-align: right;
+}
+
+/* Tables */
+[dir="rtl"] table {
+  direction: rtl;
+}
+
+/* Arabic font for body when RTL */
+[dir="rtl"] body {
+  font-family: var(--font-arabic), var(--font-body), sans-serif;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   RTL — Arabic layout support
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Flip directional icons when in RTL */
+html[dir="rtl"] .rtl-flip,
+.rtl .rtl-flip {
+  transform: scaleX(-1);
+}
+
+/* Text alignment */
+html[dir="rtl"] {
+  text-align: right;
+}
+
+/* Sidebar — RTL: move to right side */
+html[dir="rtl"] .sidebar-left {
+  left: auto;
+  right: 0;
+  border-left: none;
+  border-right: 1px solid var(--border);
+}
+
+/* Breadcrumb separators flip */
+html[dir="rtl"] .breadcrumb-sep {
+  transform: scaleX(-1);
+  display: inline-block;
+}
+
+/* Preserve LTR for code, cert IDs, and URLs */
+html[dir="rtl"] code,
+html[dir="rtl"] .font-mono,
+html[dir="rtl"] [dir="ltr"] {
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+/* Arabic font for body text in ar locale */
+html[lang="ar"] body {
+  font-family: var(--font-arabic), var(--font-body), system-ui, sans-serif;
+}

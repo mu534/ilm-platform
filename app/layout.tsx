@@ -2,6 +2,7 @@ import { Cormorant_Garamond, DM_Sans, Amiri } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./components/Providers";
 import { I18nProvider } from "./i18n-provider";
+import { DirectionProvider } from "./components/DirectionProvider";
 
 const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
@@ -35,7 +36,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body className="w-full bg-[var(--bg-primary)] text-[var(--text-primary)] transition-colors duration-300">
         <Providers>
           <I18nProvider>
-            {children}
+            <DirectionProvider>
+              {children}
+            </DirectionProvider>
           </I18nProvider>
         </Providers>
       </body>

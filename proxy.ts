@@ -187,6 +187,7 @@ export default withAuth(
           pathnameWithoutLocale.startsWith("/verify-email") ||
           pathnameWithoutLocale.startsWith("/verify-certificate") ||
           pathnameWithoutLocale.startsWith("/certificates/verify") ||
+          pathnameWithoutLocale.startsWith("/verify") ||
           pathnameWithoutLocale.startsWith("/courses") ||
           pathnameWithoutLocale.startsWith("/contact") ||
           pathnameWithoutLocale.startsWith("/lectures") ||

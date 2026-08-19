@@ -30,9 +30,13 @@ export async function POST(req: NextRequest) {
     const body = (await req.json()) as unknown;
     const data = createSchema.parse(body);
 
-    const count = await prisma.certificateSignature.count();
-    if (count >= 5) {
-      return errorResponse("Maximum of 5 signatures allowed. Delete one before adding another.", 409);
+    // Only ONE CEO signature allowed at a time
+    const existing = await prisma.certificateSignature.findFirst();
+    if (existing) {
+      return errorResponse(
+        "A CEO signature already exists. Update the existing signature instead of creating a new one.",
+        409
+      );
     }
 
     const sig = await prisma.certificateSignature.create({ data });

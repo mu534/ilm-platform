@@ -72,7 +72,7 @@ async function getScholarAnalytics(authorId: string) {
 export default async function MyAnalyticsPage() {
   const session = await getServerSession(authOptions);
   const user = session?.user as SessionUser | undefined;
-  if (!user || !["ADMIN", "INSTRUCTOR", "SCHOLAR"].includes(user.role)) redirect("/dashboard");
+  if (!user || !["ADMIN", "INSTRUCTOR"].includes(user.role)) redirect("/dashboard");
 
   const data = await getScholarAnalytics(user.id);
 

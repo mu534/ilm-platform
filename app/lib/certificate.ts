@@ -264,24 +264,31 @@ export async function issueCertificate(
 
   const completionDate = enrollment?.completedAt || new Date();
 
-  // Fetch active signatures for snapshot (up to 2)
-  const activeSignatures = await db.certificateSignature.findMany({
+  // Fetch the ONE official CEO signature (required for issuance)
+  const ceoSignature = await db.certificateSignature.findFirst({
     where: { isActive: true },
     orderBy: { createdAt: "asc" },
-    take: 2,
     select: { name: true, title: true, imageUrl: true },
   });
 
-  const signaturesSnapshot = activeSignatures.map((s) => ({
-    name: s.name,
-    title: s.title || null,
-    imageUrl: s.imageUrl,
-  }));
+  if (!ceoSignature) {
+    throw new CertificateEligibilityError(
+      "Certificate issuance is blocked: no official CEO signature has been configured. " +
+      "An administrator must upload and activate the CEO signature in Certificate Settings before certificates can be issued."
+    );
+  }
+
+  const signaturesSnapshot = [{
+    name: ceoSignature.name,
+    title: ceoSignature.title || null,
+    imageUrl: ceoSignature.imageUrl,
+  }];
 
   const certificateId = generateCertificateId();
   const baseUrl =
     process.env.NEXTAUTH_URL || process.env.APP_URL || "http://localhost:3000";
-  const verificationUrl = `${baseUrl}/certificates/verify/${certificateId}`;
+  // Use the canonical locale-prefixed verification URL
+  const verificationUrl = `${baseUrl}/en/verify/${certificateId}`;
 
   // Issue certificate record with immutable snapshot
   const certificate = await db.certificate.create({

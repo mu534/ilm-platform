@@ -6,6 +6,7 @@ import { locales, localeDirections } from '@/i18n/config';
 import { Providers } from "@/app/components/Providers";
 import { Navbar } from "@/app/components/NavBar";
 import { Footer } from "@/app/components/Footer";
+import { HtmlDirSetter } from "@/app/components/HtmlDirSetter";
 
 // Pre-generate locale segments at build time.
 // This eliminates the dynamic async timing window that triggers the
@@ -72,10 +73,9 @@ export default async function LocaleLayout({
   const direction = localeDirections[locale as keyof typeof localeDirections] || 'ltr';
 
   return (
-    <div
-      lang={locale}
-      dir={direction}
-    >
+    <div lang={locale} dir={direction} className="contents">
+      {/* Sets dir/lang on <html> at runtime for proper RTL support */}
+      <HtmlDirSetter locale={locale} dir={direction} />
       {/* JSON-LD structured data for SEO */}
       <script
         type="application/ld+json"

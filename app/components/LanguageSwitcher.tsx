@@ -35,11 +35,25 @@ export function LanguageSwitcher() {
     setCurrent(code);
     localStorage.setItem("lang", code);
 
-    // Update URL with new locale
-    const segments = pathname.split('/');
-    segments[1] = code;
-    const newPath = segments.join('/');
-    router.push(newPath);
+    // Build the new path preserving the current route:
+    // - If the path already has a locale prefix (/en/...), swap it
+    // - If it doesn't (/dashboard, /courses, etc.), prepend the new locale
+    const segments = pathname.split("/").filter(Boolean);
+    const hasLocale = locales.includes(segments[0] as Locale);
+
+    let newPath: string;
+    if (hasLocale) {
+      // Replace existing locale prefix
+      segments[0] = code;
+      newPath = "/" + segments.join("/");
+    } else {
+      // Non-locale route — prepend locale and keep the full path
+      newPath = `/${code}${pathname}`;
+    }
+
+    // Preserve search params if any
+    const search = window.location.search;
+    router.push(newPath + search);
 
     if (session?.user) {
       await fetch(`/api/users/${(session.user as { id: string }).id}`, {

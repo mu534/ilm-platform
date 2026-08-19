@@ -17,7 +17,7 @@ export default async function AdminLayoutWrapper({
   }
 
   const isAdmin      = user.role === "ADMIN";
-  const isInstructor = user.role === "INSTRUCTOR" || user.role === "SCHOLAR";
+  const isInstructor = user.role === "INSTRUCTOR";
 
   // Students and guests go to student dashboard
   if (!isAdmin && !isInstructor) {

@@ -100,7 +100,11 @@ export default withAuth(
         return NextResponse.redirect(new URL(`/${currentLocale}/dashboard`, req.url));
       }
     } else if (token && isLearner && !onboardingCompleted) {
-      return NextResponse.redirect(new URL(`/${currentLocale}/onboarding`, req.url));
+      // /scholar-application is the destination for teachers finishing onboarding —
+      // always allow it so the "Continue to Application" redirect is never blocked.
+      if (!pathnameWithoutLocale.startsWith("/scholar-application")) {
+        return NextResponse.redirect(new URL(`/${currentLocale}/onboarding`, req.url));
+      }
     }
 
     // ── Role-based access inside /admin ──────────────────────────────────

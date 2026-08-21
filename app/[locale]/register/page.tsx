@@ -169,7 +169,7 @@ export default function RegisterPage() {
                       required
                       value={form.name}
                       onChange={(e) => setForm({ ...form, name: e.target.value })}
-                      className={`input-themed pl-10 ${errors.name ? "error" : ""}`}
+                      className={`w-full pl-10 pr-4 py-2.5 bg-[var(--bg-elevated)] border rounded-xl text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] transition-colors ${errors.name ? "border-red-500/60" : "border-[var(--border-strong)]"}`}
                       placeholder="Your full name"
                       autoComplete="name"
                     />
@@ -193,7 +193,7 @@ export default function RegisterPage() {
                       required
                       value={form.email}
                       onChange={(e) => setForm({ ...form, email: e.target.value })}
-                      className={`input-themed pl-10 ${errors.email ? "error" : ""}`}
+                      className={`w-full pl-10 pr-4 py-2.5 bg-[var(--bg-elevated)] border rounded-xl text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] transition-colors ${errors.email ? "border-red-500/60" : "border-[var(--border-strong)]"}`}
                       placeholder="you@example.com"
                       autoComplete="email"
                     />
@@ -217,7 +217,7 @@ export default function RegisterPage() {
                       required
                       value={form.password}
                       onChange={(e) => setForm({ ...form, password: e.target.value })}
-                      className={`input-themed pl-10 pr-10 ${errors.password ? "error" : ""}`}
+                      className={`w-full pl-10 pr-10 py-2.5 bg-[var(--bg-elevated)] border rounded-xl text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] transition-colors ${errors.password ? "border-red-500/60" : "border-[var(--border-strong)]"}`}
                       placeholder="Min 8 chars, 1 uppercase, 1 number"
                       autoComplete="new-password"
                     />

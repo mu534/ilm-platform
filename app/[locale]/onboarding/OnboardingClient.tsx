@@ -18,13 +18,17 @@ export default function OnboardingClient() {
   const [saving, setSaving] = useState(false);
   const [ready, setReady] = useState(false);
   const [saveError, setSaveError] = useState("");
+  const [navigating, setNavigating] = useState(false);
   const [form, setForm] = useState<Form>(defaultForm);
+
   useEffect(() => {
     if (status === "unauthenticated") {
       router.replace(`/${locale}/login?callbackUrl=/${locale}/onboarding`);
       return;
     }
     if (status !== "authenticated") return;
+    // Don't re-fetch if we're in the middle of a final navigation
+    if (navigating) return;
 
     void Promise.all([
       fetch("/api/categories").then((r) => r.json()),
@@ -34,8 +38,8 @@ export default function OnboardingClient() {
       const profile = profileResponse.data;
 
       if (profile?.onboardingCompleted) {
-        // Onboarding done — go to home
-        router.replace(`/`);
+        // Only redirect home if we're NOT in the middle of navigating away
+        if (!navigating) router.replace(`/`);
         return;
       }
 
@@ -52,7 +56,7 @@ export default function OnboardingClient() {
 
       setReady(true);
     }).catch(() => setReady(true));
-  }, [status, router, locale]);
+  }, [status, router, locale, navigating]);
 
   const toggle = (key: "categoryIds" | "goals", value: string) => {
     setSaveError("");
@@ -74,13 +78,13 @@ export default function OnboardingClient() {
         return;
       }
       if (complete) {
+        setNavigating(true);
         if (form.accountIntention === "TEACH") {
-          // Scholar application page is protected but exempt from onboarding gate
+          // Refresh JWT then go to scholar application form
+          await updateSession();
           router.push(`/${locale}/scholar-application`);
         } else {
-          // Force the JWT to refresh so it picks up onboardingCompleted=true.
-          // Without this the middleware still sees onboardingCompleted=false
-          // and immediately redirects the user back to /onboarding.
+          // Refresh JWT so middleware sees onboardingCompleted=true
           await updateSession();
           router.push(`/${locale}`);
         }

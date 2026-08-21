@@ -12,6 +12,7 @@ interface User {
   id: string;
   name: string;
   email: string;
+  phone?: string | null;
   role: Role;
   createdAt: string;
   _count: { lectures: number; comments: number };
@@ -198,6 +199,13 @@ export default function AdminUsersPage() {
                         <p className="text-xs text-[var(--text-muted)]">
                           {user.email}
                         </p>
+                        {user.phone && (
+                          <p className="text-xs text-[var(--text-muted)]">
+                            <a href={`tel:${user.phone}`} className="hover:text-[var(--accent)] transition-colors">
+                              📞 {user.phone}
+                            </a>
+                          </p>
+                        )}
                       </div>
                     </div>
                   </td>

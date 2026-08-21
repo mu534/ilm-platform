@@ -24,7 +24,7 @@ const ALLOWED_TYPES  = ["application/pdf", "image/jpeg", "image/png", "image/web
 const MAX_DOC_BYTES  = 15 * 1024 * 1024;
 
 const EMPTY = {
-  bio: "", city: "", education: "",
+  bio: "", city: "", phone: "", education: "",
   institutions:      [] as string[],
   qualifications:    [] as string[],
   specializations:   [] as string[],
@@ -348,10 +348,24 @@ export default function ScholarApplicationPage() {
           <p className="text-[10px] text-[var(--text-muted)] mt-1 text-right">{form.bio.length} chars</p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <label className="block text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide mb-1.5">City</label>
             <input disabled={locked} value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} className={ic} placeholder="e.g. Medina, Cairo, London" />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide mb-1.5">
+              Phone Number
+              <span className="ml-1 font-normal normal-case text-[var(--text-muted)]">(for admin contact)</span>
+            </label>
+            <input
+              disabled={locked}
+              type="tel"
+              value={form.phone}
+              onChange={(e) => setForm({ ...form, phone: e.target.value })}
+              className={ic}
+              placeholder="+1 555 000 0000"
+            />
           </div>
           <div>
             <label className="block text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide mb-1.5">Years Teaching</label>

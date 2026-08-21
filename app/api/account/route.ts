@@ -15,6 +15,7 @@ const patchSchema = z.object({
   certificateName: z.string().min(2).max(200).optional(),
   bio:             z.string().max(2000).optional(),
   country:         z.string().max(100).optional(),
+  phone:           z.string().max(30).optional(),
 });
 
 /**
@@ -33,8 +34,9 @@ export async function PATCH(req: NextRequest) {
         ...(body.certificateName !== undefined && { certificateName: body.certificateName }),
         ...(body.bio             !== undefined && { bio: body.bio }),
         ...(body.country         !== undefined && { country: body.country }),
+        ...(body.phone           !== undefined && { phone: body.phone }),
       },
-      select: { id: true, name: true, certificateName: true, bio: true, country: true },
+      select: { id: true, name: true, certificateName: true, bio: true, country: true, phone: true },
     });
 
     return successResponse(updated);

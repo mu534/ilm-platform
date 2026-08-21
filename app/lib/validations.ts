@@ -27,6 +27,7 @@ export const learnerProfileSchema = z.object({
   educationLevel: z.string().trim().max(100).optional().or(z.literal("")),
   fieldOfStudy: z.string().trim().max(150).optional().or(z.literal("")),
   occupation: z.string().trim().max(150).optional().or(z.literal("")),
+  phone: z.string().trim().max(30).optional().or(z.literal("")),
   preferredLanguage: z.string().min(2).max(10).default("en"),
   preferredDifficulty: z.enum(["BEGINNER", "INTERMEDIATE", "ADVANCED"]).optional().nullable(),
   accountIntention: z.enum(["LEARN", "TEACH"]).default("LEARN"),
@@ -39,6 +40,7 @@ export const learnerProfileSchema = z.object({
 export const scholarApplicationSchema = z.object({
   bio: z.string().trim().min(30).max(3000),
   city: z.string().trim().max(100).optional().or(z.literal("")),
+  phone: z.string().trim().max(30).optional().or(z.literal("")),
   education: z.string().trim().max(2000).optional().or(z.literal("")),
   institutions: z.array(z.string().trim().min(2).max(200)).max(12).default([]),
   qualifications: z.array(z.string().trim().min(2).max(300)).max(20).default([]),
@@ -52,6 +54,7 @@ export const scholarApplicationSchema = z.object({
 export const scholarApplicationDraftSchema = z.object({
   bio: z.string().trim().max(3000).optional(),
   city: z.string().trim().max(100).optional().or(z.literal("")),
+  phone: z.string().trim().max(30).optional().or(z.literal("")),
   education: z.string().trim().max(2000).optional().or(z.literal("")),
   institutions: z.array(z.string().trim().min(2).max(200)).max(12).optional(),
   qualifications: z.array(z.string().trim().min(2).max(300)).max(20).optional(),
@@ -84,7 +87,7 @@ export const lectureSchema = z.object({
     .max(200, "Title must be less than 200 characters"),
   description: z
     .string()
-    .min(10, "Description must be at least 10 characters")
+    .min(1, "Description is required")
     .max(2000, "Description must be less than 2000 characters"),
   content: z.string().optional(),
   type: z.enum(["TEXT", "VIDEO", "AUDIO", "PDF"]),

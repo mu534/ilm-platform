@@ -18,6 +18,10 @@ export async function PUT(req: NextRequest) {
     // finished learner back through onboarding.
     if (previous?.onboardingCompleted) data.onboardingCompleted = true;
     const profile = await prisma.$transaction(async (tx) => {
+      // Save phone to User directly (not LearnerProfile)
+      if (data.phone !== undefined) {
+        await tx.user.update({ where: { id: user.id }, data: { phone: data.phone || null } });
+      }
       const saved = await tx.learnerProfile.upsert({ where: { userId: user.id }, create: { userId: user.id, city: data.city || null, educationLevel: data.educationLevel || null, fieldOfStudy: data.fieldOfStudy || null, occupation: data.occupation || null, preferredLanguage: data.preferredLanguage, preferredDifficulty: data.preferredDifficulty || null, accountIntention: data.accountIntention, onboardingCompleted: data.onboardingCompleted ?? false, onboardingStep: data.onboardingStep ?? 1 }, update: { city: data.city || null, educationLevel: data.educationLevel || null, fieldOfStudy: data.fieldOfStudy || null, occupation: data.occupation || null, preferredLanguage: data.preferredLanguage, preferredDifficulty: data.preferredDifficulty || null, accountIntention: data.accountIntention, onboardingCompleted: data.onboardingCompleted, onboardingStep: data.onboardingStep } });
       await tx.learnerInterest.deleteMany({ where: { profileId: saved.id } }); await tx.learnerGoal.deleteMany({ where: { profileId: saved.id } });
       if (data.categoryIds.length) await tx.learnerInterest.createMany({ data: [...new Set(data.categoryIds)].map((categoryId) => ({ profileId: saved.id, categoryId })) });

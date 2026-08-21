@@ -6,8 +6,8 @@ import { useLocale } from "next-intl";
 
 type Category = { id: string; name: string };
 const goals = ["Build foundational Islamic knowledge", "Improve Qur'an understanding", "Study Hadith", "Study Fiqh", "Learn at my own pace", "Follow structured learning", "Prepare for advanced study"];
-type Form = { accountIntention: "LEARN" | "TEACH"; preferredLanguage: string; preferredDifficulty: "BEGINNER" | "INTERMEDIATE" | "ADVANCED"; categoryIds: string[]; goals: string[] };
-const defaultForm: Form = { accountIntention: "LEARN", preferredLanguage: "en", preferredDifficulty: "BEGINNER", categoryIds: [], goals: [] };
+type Form = { accountIntention: "LEARN" | "TEACH"; preferredLanguage: string; preferredDifficulty: "BEGINNER" | "INTERMEDIATE" | "ADVANCED"; categoryIds: string[]; goals: string[]; phone: string };
+const defaultForm: Form = { accountIntention: "LEARN", preferredLanguage: "en", preferredDifficulty: "BEGINNER", categoryIds: [], goals: [], phone: "" };
 
 export default function OnboardingClient() {
   const { status, update: updateSession } = useSession();
@@ -50,7 +50,8 @@ export default function OnboardingClient() {
           preferredLanguage: profile.preferredLanguage ?? "en",
           preferredDifficulty: profile.preferredDifficulty ?? "BEGINNER",
           categoryIds: profile.interests?.map((item: { categoryId: string }) => item.categoryId) ?? [],
-          goals: profile.goals?.map((item: { goal: string }) => item.goal) ?? []
+          goals: profile.goals?.map((item: { goal: string }) => item.goal) ?? [],
+          phone: profile.phone ?? "",
         });
       }
 
@@ -139,6 +140,24 @@ export default function OnboardingClient() {
               </label>
             ))}
           </div>
+
+          {/* Phone number — shown for both LEARN and TEACH */}
+          <div>
+            <label className="block text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide mb-1.5">
+              Phone Number <span className="font-normal normal-case text-[var(--text-muted)]">(optional — so we can contact you)</span>
+            </label>
+            <input
+              type="tel"
+              value={form.phone}
+              onChange={(e) => setForm({ ...form, phone: e.target.value })}
+              placeholder="+1 555 000 0000"
+              className="w-full px-4 py-3 bg-[var(--bg-elevated)] border border-[var(--border-strong)] rounded-xl text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] transition-colors"
+            />
+            <p className="text-[11px] text-[var(--text-muted)] mt-1">
+              Admins may use this to contact you about your account or application.
+            </p>
+          </div>
+
           <button className="btn-primary w-full" disabled={saving} onClick={() => void saveStep(2)}>
             {saving ? "Saving…" : "Continue →"}
           </button>

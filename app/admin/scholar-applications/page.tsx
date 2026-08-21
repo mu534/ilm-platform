@@ -6,7 +6,7 @@ type ReviewAction = "UNDER_REVIEW" | "APPROVE" | "REJECT";
 type Item = {
   id: string; status: string; submittedAt: string | null; createdAt: string;
   specializations: string[]; qualifications: string[]; institutions: string[]; teachingLanguages: string[];
-  bio: string | null; city: string | null; education: string | null; teachingExperience: string | null; teachingYears: number | null;
+  bio: string | null; city: string | null; phone: string | null; education: string | null; teachingExperience: string | null; teachingYears: number | null;
   decisionReason: string | null;
   user: { name: string; email: string; country: string | null };
   categories: { category: { name: string } }[];
@@ -103,6 +103,11 @@ export default function ScholarApplicationsPage() {
         <div className="grid sm:grid-cols-2 gap-4">
           <Detail label="Country">{selected.user.country}</Detail>
           <Detail label="City">{selected.city}</Detail>
+          <Detail label="Phone">
+            {selected.phone
+              ? <a href={`tel:${selected.phone}`} className="text-[var(--accent)] hover:underline">{selected.phone}</a>
+              : "—"}
+          </Detail>
           <Detail label="Years teaching">{selected.teachingYears ?? "—"}</Detail>
           <Detail label="Submitted">{formatDate(selected.submittedAt)}</Detail>
         </div>

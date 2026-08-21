@@ -209,8 +209,15 @@ function LectureForm({
           body:    JSON.stringify({ ...form, tags, moduleId, slug, order: nextOrder ?? 0 }),
         });
       }
-      const data = await res.json();
-      if (!data.success) { setError(data.error ?? "Failed to save lesson"); return; }
+      const data = await res.json() as { success?: boolean; error?: string; details?: Record<string, string[]> };
+      if (!data.success) {
+        // Show the first validation field error if available, otherwise the general error
+        const fieldError = data.details
+          ? Object.entries(data.details).map(([k, v]) => `${k}: ${v[0]}`).join(", ")
+          : null;
+        setError(fieldError ?? data.error ?? "Failed to save lesson");
+        return;
+      }
       onSave();
     } catch { setError("Something went wrong"); }
     finally   { setSaving(false); }

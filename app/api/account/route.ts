@@ -36,19 +36,6 @@ export async function GET() {
   }
 }
 
-const deleteSchema = z.object({
-  password: z.string().optional(),
-  confirm:  z.literal(true, { message: "Confirmation is required" }),
-});
-
-const patchSchema = z.object({
-  name:            z.string().min(1).max(200).optional(),
-  certificateName: z.string().min(2).max(200).optional(),
-  bio:             z.string().max(2000).optional(),
-  country:         z.string().max(100).optional(),
-  phone:           z.string().max(30).optional(),
-});
-
 /**
  * PATCH /api/account
  * Update profile fields (name, certificateName, bio, country).

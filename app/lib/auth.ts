@@ -148,7 +148,10 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async signIn({ user, account }) {
       if (account?.provider === "google") {
-        if (!user.email) return false;
+        if (!user.email) {
+          console.error("[Auth] Google signIn: no email on user object");
+          return false;
+        }
         try {
           const existing = await prisma.user.findUnique({
             where: { email: user.email },
@@ -174,12 +177,13 @@ export const authOptions: NextAuthOptions = {
               data: { image: user.image },
             });
           }
-        } catch {
+        } catch (err) {
+          console.error("[Auth] Google signIn error:", err);
           // Concurrent first sign-in may have created the row already; only
           // allow sign-in when the account genuinely exists.
           const created = await prisma.user
             .findUnique({ where: { email: user.email }, select: { id: true } })
-            .catch(() => null);
+            .catch((e) => { console.error("[Auth] fallback lookup error:", e); return null; });
           if (!created) return false;
         }
         return true;

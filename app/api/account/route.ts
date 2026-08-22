@@ -19,6 +19,37 @@ const patchSchema = z.object({
 });
 
 /**
+ * GET /api/account
+ * Return the current user's profile fields.
+ */
+export async function GET() {
+  try {
+    const sessionUser = await requireUserFresh();
+    const user = await prisma.user.findUnique({
+      where:  { id: sessionUser.id },
+      select: { id: true, name: true, email: true, certificateName: true, bio: true, country: true, phone: true },
+    });
+    if (!user) return errorResponse("User not found", 404);
+    return successResponse(user);
+  } catch (error) {
+    return handleApiError(error);
+  }
+}
+
+const deleteSchema = z.object({
+  password: z.string().optional(),
+  confirm:  z.literal(true, { message: "Confirmation is required" }),
+});
+
+const patchSchema = z.object({
+  name:            z.string().min(1).max(200).optional(),
+  certificateName: z.string().min(2).max(200).optional(),
+  bio:             z.string().max(2000).optional(),
+  country:         z.string().max(100).optional(),
+  phone:           z.string().max(30).optional(),
+});
+
+/**
  * PATCH /api/account
  * Update profile fields (name, certificateName, bio, country).
  */

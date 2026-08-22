@@ -1,20 +1,40 @@
 import { notFound, redirect } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
+import { getServerSession } from "next-auth";
+import { authOptions } from "../../lib/auth";
 import { prisma } from "../../lib/prism";
 import { CommentSection } from "../../components/CommentSection";
 import { LikeButton } from "../../components/lectures/LikeButton";
 import { LectureResources } from "../../components/lectures/LectureResources";
 import { LecturePdfViewer } from "../../components/lectures/LecturePdfViewer";
 import { sanitizeHtml } from "../../utils/sanitize";
+import type { SessionUser } from "../../types/auth.types";
 
 interface Props {
   params: Promise<{ slug: string }>;
 }
 
-async function getLecture(slug: string) {
+async function getLecture(slug: string, userId?: string, userRole?: string) {
+  const isStaff = userRole === "ADMIN" || userRole === "INSTRUCTOR";
+
+  // Build the slug/id match combined with the publish gate
+  const slugMatch = [{ slug }, { id: slug }];
+
   return prisma.lecture.findFirst({
-    where: { OR: [{ slug }, { id: slug }], published: true },
+    where: isStaff && userId
+      ? {
+          // Staff: match slug OR id AND (published OR authored by this user)
+          AND: [
+            { OR: slugMatch },
+            { OR: [{ published: true }, { authorId: userId }] },
+          ],
+        }
+      : {
+          // Public: must be published AND match slug or id
+          OR: slugMatch,
+          published: true,
+        },
     include: {
       author:   { select: { id: true, name: true, image: true, bio: true } },
       scholar:  { include: { user: { select: { name: true, image: true } } } },
@@ -26,8 +46,10 @@ async function getLecture(slug: string) {
 }
 
 export async function generateMetadata({ params }: Props) {
-  const { slug } = await params;
-  const lecture  = await getLecture(slug);
+  const { slug }  = await params;
+  const session   = await getServerSession(authOptions);
+  const user      = session?.user as SessionUser | undefined;
+  const lecture   = await getLecture(slug, user?.id, user?.role);
   if (!lecture) return { title: "Lesson Not Found" };
   return {
     title:       lecture.title,
@@ -45,8 +67,11 @@ export async function generateMetadata({ params }: Props) {
  * no parent course (e.g. free-standing articles/lessons) render here.
  */
 export default async function LecturePage({ params }: Props) {
-  const { slug } = await params;
-  const lecture  = await getLecture(slug);
+  const { slug }  = await params;
+  const session   = await getServerSession(authOptions);
+  const user      = session?.user as SessionUser | undefined;
+  const lecture   = await getLecture(slug, user?.id, user?.role);
+  const isDraft   = !lecture?.published;
 
   if (!lecture) notFound();
 
@@ -57,6 +82,16 @@ export default async function LecturePage({ params }: Props) {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
       <article>
+
+        {/* Draft preview banner — visible to staff only */}
+        {isDraft && (
+          <div className="flex items-center gap-2.5 mb-6 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-400 text-sm font-medium">
+            <span className="text-base">⚠️</span>
+            <span>
+              <strong>Draft Preview</strong> — This lesson is not yet published. Only you and admins can see this.
+            </span>
+          </div>
+        )}
 
         {/* Breadcrumb */}
         <nav className="flex items-center gap-2 mb-6 text-xs text-[var(--text-muted)] flex-wrap">

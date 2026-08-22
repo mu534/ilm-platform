@@ -32,7 +32,7 @@ export default function RegisterPage() {
   // ── Google sign-up ───────────────────────────────────────────────────────────
   const handleGoogle = async () => {
     setGoogleLoading(true);
-    await signIn("google", { callbackUrl: "/onboarding" });
+    await signIn("google", { callbackUrl: "/" });
     // Google redirects — loading stays true
   };
 

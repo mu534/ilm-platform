@@ -152,6 +152,7 @@ export default function ScholarApplicationPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [form,          setForm]          = useState(EMPTY);
+  const [userCountry,   setUserCountry]   = useState<string | null>(null);
   const [appState,      setAppState]      = useState("DRAFT");
   const [saving,        setSaving]        = useState(false);
   const [message,       setMessage]       = useState("");
@@ -173,8 +174,10 @@ export default function ScholarApplicationPage() {
     void Promise.all([
       fetch("/api/scholar-applications").then((r) => r.json()),
       fetch("/api/categories").then((r) => r.json()),
-    ]).then(([appRes, catRes]) => {
+      fetch("/api/account").then((r) => r.json()).catch(() => null),
+    ]).then(([appRes, catRes, accountRes]) => {
       setCategories(catRes.data ?? []);
+      if (accountRes?.data?.country) setUserCountry(accountRes.data.country);
       const app = appRes.data;
       if (app) {
         setForm({ ...EMPTY, ...app, categoryIds: app.categories?.map((c: { categoryId: string }) => c.categoryId) ?? [] });
@@ -348,7 +351,18 @@ export default function ScholarApplicationPage() {
           <p className="text-[10px] text-[var(--text-muted)] mt-1 text-right">{form.bio.length} chars</p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+          <div>
+            <label className="block text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide mb-1.5">
+              <FiGlobe className="inline mr-1 mb-0.5" size={11} />Country
+            </label>
+            <input
+              disabled
+              value={userCountry ?? "—"}
+              className={`${ic} opacity-60 cursor-not-allowed`}
+              title="Country is set from your registration profile"
+            />
+          </div>
           <div>
             <label className="block text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide mb-1.5">City</label>
             <input disabled={locked} value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} className={ic} placeholder="e.g. Medina, Cairo, London" />
@@ -413,7 +427,41 @@ export default function ScholarApplicationPage() {
         <TagEditor label="Institutions" placeholder="Add institution (press Enter)" values={form.institutions} onChange={(v) => setForm({ ...form, institutions: v })} disabled={locked} />
         <TagEditor label="Qualifications" placeholder="e.g. Ijazah in Quran, BA Islamic Studies" values={form.qualifications} onChange={(v) => setForm({ ...form, qualifications: v })} disabled={locked} />
         <TagEditor label="Specialisations" placeholder="e.g. Fiqh, Hadith, Tafsir" values={form.specializations} onChange={(v) => setForm({ ...form, specializations: v })} disabled={locked} />
-        <TagEditor label="Teaching Languages" placeholder="Add language" values={form.teachingLanguages} onChange={(v) => setForm({ ...form, teachingLanguages: v })} disabled={locked} />
+
+        {/* Teaching Languages — fixed 4 options */}
+        <div>
+          <label className="block text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide mb-2">
+            Teaching Languages
+          </label>
+          <div className="flex flex-wrap gap-3">
+            {["English", "Arabic", "Oromo", "Amharic"].map((lang) => (
+              <label
+                key={lang}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border cursor-pointer transition-colors select-none ${
+                  form.teachingLanguages.includes(lang)
+                    ? "bg-[var(--accent-dim)] border-[var(--accent)] text-[var(--accent)]"
+                    : "border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--border-strong)]"
+                } ${locked ? "opacity-50 cursor-not-allowed" : ""}`}
+              >
+                <input
+                  type="checkbox"
+                  disabled={locked}
+                  checked={form.teachingLanguages.includes(lang)}
+                  onChange={() =>
+                    setForm({
+                      ...form,
+                      teachingLanguages: form.teachingLanguages.includes(lang)
+                        ? form.teachingLanguages.filter((l) => l !== lang)
+                        : [...form.teachingLanguages, lang],
+                    })
+                  }
+                  className="accent-[var(--accent)]"
+                />
+                <span className="text-sm font-medium">{lang}</span>
+              </label>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* ── Section 3: Subjects ─────────────────────────────────────────────── */}

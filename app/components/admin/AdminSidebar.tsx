@@ -20,6 +20,7 @@ import {
   FiLogOut,
   FiChevronRight,
   FiAward,
+  FiPlus,
 } from "react-icons/fi";
 import { LuPanelLeftClose, LuPanelLeftOpen } from "react-icons/lu";
 import { GiMoon } from "react-icons/gi";
@@ -93,6 +94,7 @@ export function AdminSidebar({
   // Instructor sees only their relevant nav items
   const instructorNav: NavItem[] = [
     { href: "/admin/courses",      label: "My Courses",    icon: <FiLayout size={18} /> },
+    { href: "/admin/courses/new",  label: "New Course",    icon: <FiPlus   size={18} /> },
     { href: "/admin/my-analytics", label: "My Analytics",  icon: <FiBarChart2 size={18} /> },
   ];
 

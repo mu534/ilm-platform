@@ -85,9 +85,17 @@ export async function PATCH(
       if (!isOwner && !isAdmin) return errorResponse("Forbidden", 403);
 
       const status = course.certificateApprovalStatus as string;
-      if (status !== "NOT_REQUESTED" && status !== "REJECTED" && status !== "DRAFT") {
+      // Allow request from any status except APPROVED (already approved — use enable/disable instead)
+      // and PENDING_REVIEW (already submitted, waiting for admin)
+      if (status === "PENDING_REVIEW") {
         return errorResponse(
-          "A certificate request can only be submitted when current status is Not Requested or Rejected",
+          "Your certificate request is already submitted and is pending admin review. Please wait for the admin to respond.",
+          409
+        );
+      }
+      if (status === "APPROVED") {
+        return errorResponse(
+          "This course already has an approved certificate. Use the enable/disable action instead.",
           409
         );
       }

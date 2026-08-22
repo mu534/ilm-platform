@@ -67,6 +67,14 @@ export default function OnboardingClient() {
   const saveStep = async (nextStep: number, complete = false) => {
     setSaving(true);
     setSaveError("");
+
+    // Validate phone is required for learners (teachers provide it in the scholar application)
+    if (step === 1 && form.accountIntention === "LEARN" && !form.phone.trim()) {
+      setSaveError("Phone number is required.");
+      setSaving(false);
+      return;
+    }
+
     try {
       const response = await fetch("/api/learner-profile", {
         method: "PUT",
@@ -141,13 +149,15 @@ export default function OnboardingClient() {
             ))}
           </div>
 
-          {/* Phone number — shown for both LEARN and TEACH */}
+          {/* Phone number — only shown for learners (teachers provide it in the scholar application) */}
+          {form.accountIntention === "LEARN" && (
           <div>
             <label className="block text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide mb-1.5">
-              Phone Number <span className="font-normal normal-case text-[var(--text-muted)]">(optional — so we can contact you)</span>
+              Phone Number
             </label>
             <input
               type="tel"
+              required
               value={form.phone}
               onChange={(e) => setForm({ ...form, phone: e.target.value })}
               placeholder="+1 555 000 0000"
@@ -157,6 +167,7 @@ export default function OnboardingClient() {
               Admins may use this to contact you about your account or application.
             </p>
           </div>
+          )}
 
           <button className="btn-primary w-full" disabled={saving} onClick={() => void saveStep(2)}>
             {saving ? "Saving…" : "Continue →"}

@@ -22,11 +22,15 @@ interface Props {
 // prevents a lecture from one course leaking into another course's classroom
 // and lets us skip a separate course lookup entirely.
 
-async function getLecture(courseSlug: string, lectureSlug: string) {
+async function getLecture(courseSlug: string, lectureSlug: string, userId?: string, userRole?: string) {
+  const isStaff = userRole === "ADMIN" || userRole === "INSTRUCTOR";
   return prisma.lecture.findFirst({
     where: {
       slug: lectureSlug,
-      published: true,
+      // Staff (admin/author) can preview unpublished lectures
+      ...(isStaff && userId
+        ? {}  // no published filter — module ownership checked in isStaffPreview below
+        : { published: true }),
       module: { course: { slug: courseSlug } },
     },
     include: {
@@ -145,7 +149,9 @@ function buildNavInfo(
 
 export async function generateMetadata({ params }: Props) {
   const { slug, lectureSlug } = await params;
-  const lecture = await getLecture(slug, lectureSlug);
+  const session = await getServerSession(authOptions);
+  const user    = session?.user as SessionUser | undefined;
+  const lecture = await getLecture(slug, lectureSlug, user?.id, user?.role);
   if (!lecture) return { title: "Lesson Not Found" };
   return {
     title:       `${lecture.title}${lecture.module?.course ? ` — ${lecture.module.course.title}` : ""}`,
@@ -158,14 +164,13 @@ export async function generateMetadata({ params }: Props) {
 
 export default async function ClassroomLecturePage({ params }: Props) {
   const { slug, lectureSlug } = await params;
-  const [lecture, session] = await Promise.all([
-    getLecture(slug, lectureSlug),
-    getServerSession(authOptions),
-  ]);
+  const session = await getServerSession(authOptions);
+  const user    = session?.user as SessionUser | undefined;
+
+  const lecture = await getLecture(slug, lectureSlug, user?.id, user?.role);
 
   if (!lecture || !lecture.module) notFound();
 
-  const user      = session?.user as SessionUser | undefined;
   const course    = lecture.module.course;
   const section   = lecture.module;
   const courseId  = course.id;

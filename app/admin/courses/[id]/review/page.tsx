@@ -188,6 +188,7 @@ export default function CourseReviewPage() {
   }
 
   const isPending   = course.status === "PENDING_REVIEW" || course.approvalStatus === "PENDING";
+  const isApproved  = course.approvalStatus === "APPROVED" || course.status === "PUBLISHED";
   const isPublished = course.status === "PUBLISHED";
   const totalLectures = course.modules.reduce((s, m) => s + m.lectures.length, 0);
   const publishedLectures = course.modules.reduce((s, m) => s + m.lectures.filter((l) => l.published).length, 0);
@@ -446,8 +447,34 @@ export default function CourseReviewPage() {
           )}
 
           {/* Review actions */}
-          {!isPublished && (
-            <div className="glass-card rounded-2xl p-5 space-y-4">
+          {isApproved ? (
+            <div className="glass-card rounded-2xl p-5 space-y-3">
+              <h3 className="text-sm font-semibold text-[var(--text-primary)]">Review Decision</h3>
+              <div className="flex flex-col items-center gap-2 py-2">
+                <FiCheckCircle className="text-emerald-400" size={28} />
+                <p className="text-sm font-semibold text-emerald-400">Already Approved</p>
+                <p className="text-xs text-[var(--text-muted)] text-center">
+                  This course has been approved and is live. No further action needed.
+                </p>
+              </div>
+              <button
+                disabled
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-emerald-500/20 text-emerald-600 text-sm font-semibold cursor-not-allowed opacity-60"
+              >
+                <FiCheckCircle size={14} /> Approve & Publish
+              </button>
+              {isPublished && (
+                <Link
+                  href={`/courses/${course.slug}`}
+                  target="_blank"
+                  className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl border border-[var(--border)] text-xs text-[var(--accent)] hover:text-[var(--accent-light)] transition-colors"
+                >
+                  <FiEye size={11} /> View live course →
+                </Link>
+              )}
+            </div>
+          ) : (
+          <div className="glass-card rounded-2xl p-5 space-y-4">
               <h3 className="text-sm font-semibold text-[var(--text-primary)]">Review Decision</h3>
 
               {/* Note field */}
@@ -516,21 +543,6 @@ export default function CourseReviewPage() {
                   </div>
                 </div>
               )}
-            </div>
-          )}
-
-          {isPublished && (
-            <div className="glass-card rounded-2xl p-5 text-center">
-              <FiCheckCircle className="text-emerald-400 text-2xl mx-auto mb-2" />
-              <p className="text-sm font-medium text-[var(--text-primary)]">Course is Live</p>
-              <p className="text-xs text-[var(--text-muted)] mt-1">This course is published and visible to students.</p>
-              <Link
-                href={`/courses/${course.slug}`}
-                target="_blank"
-                className="inline-flex items-center gap-1.5 mt-3 text-xs text-[var(--accent)] hover:text-[var(--accent-light)] transition-colors"
-              >
-                <FiEye size={11} /> View live course →
-              </Link>
             </div>
           )}
 

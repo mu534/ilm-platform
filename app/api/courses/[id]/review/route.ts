@@ -23,8 +23,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       return successResponse({ message: "Course submitted for review" });
     }
     const admin = await requireAdmin();
-    if (course.authorId === admin.id) return errorResponse("You cannot review your own course", 403);
-    if (course.approvalStatus !== "PENDING") return errorResponse("Only courses under review can be reviewed", 409);
+    if (course.approvalStatus === "APPROVED") return errorResponse("This course is already approved", 409);
+    if (!["PENDING", "DRAFT", "REJECTED"].includes(course.approvalStatus)) return errorResponse("Only courses under review can be reviewed", 409);
     if (action === "approve") {
       const check = await checkCoursePublishable(id); if (!check.valid) return errorResponse(`Course cannot be published: ${check.errors.join("; ")}`, 422);
       await prisma.$transaction(async (tx) => { await tx.course.update({ where: { id }, data: { approvalStatus: "APPROVED", status: "PUBLISHED", published: true, reviewedAt: new Date(), approvalNote: note || null } }); await tx.courseReview.create({ data: { courseId: id, reviewerId: admin.id, status: "APPROVED", applicantNote: note || null, internalNotes: internalNotes || null } }); await tx.auditLog.createMany({ data: [{ userId: admin.id, action: "COURSE_REVIEWED", entityType: "Course", entityId: id }, { userId: admin.id, action: "COURSE_APPROVED", entityType: "Course", entityId: id }, { userId: admin.id, action: "COURSE_PUBLISHED", entityType: "Course", entityId: id }] }); });

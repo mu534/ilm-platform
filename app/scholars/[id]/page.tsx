@@ -10,7 +10,7 @@ import { FiBookOpen, FiStar, FiUsers, FiEdit2 } from "react-icons/fi";
 import type { Lecture, LectureType, SessionUser } from "../../types/auth.types";
 
 interface Props {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 function mapLecture(l: {
@@ -85,13 +85,15 @@ async function getScholar(id: string) {
 }
 
 export async function generateMetadata({ params }: Props) {
-  const scholar = await getScholar(params.id);
+  const { id } = await params;
+  const scholar = await getScholar(id);
   if (!scholar) return { title: "Scholar Not Found" };
   return { title: scholar.user.name, description: scholar.bio.slice(0, 160) };
 }
 
 export default async function ScholarPage({ params }: Props) {
-  const scholar = await getScholar(params.id);
+  const { id } = await params;
+  const scholar = await getScholar(id);
   if (!scholar) notFound();
 
   const session = await getServerSession(authOptions);

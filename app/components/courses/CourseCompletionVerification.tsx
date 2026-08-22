@@ -200,28 +200,10 @@ export function CourseCompletionVerification({
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // CERT NOT ENABLED
+  // CERT NOT ENABLED — still show name step but warn on generate
   // ─────────────────────────────────────────────────────────────────────────
-  if (isCompleted && !certificateEnabled) {
-    return (
-      <div className="min-h-[calc(100vh-64px)] flex items-center justify-center px-4 py-12">
-        <div className="max-w-md w-full glass-card rounded-3xl p-8 border border-[var(--border)] text-center space-y-4">
-          <div className="w-16 h-16 rounded-2xl bg-[var(--accent-dim)] border border-[var(--border-strong)] flex items-center justify-center mx-auto">
-            <FiAward className="text-[var(--accent)]" size={28} />
-          </div>
-          <h1 className="font-display text-xl font-bold text-[var(--text-primary)]">Course Completed!</h1>
-          <p className="text-sm text-[var(--text-muted)]">
-            The certificate for <strong className="text-[var(--text-primary)]">{courseTitle}</strong> is
-            pending administrator approval. Check back soon.
-          </p>
-          <Link href="/dashboard"
-            className="flex items-center justify-center gap-2 w-full py-2.5 text-sm text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors">
-            <FiArrowRight size={13} /> Back to Dashboard
-          </Link>
-        </div>
-      </div>
-    );
-  }
+  // (removed the early return — fall through to steps below so student can
+  //  verify their name while waiting for admin approval)
 
   // ─────────────────────────────────────────────────────────────────────────
   // STEP 1 — Verify Certificate Name
@@ -356,6 +338,7 @@ export function CourseCompletionVerification({
               </div>
             )}
 
+            {certificateEnabled ? (
             <button
               onClick={() => void generateCertificate()}
               disabled={generating}
@@ -365,6 +348,17 @@ export function CourseCompletionVerification({
                 ? <><FiLoader className="animate-spin" size={15} /> Generating Certificate…</>
                 : <><FiAward size={15} /> Generate Your Certificate</>}
             </button>
+            ) : (
+              <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 text-center space-y-2">
+                <FiAward className="text-amber-400 mx-auto" size={22} />
+                <p className="text-sm font-semibold text-amber-400">Certificate Pending Approval</p>
+                <p className="text-xs text-[var(--text-muted)]">
+                  Your name is saved. The administrator needs to approve certificates for{" "}
+                  <strong className="text-[var(--text-primary)]">{courseTitle}</strong> before you can
+                  generate yours. Check back soon.
+                </p>
+              </div>
+            )}
 
             <button
               onClick={() => { setStep(1); setNameEditing(true); setError(""); }}

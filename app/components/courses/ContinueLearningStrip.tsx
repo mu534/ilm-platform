@@ -3,11 +3,12 @@ import Image from "next/image";
 import { FiArrowRight, FiPlayCircle } from "react-icons/fi";
 
 interface InProgressCourse {
-  courseId:     string;
-  slug:         string;
-  title:        string;
-  thumbnailUrl: string | null;
-  progress:     number;
+  courseId:        string;
+  slug:            string;
+  title:           string;
+  thumbnailUrl:    string | null;
+  progress:        number;
+  nextLectureSlug: string | null;
 }
 
 interface ContinueLearningStripProps {
@@ -48,7 +49,9 @@ export function ContinueLearningStrip({ courses, userName }: ContinueLearningStr
         {courses.map((c) => (
           <Link
             key={c.courseId}
-            href={`/courses/${c.slug}`}
+            href={c.nextLectureSlug
+              ? `/courses/${c.slug}/learn/${c.nextLectureSlug}`
+              : `/courses/${c.slug}`}
             className="group flex items-center gap-4 p-3 rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] hover:border-[var(--border-strong)] hover:shadow-[var(--shadow-md)] transition-all duration-250"
           >
             <div className="relative w-20 h-20 flex-shrink-0 rounded-xl overflow-hidden bg-[var(--bg-secondary)]">

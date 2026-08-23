@@ -119,17 +119,49 @@ async function getContinueLearning(userId: string) {
     orderBy: { updatedAt: "desc" },
     take: 3,
     include: {
-      course: { select: { id: true, slug: true, title: true, thumbnailUrl: true } },
+      course: {
+        select: {
+          id: true, slug: true, title: true, thumbnailUrl: true,
+          modules: {
+            orderBy: { order: "asc" },
+            select: {
+              lectures: {
+                where: { published: true },
+                orderBy: { order: "asc" },
+                select: { id: true, slug: true },
+              },
+            },
+          },
+        },
+      },
     },
   });
 
-  return enrollments.map((e) => ({
-    courseId:     e.course.id,
-    slug:         e.course.slug,
-    title:        e.course.title,
-    thumbnailUrl: e.course.thumbnailUrl,
-    progress:     e.progress,
-  }));
+  // Get completed lecture IDs for this user across these courses
+  const allLectureIds = enrollments.flatMap((e) =>
+    e.course.modules.flatMap((m) => m.lectures.map((l) => l.id))
+  );
+  const completedSet = new Set(
+    allLectureIds.length > 0
+      ? (await prisma.lectureProgress.findMany({
+          where: { userId, lectureId: { in: allLectureIds }, completed: true },
+          select: { lectureId: true },
+        })).map((p) => p.lectureId)
+      : []
+  );
+
+  return enrollments.map((e) => {
+    const lectures = e.course.modules.flatMap((m) => m.lectures);
+    const nextLecture = lectures.find((l) => !completedSet.has(l.id)) ?? lectures[0];
+    return {
+      courseId:        e.course.id,
+      slug:            e.course.slug,
+      title:           e.course.title,
+      thumbnailUrl:    e.course.thumbnailUrl,
+      progress:        e.progress,
+      nextLectureSlug: nextLecture?.slug ?? null,
+    };
+  });
 }
 
 // ─── Types ────────────────────────────────────────────────────────────────────

@@ -109,13 +109,10 @@ export default async function CourseDetailPage({ params }: Props) {
 
   // Pre-fetch next lecture server-side
   let nextLectureSlug: string | null = null;
-  // For active students: find the next uncompleted lecture.
-  // For completed students: point to the first lecture so they can review content.
   if (enrollment && user) {
     const allLectures = course.modules.flatMap((m) => m.lectures.map((l) => ({ id: l.id, slug: l.slug })));
     if (allLectures.length > 0) {
       if (enrollment.status === "COMPLETED") {
-        // Completed — go back to the first lecture for review
         nextLectureSlug = allLectures[0]?.slug ?? null;
       } else {
         const done = await prisma.lectureProgress.findMany({

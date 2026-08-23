@@ -232,13 +232,21 @@ export function AdminCoursesTable({ courses }: { courses: Course[] }) {
                       >
                         Build
                       </Link>
-                      {course.status === "PENDING_REVIEW" && (
+                      {course.status === "PENDING_REVIEW" ? (
                         <Link
                           href={`/admin/courses/${course.id}/review`}
                           className="p-1.5 text-xs text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded-lg transition-colors font-semibold"
                           title="Review this course submission"
                         >
                           Review
+                        </Link>
+                      ) : (
+                        <Link
+                          href={`/admin/courses/${course.id}/review`}
+                          className="p-1.5 text-xs text-[var(--text-muted)] hover:text-[var(--accent)] hover:bg-[var(--accent-dim)] rounded-lg transition-colors font-semibold"
+                          title="Course settings & certificate control"
+                        >
+                          Settings
                         </Link>
                       )}
                       <AdminCourseActions course={course} />

@@ -92,8 +92,8 @@ export default function CourseReviewPage() {
     const load = async () => {
       try {
         const [cr, ck] = await Promise.all([
-          fetch(`/api/courses/${id}`),
-          fetch(`/api/courses/${id}/checklist`),
+          fetch(`/api/courses/${id}`, { cache: "no-store" }),
+          fetch(`/api/courses/${id}/checklist`, { cache: "no-store" }),
         ]);
         const cd = await cr.json() as { success?: boolean; data?: CourseDetail };
         const ch = await ck.json() as { success?: boolean; data?: CheckResult };
@@ -548,10 +548,26 @@ export default function CourseReviewPage() {
 
           {/* ── Certificate Control Panel ── */}
           <div className="glass-card rounded-2xl p-5 space-y-4 border border-[var(--border-strong)]">
-            <h3 className="text-sm font-semibold text-[var(--text-primary)] flex items-center gap-2">
-              <FiAward size={14} className="text-[var(--accent)]" />
-              Certificate Control
-            </h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-[var(--text-primary)] flex items-center gap-2">
+                <FiAward size={14} className="text-[var(--accent)]" />
+                Certificate Control
+              </h3>
+              <button
+                onClick={() => {
+                  fetch(`/api/courses/${id}`, { cache: "no-store" })
+                    .then(r => r.json())
+                    .then((cd: { success?: boolean; data?: CourseDetail }) => {
+                      if (cd.success && cd.data) setCourse(cd.data);
+                    })
+                    .catch(() => {});
+                }}
+                className="text-xs text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors"
+                title="Refresh certificate status"
+              >
+                ↻ Refresh
+              </button>
+            </div>
 
             {/* Status display */}
             <div className="space-y-2 text-xs">

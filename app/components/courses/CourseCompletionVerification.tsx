@@ -51,7 +51,7 @@ export function CourseCompletionVerification({
   courseTitle,
   enrollmentStatus,
   currentName,
-  certificateEnabled,
+  certificateEnabled: initialCertificateEnabled,
   existingCertId,
   existingCertDbId,
   completedLectures,
@@ -68,6 +68,8 @@ export function CourseCompletionVerification({
   const [certPubId,  setCertPubId]  = useState(existingCertId);
   const [error,      setError]      = useState("");
   const [nameApproved, setNameApproved] = useState(false);
+  // Live certificate enabled state — re-checked on each generate attempt
+  const [certificateEnabled, setCertificateEnabled] = useState(initialCertificateEnabled);
 
   // If cert already exists go straight to success
   const [step, setStep] = useState<1 | 2 | 3>(
@@ -200,61 +202,40 @@ export function CourseCompletionVerification({
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // CERT NOT ENABLED — still show name step but warn on generate
-  // ─────────────────────────────────────────────────────────────────────────
-  // (removed the early return — fall through to steps below so student can
-  //  verify their name while waiting for admin approval)
-
-  // ─────────────────────────────────────────────────────────────────────────
-  // NO CERTIFICATE — course completed but no certificate for this course
+  // NO CERTIFICATE — course has no certificate, show simple congrats
   // ─────────────────────────────────────────────────────────────────────────
   if (!certificateEnabled) {
     return (
       <div className="min-h-[calc(100vh-64px)] flex items-center justify-center px-4 py-12">
         <div className="max-w-md w-full">
           <div className="glass-card rounded-3xl overflow-hidden border border-[var(--border-strong)]">
-            <div
-              className="relative flex flex-col items-center pt-10 pb-6 px-8"
-              style={{
-                background: "radial-gradient(ellipse 90% 70% at 50% 0%, rgba(16,185,129,0.10), transparent 80%)",
-              }}
-            >
+            <div className="relative flex flex-col items-center pt-10 pb-6 px-8"
+              style={{ background: "radial-gradient(ellipse 90% 70% at 50% 0%, rgba(16,185,129,0.10), transparent 80%)" }}>
               <div className="w-20 h-20 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center mb-5">
                 <FiCheckCircle className="text-emerald-400" size={40} />
               </div>
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/25 text-emerald-400 text-[11px] font-bold tracking-widest uppercase mb-4">
                 <FiCheckCircle size={10} /> Course Completed
               </div>
-              <h1 className="font-display text-3xl font-bold text-[var(--text-primary)] mb-2">
-                Congratulations! 🎉
-              </h1>
+              <h1 className="font-display text-3xl font-bold text-[var(--text-primary)] mb-2">Congratulations! 🎉</h1>
               <p className="text-sm text-[var(--text-muted)] text-center">
-                You have successfully completed{" "}
-                <strong className="text-[var(--text-primary)]">{courseTitle}</strong>
+                You have successfully completed <strong className="text-[var(--text-primary)]">{courseTitle}</strong>
               </p>
-              <p className="text-xs text-[var(--text-muted)] mt-3 text-center">
-                This course does not include a certificate.
-              </p>
+              <p className="text-xs text-[var(--text-muted)] mt-3 text-center">This course does not include a certificate.</p>
             </div>
             <div className="px-6 pb-8 space-y-2.5">
               {firstLectureSlug && (
-                <Link
-                  href={`/courses/${courseSlug}/learn/${firstLectureSlug}`}
-                  className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:border-[var(--border-strong)] text-sm transition-colors"
-                >
+                <Link href={`/courses/${courseSlug}/learn/${firstLectureSlug}`}
+                  className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:border-[var(--border-strong)] text-sm transition-colors">
                   <FiBookOpen size={13} /> Relearn Course from Beginning
                 </Link>
               )}
-              <Link
-                href={`/courses/${courseSlug}#reviews`}
-                className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-primary)] text-sm transition-colors"
-              >
+              <Link href={`/courses/${courseSlug}#reviews`}
+                className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-primary)] text-sm transition-colors">
                 ⭐ Leave a Review
               </Link>
-              <Link
-                href="/dashboard"
-                className="flex items-center justify-center gap-2 w-full py-2.5 text-sm text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors"
-              >
+              <Link href="/dashboard"
+                className="flex items-center justify-center gap-2 w-full py-2.5 text-sm text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors">
                 <FiArrowRight size={13} /> Back to Dashboard
               </Link>
             </div>

@@ -1,5 +1,6 @@
 import { prisma } from "./prism";
 import { HttpError } from "./httpError";
+import { formatCertificateName } from "./formatName";
 
 type Tx = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
 
@@ -227,8 +228,9 @@ export async function issueCertificate(
   // Rule 1: Enrollment, required lectures & quizzes
   await validateStudentCompletion(userId, courseId, db);
 
-  // Rule 2: Student full name validation
-  const studentName = await validateStudentName(userId, db);
+  // Rule 2: Student full name validation — normalize casing for the snapshot
+  const rawName = await validateStudentName(userId, db);
+  const studentName = formatCertificateName(rawName);
 
   // Rule 3: Course must be approved and certificate enabled by admin
   // This MUST run before idempotency check so the error is surfaced even

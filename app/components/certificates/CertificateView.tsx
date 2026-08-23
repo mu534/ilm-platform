@@ -40,6 +40,10 @@ export function CertificateView({ certificate, signature }: CertificateViewProps
   // Normalize display name (title-case) without mutating DB value
   const displayName = formatCertificateName(certificate.studentName);
 
+  // Only show instructor if set and different from the student (guards against bad legacy data)
+  const showInstructor = certificate.instructorName &&
+    certificate.instructorName.trim().toLowerCase() !== certificate.studentName.trim().toLowerCase();
+
   // Signature list from snapshot, or fallback single prop
   let sigs: SignatureItem[] = [];
   if (Array.isArray(certificate.signaturesSnapshot) && certificate.signaturesSnapshot.length > 0) {
@@ -143,7 +147,7 @@ export function CertificateView({ certificate, signature }: CertificateViewProps
 
             {/* Meta badges */}
             <div className="flex flex-wrap items-center justify-center gap-3 mt-1">
-              {certificate.instructorName && (
+              {showInstructor && (
                 <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-medium border border-emerald-200 bg-emerald-50 text-emerald-800">
                   <FiShield size={11} /> {certificate.instructorName}
                 </span>

@@ -49,7 +49,10 @@ export async function GET(
   // Use stored immutable snapshots — normalize name casing for display
   const studentName = escapeHtml(formatCertificateName(cert.studentName || "Student"));
   const courseTitle = escapeHtml(cert.title);
-  const instructor = escapeHtml(cert.instructorName || "Ilm Academic Faculty");
+  const rawInstructor = cert.instructorName || "";
+  // Only show instructor if it's different from the student name (guards legacy bad data)
+  const showInstructor = rawInstructor.trim().toLowerCase() !== (cert.studentName || "").trim().toLowerCase();
+  const instructor = showInstructor ? escapeHtml(rawInstructor) : "";
   const certId = escapeHtml(cert.certificateId || cert.id.slice(0, 12).toUpperCase());
   const durationHours = cert.courseDuration ? Math.round(cert.courseDuration / 60) : null;
   const baseUrl = (process.env.NEXTAUTH_URL ?? process.env.APP_URL ?? "").replace(/\/$/, "");
@@ -297,7 +300,7 @@ export async function GET(
       <div class="fulfilled-text">has successfully fulfilled all course requirements for</div>
       <div class="course-title">${courseTitle}</div>
       <div class="meta-row">
-        <div class="meta-badge emerald">Instructor: ${instructor}</div>
+        ${showInstructor ? `<div class="meta-badge emerald">Instructor: ${instructor}</div>` : ""}
         ${durationHours ? `<div class="meta-badge amber">Duration: ${durationHours} hours</div>` : ""}
         <div class="meta-badge">Issued: ${escapeHtml(issuedDate)}</div>
       </div>

@@ -254,6 +254,7 @@ export async function issueCertificate(
           user: { select: { name: true } },
         },
       },
+      author: { select: { name: true } },
     },
   });
 
@@ -305,7 +306,13 @@ export async function issueCertificate(
       courseId,
       studentName,
       title: course.title,
-      instructorName: course.scholar?.user.name || null,
+      // Use scholar name if available; never fall back to student's own name
+      instructorName: (() => {
+        const name = course.scholar?.user.name || course.author?.name || null;
+        // Guard: don't store student name as instructor
+        if (name && name.trim().toLowerCase() === studentName.trim().toLowerCase()) return null;
+        return name;
+      })(),
       completionDate,
       issuedAt: new Date(),
       courseDuration: course.estimatedDuration || null,

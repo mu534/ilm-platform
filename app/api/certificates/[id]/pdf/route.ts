@@ -51,6 +51,7 @@ export async function GET(
   const courseTitle = escapeHtml(cert.title);
   const instructor = escapeHtml(cert.instructorName || "Ilm Academic Faculty");
   const certId = escapeHtml(cert.certificateId || cert.id.slice(0, 12).toUpperCase());
+  const durationHours = cert.courseDuration ? Math.round(cert.courseDuration / 60) : null;
   const baseUrl = (process.env.NEXTAUTH_URL ?? process.env.APP_URL ?? "").replace(/\/$/, "");
   const verifyUrl = cert.verificationUrl ||
     (cert.certificateId ? `${baseUrl}/en/verify/${cert.certificateId}` : "");
@@ -297,7 +298,7 @@ export async function GET(
       <div class="course-title">${courseTitle}</div>
       <div class="meta-row">
         <div class="meta-badge emerald">Instructor: ${instructor}</div>
-        ${durationHours ? `<div class="meta-badge amber">Duration: ${Math.round(cert.courseDuration! / 60)} hours</div>` : ""}
+        ${durationHours ? `<div class="meta-badge amber">Duration: ${durationHours} hours</div>` : ""}
         <div class="meta-badge">Issued: ${escapeHtml(issuedDate)}</div>
       </div>
     </div>

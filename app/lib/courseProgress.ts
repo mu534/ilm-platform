@@ -1,5 +1,4 @@
 import { prisma } from "./prism";
-import { issueCompletionCertificate } from "./certificates";
 
 export interface RecalculateResult {
   percent: number;
@@ -103,9 +102,9 @@ export async function recalculateCourseProgress(
     });
 
     if (isFullyCompleted) {
-      await prisma.$transaction(async (tx) => {
-        await issueCompletionCertificate(tx, userId, courseId);
-      });
+      // Certificate is NOT auto-issued here — the student must visit the
+      // completion page and explicitly verify their name before generating.
+      // This ensures the certificate name is confirmed by the student.
     }
 
     return {

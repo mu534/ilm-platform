@@ -1,7 +1,6 @@
 import { prisma } from "../prism";
 import { HttpError } from "../httpError";
 import { requireQuizLearningAccess } from "../courseAccess";
-import { issueCompletionCertificate } from "../certificates";
 import { recalculateCourseProgress } from "../courseProgress";
 import type { SessionUser } from "../../types/auth.types";
 
@@ -104,10 +103,8 @@ export class QuizService {
         });
       }
 
-      // Check for certificate issuance inside transaction
-      if (passed && access.courseId) {
-        await issueCompletionCertificate(tx, user.id, access.courseId);
-      }
+      // Certificate is NOT auto-issued on quiz pass — the student must visit
+      // the completion page and explicitly verify their name before generating.
 
       return createdAttempt;
     });

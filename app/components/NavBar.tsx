@@ -50,7 +50,7 @@ export function Navbar() {
     };
     t = (key: string) => fallbackMap[key] ?? key;
   }
-  const { data: session }            = useSession();
+  const { data: session, status }     = useSession();
   const [mobileOpen, setMobileOpen]  = useState(false);
   const { theme, toggleTheme, isLight } = useTheme();
   const user = session?.user as SessionUser | undefined;
@@ -148,7 +148,10 @@ export function Navbar() {
             {session && <NotificationBell />}
 
             {/* Auth */}
-            {session ? (
+            {status === "loading" ? (
+              /* Skeleton placeholder — prevents Login/Get Started flash */
+              <div className="w-24 h-8 rounded-xl bg-[var(--accent-dim)] animate-pulse ml-1" />
+            ) : session ? (
               <DropdownMenu.Root>
                 <DropdownMenu.Trigger asChild>
                   <button className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl hover:bg-[var(--accent-dim)] border border-transparent hover:border-[var(--border)] transition-all duration-200 ml-1">
@@ -266,7 +269,9 @@ export function Navbar() {
               </Link>
             ))}
             <div className="pt-2 border-t border-[var(--border)] space-y-0.5 mt-2">
-              {session ? (
+              {status === "loading" ? (
+                <div className="h-8 w-full rounded-xl bg-[var(--accent-dim)] animate-pulse" />
+              ) : session ? (
                 <>
                   <Link href={localHref("/profile")}    onClick={() => setMobileOpen(false)} className="block px-3 py-2.5 rounded-xl text-sm text-[var(--text-secondary)] hover:bg-[var(--accent-dim)] transition-all">{t("profile")}</Link>
                   <Link href={localHref("/settings")}   onClick={() => setMobileOpen(false)} className="block px-3 py-2.5 rounded-xl text-sm text-[var(--text-secondary)] hover:bg-[var(--accent-dim)] transition-all">{t("settings")}</Link>

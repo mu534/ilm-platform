@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
 import Image from "next/image";
-import { GiMoon, GiStarFormation } from "react-icons/gi";
+import { GiStarFormation } from "react-icons/gi";
 import { FiUser, FiMail, FiLock, FiAlertCircle, FiCheck, FiEye, FiEyeOff, FiLoader } from "react-icons/fi";
 
 // ── Google SVG icon ───────────────────────────────────────────────────────────

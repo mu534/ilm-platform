@@ -288,6 +288,9 @@ export async function GET(
 
     <!-- Header -->
     <div class="header">
+      <div style="display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:6px;">
+        <img src="${baseUrl}/logo.png" alt="Ilm Platform" style="width:40px; height:40px; object-fit:contain;" />
+      </div>
       <div class="org-name">Ilm Platform &nbsp;·&nbsp; Center of Academic Excellence</div>
       <div class="cert-title">Certificate of Completion</div>
       <div class="divider"></div>

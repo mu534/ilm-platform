@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import {
@@ -23,7 +24,6 @@ import {
   FiPlus,
 } from "react-icons/fi";
 import { LuPanelLeftClose, LuPanelLeftOpen } from "react-icons/lu";
-import { GiMoon } from "react-icons/gi";
 import type { SessionUser } from "@/app/types/auth.types";
 
 interface NavItem {
@@ -115,8 +115,8 @@ export function AdminSidebar({
           onClick={handleLinkClick}
           className="flex items-center gap-3 group focus:outline-none focus:ring-2 focus:ring-[var(--accent)] rounded-xl p-1"
         >
-          <div className="w-9 h-9 rounded-xl bg-[var(--accent-dim)] border border-[var(--border-strong)] flex items-center justify-center text-[var(--accent)] group-hover:scale-105 transition-transform flex-shrink-0">
-            <GiMoon size={20} />
+          <div className="w-9 h-9 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
+            <Image src="/logo.png" alt="Ilm Platform" width={36} height={36} className="object-contain" />
           </div>
           {(!collapsed || isMobile) && (
             <div className="flex flex-col">

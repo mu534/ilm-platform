@@ -1,6 +1,6 @@
 import Link from "next/link";
+import Image from "next/image";
 import { FiHome, FiSearch, FiBookOpen, FiArrowRight } from "react-icons/fi";
-import { GiMoon } from "react-icons/gi";
 
 export default function NotFound() {
   return (
@@ -15,7 +15,7 @@ export default function NotFound() {
       <div className="relative max-w-md w-full text-center space-y-8">
         {/* Logo */}
         <Link href="/" className="inline-flex items-center gap-2 group">
-          <GiMoon className="text-[var(--accent)] text-2xl group-hover:rotate-12 transition-transform" />
+          <Image src="/logo.png" alt="Ilm Platform" width={36} height={36} className="object-contain group-hover:scale-105 transition-transform" />
           <span className="font-display text-xl font-semibold">
             <span className="gradient-text">Ilm</span>
             <span className="text-[var(--text-secondary)] ml-1">Platform</span>

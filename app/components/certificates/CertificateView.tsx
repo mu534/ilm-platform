@@ -106,6 +106,9 @@ export function CertificateView({ certificate, signature }: CertificateViewProps
 
           {/* ── Header ── */}
           <div className="text-center mb-6">
+            <div className="flex justify-center mb-3">
+              <Image src="/logo.png" alt="Ilm Platform" width={52} height={52} className="object-contain" />
+            </div>
             <p
               className="text-[10px] font-semibold tracking-[4px] uppercase text-[#b45309] mb-2"
               style={{ letterSpacing: "0.25em" }}

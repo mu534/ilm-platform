@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { prisma } from "@/app/lib/prism";
 import { publicCourseWhere } from "@/app/lib/courseAccess";
@@ -27,8 +28,8 @@ async function getHomeData() {
   // Batch 1 = critical above-the-fold data.
   const [featuredCourses, featuredScholars, categoriesRaw] = await Promise.all([
     prisma.course.findMany({
-      where:   { ...publicCourseWhere },
-      take:    10,
+      where:   { ...publicCourseWhere, featured: true },
+      take:    6,
       orderBy: { createdAt: "desc" },
       include: {
         category: { select: { id: true, name: true, slug: true, icon: true, color: true } },
@@ -475,8 +476,8 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
           <div className="absolute inset-x-0 top-0 hero-line" aria-hidden="true" />
 
           <div className="relative px-6 py-14 sm:py-20 flex flex-col items-center text-center">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[var(--accent-dim)] border border-[var(--border-strong)] animate-pulse-accent mb-6">
-              <GiMoon className="text-[var(--accent)] text-2xl" aria-hidden="true" />
+            <div className="inline-flex items-center justify-center w-16 h-16 mb-6">
+              <Image src="/logo.png" alt="Ilm Platform" width={64} height={64} className="object-contain animate-pulse-accent" aria-hidden="true" />
             </div>
 
             {user ? (

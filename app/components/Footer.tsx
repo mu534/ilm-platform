@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { GiMoon, GiStarFormation } from "react-icons/gi";
 import { FiMail, FiGithub, FiHeart } from "react-icons/fi";
@@ -78,10 +79,7 @@ export function Footer() {
           {/* ── Brand ── */}
           <div className="col-span-1 md:col-span-2">
             <Link href={localHref("/")} className="inline-flex items-center gap-2.5 group mb-4">
-              <div className="relative">
-                <GiMoon className="text-gold-500 text-2xl group-hover:rotate-12 transition-transform duration-300" />
-                <div className="absolute inset-0 bg-gold-400/20 rounded-full blur-md scale-150 opacity-0 group-hover:opacity-100 transition-opacity" />
-              </div>
+              <Image src="/logo.png" alt="Ilm Platform" width={36} height={36} className="object-contain group-hover:scale-105 transition-transform duration-300" />
               <span className="font-display text-xl font-semibold">
                 <span className="gradient-text">Ilm</span>
                 <span className="text-[var(--text-secondary)] ml-1">Platform</span>

@@ -3,7 +3,8 @@
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { GiMoon, GiStarFormation } from "react-icons/gi";
+import Image from "next/image";
+import { GiStarFormation } from "react-icons/gi";
 import { FiCheckCircle, FiAlertCircle, FiMail, FiLoader } from "react-icons/fi";
 
 function VerifyContent() {
@@ -56,9 +57,8 @@ function VerifyContent() {
       <div className="relative w-full max-w-sm animate-fadeInUp">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="relative inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[var(--accent-dim)] border border-[var(--border-strong)] mb-4 mx-auto">
-            <GiMoon className="text-[var(--accent)] text-3xl" />
-            <GiStarFormation className="absolute -top-1 -right-1 text-[var(--accent-light)] text-xs animate-spin-slow" />
+          <div className="flex justify-center mb-4">
+            <Image src="/logo.png" alt="Ilm Platform" width={80} height={80} className="object-contain" />
           </div>
           <h1 className="font-display text-2xl font-bold text-[var(--text-primary)]">Email Verification</h1>
         </div>

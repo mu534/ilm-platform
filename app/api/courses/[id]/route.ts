@@ -36,7 +36,6 @@ const courseDetailSelect = {
   featured: true,
   approvalStatus: true,
   approvalNote: true,
-  enrollmentType: true,
   price: true,
   certificateEnabled: true,
   certificateApprovalStatus: true,

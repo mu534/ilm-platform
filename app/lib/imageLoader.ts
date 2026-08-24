@@ -16,7 +16,8 @@ import type { ImageLoaderProps } from "next/image";
 export default function imageLoader({ src, width, quality }: ImageLoaderProps): string {
   // ── Local public folder images — serve directly, no transformation needed ──
   if (src.startsWith("/")) {
-    return src;
+    // Return with width param to satisfy Next.js loader width requirement
+    return `${src}?w=${width}`;
   }
 
   // ── Cloudinary ────────────────────────────────────────────────────────────

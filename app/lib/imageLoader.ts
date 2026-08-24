@@ -14,6 +14,11 @@
 import type { ImageLoaderProps } from "next/image";
 
 export default function imageLoader({ src, width, quality }: ImageLoaderProps): string {
+  // ── Local public folder images — serve directly, no transformation needed ──
+  if (src.startsWith("/")) {
+    return src;
+  }
+
   // ── Cloudinary ────────────────────────────────────────────────────────────
   if (src.includes("res.cloudinary.com")) {
     const q = quality ?? 90;             // high quality default

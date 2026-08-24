@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useSession, signOut } from "next-auth/react";
 import { useState } from "react";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
@@ -92,13 +93,13 @@ export function Navbar() {
 
           {/* ── Logo ── */}
           <Link href={localHref("/")} className="flex items-center gap-2.5 group flex-shrink-0">
-            <div className="relative">
-              {isLight ? (
-                <GiSun className="text-[var(--accent)] text-2xl group-hover:rotate-180 transition-transform duration-700" />
-              ) : (
-                <GiMoon className="text-[var(--accent)] text-2xl group-hover:rotate-12 transition-transform duration-300" />
-              )}
-            </div>
+            <Image
+              src="/logo.png"
+              alt="Ilm Platform"
+              width={40}
+              height={40}
+              className="object-contain group-hover:scale-105 transition-transform duration-300"
+            />
             <span className="font-display text-xl font-semibold tracking-tight">
               <span className="gradient-text">Ilm</span>
               <span className="text-[var(--text-secondary)] ml-1">Platform</span>

@@ -4,6 +4,7 @@ import { useState, Suspense } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { GiMoon, GiStarFormation } from "react-icons/gi";
 import { FiMail, FiLock, FiAlertCircle, FiEye, FiEyeOff, FiLoader } from "react-icons/fi";
 
@@ -98,9 +99,8 @@ function LoginForm() {
 
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="relative inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[var(--accent-dim)] border border-[var(--border-strong)] mb-4 animate-pulse-accent mx-auto">
-            <GiMoon className="text-[var(--accent)] text-3xl" />
-            <GiStarFormation className="absolute -top-1 -right-1 text-[var(--accent-light)] text-xs animate-spin-slow" />
+          <div className="flex justify-center mb-4">
+            <Image src="/logo.png" alt="Ilm Platform" width={80} height={80} className="object-contain" />
           </div>
           <h1 className="font-display text-3xl font-bold text-[var(--text-primary)]">
             Welcome Back

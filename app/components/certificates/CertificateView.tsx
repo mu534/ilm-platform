@@ -5,7 +5,6 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
 import { formatCertificateName } from "../../lib/formatName";
-
 interface SignatureItem {
   name: string;
   title: string | null;

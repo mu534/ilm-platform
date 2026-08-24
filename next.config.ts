@@ -1,5 +1,4 @@
 import type { NextConfig } from "next";
-import path from "path";
 import createNextIntlPlugin from 'next-intl/plugin';
 
 const withNextIntl = createNextIntlPlugin('./app/lib/i18n.ts');
@@ -8,7 +7,7 @@ const nextConfig: NextConfig = {
   // Allow the local network IP to access the dev server (e.g. from a phone or another PC)
   allowedDevOrigins: ["192.168.219.1", "192.168.219.*", "localhost"],
 
-  // Ensure TipTap ESM packages are transpiled correctly by Turbopack/webpack
+  // Ensure TipTap ESM packages are transpiled correctly by webpack
   transpilePackages: [
     "@tiptap/react",
     "@tiptap/pm",
@@ -21,10 +20,6 @@ const nextConfig: NextConfig = {
     "@tiptap/extension-link",
     "@tiptap/extension-placeholder",
   ],
-
-  turbopack: {
-    root: __dirname,
-  },
 
   images: {
     // Use our custom Cloudinary loader so images are optimised by Cloudinary directly

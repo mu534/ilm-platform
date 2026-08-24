@@ -10,6 +10,11 @@ const BASE_URL  = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
 const FROM_EMAIL = process.env.EMAIL_FROM   ?? "noreply@ilm-platform.com";
 const RESEND_KEY = process.env.RESEND_API_KEY;
 
+// Logo URL for email templates — must be a publicly accessible HTTPS URL.
+// In dev (localhost) this won't display in email clients.
+const LOGO_URL = process.env.NEXT_PUBLIC_LOGO_URL
+  ?? (BASE_URL.startsWith("https://") ? `${BASE_URL}/logo.png` : "");
+
 // ── Core send function ────────────────────────────────────────────────────────
 
 export async function sendEmail(to: string, subject: string, html: string) {
@@ -33,7 +38,13 @@ export async function sendEmail(to: string, subject: string, html: string) {
 
   if (!res.ok) {
     const err = await res.text();
-    console.error("Email send failed:", err);
+    // In testing mode (unverified domain) Resend returns 403 — log at debug level only
+    const parsed = (() => { try { return JSON.parse(err); } catch { return null; } })();
+    if (parsed?.statusCode === 403) {
+      console.debug("[Email] Skipped — domain not verified:", parsed.message);
+    } else {
+      console.error("Email send failed:", err);
+    }
   }
 
   return { ok: res.ok };
@@ -55,8 +66,11 @@ const wrap = (inner: string) => `
 <body style="margin:0;padding:0;background:#f7f0e0;font-family:'DM Sans',Arial,sans-serif;">
   <div style="max-width:520px;margin:40px auto;background:#fffdf8;border-radius:16px;border:1px solid rgba(200,135,26,0.2);overflow:hidden;box-shadow:0 4px 24px rgba(120,70,10,0.12);">
     <!-- Header -->
-    <div style="background:linear-gradient(135deg,#1a0f00,#0d0a06);padding:32px;text-align:center;">
-      <div style="display:inline-block;width:52px;height:52px;background:rgba(200,135,26,0.15);border:1px solid rgba(200,135,26,0.4);border-radius:14px;font-size:26px;line-height:52px;margin-bottom:12px;">🌙</div>
+    <div style="background:linear-gradient(135deg,#1a0f00,#0d0a06);padding:28px 32px;text-align:center;">
+      ${LOGO_URL
+        ? `<img src="${LOGO_URL}" alt="Ilm Platform" width="60" height="60" style="display:inline-block;margin-bottom:10px;object-fit:contain;" />`
+        : `<div style="display:inline-block;width:52px;height:52px;background:rgba(200,135,26,0.15);border:1px solid rgba(200,135,26,0.4);border-radius:14px;font-size:26px;line-height:52px;margin-bottom:12px;">🌙</div>`
+      }
       <h1 style="font-family:Georgia,serif;color:#f5f0e8;font-size:22px;margin:0;font-weight:600;">Ilm Platform</h1>
       <p style="color:#c8871a;font-size:11px;margin:6px 0 0;letter-spacing:2px;text-transform:uppercase;">Authentic Islamic Knowledge</p>
     </div>

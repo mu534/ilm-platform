@@ -73,8 +73,8 @@ export async function POST(req: NextRequest) {
       `
     );
 
-    // Confirmation to sender
-    await sendEmail(
+    // Confirmation to sender — best-effort only (may fail if domain not verified)
+    void sendEmail(
       body.email,
       "We received your message — Ilm Platform",
       `

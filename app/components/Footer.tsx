@@ -156,15 +156,6 @@ export function Footer() {
             >
               <FiMail size={15} />
             </Link>
-            
-             <a href="https://github.com/mu534/ilm-platform"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="p-2 rounded-lg text-[var(--text-muted)] hover:text-[var(--accent)] hover:bg-[var(--accent-dim)] transition-all duration-200 hover:scale-110"
-              aria-label="GitHub"
-            >
-              <FiGithub size={15} />
-            </a>
           </div>
         </div>
       </div>

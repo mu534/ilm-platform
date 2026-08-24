@@ -121,3 +121,30 @@ export function passwordResetEmailHtml(name: string, token: string): string {
     </p>
   `);
 }
+
+export function newsletterWelcomeEmailHtml(email: string): string {
+  const unsubUrl = `${BASE_URL}/api/newsletter/unsubscribe?email=${encodeURIComponent(email)}`;
+  return wrap(`
+    <h2 style="font-family:Georgia,serif;font-size:22px;color:#1a0e04;margin:0 0 10px;">You're subscribed! 🎉</h2>
+    <p style="color:#4a3520;font-size:15px;line-height:1.7;margin:0 0 12px;">
+      Jazakallahu khayran for subscribing to Ilm Platform.
+    </p>
+    <p style="color:#4a3520;font-size:15px;line-height:1.7;margin:0 0 16px;">
+      You'll be the first to know when new courses are published — from Qur'an and Hadith to Fiqh, Seerah, and Islamic history.
+    </p>
+    <div style="background:#f5ede0;border-radius:12px;padding:16px 20px;margin:0 0 20px;border-left:3px solid #c8871a;">
+      <p style="color:#4a3520;font-size:14px;margin:0;line-height:1.7;">
+        <strong>What to expect:</strong><br/>
+        • New course announcements<br/>
+        • Featured scholars and their upcoming content<br/>
+        • Platform updates and learning tips
+      </p>
+    </div>
+    <div style="text-align:center;margin:8px 0;">
+      ${actionBtn(`${BASE_URL}/courses`, "Browse Courses Now")}
+    </div>
+    <p style="color:#8a7060;font-size:12px;margin:16px 0 0;text-align:center;">
+      <a href="${unsubUrl}" style="color:#8a7060;">Unsubscribe</a> at any time.
+    </p>
+  `);
+}

@@ -151,6 +151,7 @@ export default withAuth(
       "/admin/scholars",
       "/admin/instructors",
       "/admin/cms",
+      "/admin/newsletter",
     ];
     const isAdminOnlyPath = adminOnlyPaths.some((p) =>
       pathnameWithoutLocale.startsWith(p)

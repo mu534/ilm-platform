@@ -14,6 +14,7 @@ import {
   FiBarChart2,
   FiFlag,
   FiFileText,
+  FiMail,
   FiList,
   FiShield,
   FiTag,
@@ -59,6 +60,7 @@ const systemNav: NavItem[] = [
   { href: "/admin/analytics", label: "Analytics", icon: <FiBarChart2 size={18} /> },
   { href: "/admin/audit-log", label: "Audit Log", icon: <FiShield size={18} /> },
   { href: "/admin/cms", label: "CMS", icon: <FiFileText size={18} /> },
+  { href: "/admin/newsletter", label: "Newsletter", icon: <FiMail size={18} /> },
 ];
 
 interface AdminSidebarProps {

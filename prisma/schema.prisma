@@ -1061,3 +1061,17 @@ model CourseAnnouncement {
   @@index([authorId])
   @@map("course_announcements")
 }
+
+// ─── Newsletter Subscriptions ─────────────────────────────────────────────────
+
+model NewsletterSubscription {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  subscribedAt DateTime @default(now())
+  unsubscribedAt DateTime?
+  active      Boolean  @default(true)
+
+  @@index([email])
+  @@index([active])
+  @@map("newsletter_subscriptions")
+}

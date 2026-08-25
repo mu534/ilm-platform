@@ -219,7 +219,7 @@ export function Navbar() {
                     <DropdownMenu.Separator className="my-1 h-px bg-[var(--border)]" />
                     <DropdownMenu.Item
                       className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-xl cursor-pointer transition-colors"
-                      onClick={() => signOut({ callbackUrl: "/" })}
+                      onClick={() => signOut({ callbackUrl: "/en" })}
                     >
                       <FiLogOut size={14} /> {t("signOut")}
                     </DropdownMenu.Item>
@@ -286,7 +286,7 @@ export function Navbar() {
                   {user?.role === "ADMIN" && (
                     <Link href={localHref("/admin")}    onClick={() => setMobileOpen(false)} className="block px-3 py-2.5 rounded-xl text-sm text-[var(--accent)] hover:bg-[var(--accent-dim)] transition-all">{t("admin")}</Link>
                   )}
-                  <button onClick={() => signOut({ callbackUrl: "/" })} className="block w-full text-left px-3 py-2.5 rounded-xl text-sm text-red-400 hover:bg-red-500/10 transition-all">
+                  <button onClick={() => signOut({ callbackUrl: "/en" })} className="block w-full text-left px-3 py-2.5 rounded-xl text-sm text-red-400 hover:bg-red-500/10 transition-all">
                     {t("signOut")}
                   </button>
                 </>
@@ -303,3 +303,4 @@ export function Navbar() {
     </header>
   );
 }
+

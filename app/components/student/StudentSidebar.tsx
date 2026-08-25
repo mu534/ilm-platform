@@ -238,7 +238,7 @@ export function StudentSidebar({
             <button
               onClick={() => {
                 handleLinkClick();
-                signOut({ callbackUrl: "/" });
+                signOut({ callbackUrl: "/en" });
               }}
               title={collapsed && !isMobile ? "Sign Out" : undefined}
               className={`w-full flex items-center gap-3.5 px-3 py-2.5 rounded-xl text-sm font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all duration-200 ${
@@ -284,3 +284,4 @@ export function StudentSidebar({
     </aside>
   );
 }
+

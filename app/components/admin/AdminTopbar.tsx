@@ -203,7 +203,7 @@ export function AdminTopbar({
 
                 <DropdownMenu.Item
                   className="flex items-center gap-2.5 px-3 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-xl cursor-pointer transition-colors"
-                  onClick={() => signOut({ callbackUrl: "/" })}
+                  onClick={() => signOut({ callbackUrl: "/en" })}
                 >
                   <FiLogOut size={14} /> Sign Out
                 </DropdownMenu.Item>
@@ -215,3 +215,4 @@ export function AdminTopbar({
     </header>
   );
 }
+

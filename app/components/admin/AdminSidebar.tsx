@@ -386,7 +386,7 @@ export function AdminSidebar({
 
             {/* Back to Site Link */}
             <Link
-              href="/"
+              href="/en"
               onClick={handleLinkClick}
               title={collapsed && !isMobile ? "Back to Site" : undefined}
               className={`flex items-center gap-3.5 px-3 py-2.5 rounded-xl text-sm font-medium text-[var(--accent)] hover:bg-[var(--accent-dim)] transition-all duration-200 ${
@@ -433,7 +433,7 @@ export function AdminSidebar({
                 {(!collapsed || isMobile) && <span className="truncate flex-1">Instructor Dashboard</span>}
               </Link>
               <Link
-                href="/"
+                href="/en"
                 onClick={handleLinkClick}
                 className={`flex items-center gap-3.5 px-3 py-2.5 rounded-xl text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-hover)] transition-all ${collapsed && !isMobile ? "justify-center px-0" : ""}`}
               >

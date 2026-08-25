@@ -88,7 +88,7 @@ export function StudentSidebar({
         onMouseLeave={() => setIsHeaderHovered(false)}
       >
         <Link
-          href="/"
+          href="/dashboard"
           onClick={handleLinkClick}
           className="flex items-center gap-3 group focus:outline-none focus:ring-2 focus:ring-[var(--accent)] rounded-xl p-1"
         >

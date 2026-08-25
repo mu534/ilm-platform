@@ -155,27 +155,35 @@ export const authOptions: NextAuthOptions = {
         try {
           const existing = await prisma.user.findUnique({
             where: { email: user.email },
-            select: { id: true, image: true },
+            select: { id: true, image: true, role: true },
           });
 
+          // Auto-promote emails listed in ADMIN_EMAILS env var
+          const adminEmails = (process.env.ADMIN_EMAILS ?? "")
+            .split(",")
+            .map((e) => e.trim().toLowerCase())
+            .filter(Boolean);
+          const isAdminEmail = adminEmails.includes(user.email.toLowerCase());
+
           if (!existing) {
-            // Roles are never taken from the provider — a new Google account is
-            // always a plain USER and must complete onboarding.
             await prisma.user.create({
               data: {
                 email: user.email,
                 name: user.name ?? "Google User",
                 image: user.image ?? null,
                 password: null,
-                role: "USER",
+                role: isAdminEmail ? "ADMIN" : "USER",
                 emailVerified: true,
               },
             });
-          } else if (!existing.image && user.image) {
-            await prisma.user.update({
-              where: { id: existing.id },
-              data: { image: user.image },
-            });
+          } else {
+            // Update image if missing; also promote to ADMIN if in ADMIN_EMAILS and not already
+            const updates: Record<string, unknown> = {};
+            if (!existing.image && user.image) updates.image = user.image;
+            if (isAdminEmail && existing.role !== "ADMIN") updates.role = "ADMIN";
+            if (Object.keys(updates).length > 0) {
+              await prisma.user.update({ where: { id: existing.id }, data: updates });
+            }
           }
         } catch (err) {
           console.error("[Auth] Google signIn error:", err);

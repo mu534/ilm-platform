@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useSession, signOut } from "next-auth/react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import * as Avatar from "@radix-ui/react-avatar";
 import type { SessionUser } from "../types/auth.types";
@@ -53,8 +53,13 @@ export function Navbar() {
   }
   const { data: session, status }     = useSession();
   const [mobileOpen, setMobileOpen]  = useState(false);
+  const [mounted,    setMounted]     = useState(false);
   const { theme, toggleTheme, isLight } = useTheme();
   const user = session?.user as SessionUser | undefined;
+
+  // Delay rendering auth buttons until client is mounted to prevent
+  // Login/Get Started flash after login redirects
+  useEffect(() => { setMounted(true); }, []);
   const localHref = (href: string) => href === "/" ? `/${locale}` : `/${locale}${href}`;
   const navLinks = [
     { href: "/",        label: t("home") },
@@ -146,11 +151,11 @@ export function Navbar() {
             </button>
 
             {/* Notifications */}
-            {session && <NotificationBell />}
+            {mounted && session && <NotificationBell />}
 
             {/* Auth */}
-            {status === "loading" ? (
-              /* Skeleton placeholder — prevents Login/Get Started flash */
+            {(!mounted || status === "loading") ? (
+              /* Skeleton — shown until client mounts and session resolves */
               <div className="w-24 h-8 rounded-xl bg-[var(--accent-dim)] animate-pulse ml-1" />
             ) : session ? (
               <DropdownMenu.Root>
@@ -270,7 +275,7 @@ export function Navbar() {
               </Link>
             ))}
             <div className="pt-2 border-t border-[var(--border)] space-y-0.5 mt-2">
-              {status === "loading" ? (
+              {(!mounted || status === "loading") ? (
                 <div className="h-8 w-full rounded-xl bg-[var(--accent-dim)] animate-pulse" />
               ) : session ? (
                 <>

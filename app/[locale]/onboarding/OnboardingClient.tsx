@@ -89,13 +89,13 @@ export default function OnboardingClient() {
       if (complete) {
         setNavigating(true);
         if (form.accountIntention === "TEACH") {
-          // Refresh JWT then go to scholar application form
           await updateSession();
-          router.push(`/${locale}/scholar-application`);
+          // Use full navigation to ensure middleware picks up updated JWT
+          window.location.href = `/${locale}/scholar-application`;
         } else {
-          // Refresh JWT so middleware sees onboardingCompleted=true
           await updateSession();
-          router.push(`/${locale}`);
+          // Use full navigation to ensure middleware picks up updated JWT
+          window.location.href = `/${locale}`;
         }
       } else {
         setStep(nextStep);

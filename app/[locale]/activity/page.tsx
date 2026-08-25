@@ -7,6 +7,7 @@ import {
 } from "react-icons/fi";
 import { GiStarFormation } from "react-icons/gi";
 
+export const dynamic = "force-dynamic";
 export const metadata = { title: "Recent Activity" };
 
 async function getActivity() {

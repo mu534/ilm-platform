@@ -25,7 +25,7 @@ export function Footer() {
     t = (key: string) => { try { return intlFooter(key); } catch { return key; } };
   } catch {
     const navMap: Record<string, string> = {
-      home: "Home", courses: "Courses", scholars: "Scholars", forum: "Forum", login: "Log in", register: "Register", myLearning: "My Learning",
+      home: "Home", about: "About", courses: "Courses", scholars: "Scholars", forum: "Forum", login: "Log in", register: "Register", myLearning: "My Learning",
     };
     const footerMap: Record<string, string> = {
       lectures: "Lectures", activity: "Activity", myProfile: "My Profile", tagline: "Authentic Islamic knowledge from verified scholars.", explore: "Explore", account: "Account", madeWith: "Made with", forUmmah: "for the Ummah",
@@ -37,6 +37,7 @@ export function Footer() {
   const localHref = (href: string) => href === "/" ? `/${locale}` : `/${locale}${href}`;
   const exploreLinks = [
     { href: "/",        label: nav("home") },
+    { href: "/about",   label: nav("about") },
     { href: "/courses", label: nav("courses") },
     { href: "/lectures", label: t("lectures") },
     { href: "/scholars", label: nav("scholars") },

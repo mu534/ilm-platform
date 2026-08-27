@@ -7,6 +7,7 @@ import { locales, defaultLocale } from './i18n/config';
 // application pages currently live at the app root and are served through an
 // internal rewrite after their locale prefix has been processed.
 const localeRoutePrefixes = [
+  "/about",
   "/activity",
   "/forgot-password",
   "/login",

@@ -9,7 +9,7 @@
     "cancel": "Haquu",
     "delete": "Balleessuu",
     "edit": "Gulaaluu",
-    "create": "Uumiuu",
+    "create": "Uumuu",
     "update": "Haalii Cabsuu",
     "search": "Barbaaduu",
     "filter": "Saxaxuu",
@@ -975,6 +975,7 @@
   },
   "nav": {
     "home": "Mana",
+    "about": "Waa'ee Keenya",
     "courses": "Koorsiiwwan",
     "scholars": "Hayyoota",
     "myLearning": "Barnoota koo",

@@ -36,7 +36,7 @@ export function Navbar() {
         return intlT(key);
       } catch {
         const fallbackMap: Record<string, string> = {
-          home: "Home", courses: "Courses", scholars: "Scholars", forum: "Forum", admin: "Admin",
+          home: "Home", about: "About", courses: "Courses", scholars: "Scholars", forum: "Forum", admin: "Admin",
           profile: "Profile", settings: "Settings", myLearning: "My Learning", manageCourses: "Manage Courses",
           dashboard: "Dashboard", signOut: "Sign Out", login: "Log in", getStarted: "Get Started", register: "Register",
         };
@@ -45,7 +45,7 @@ export function Navbar() {
     };
   } catch {
     const fallbackMap: Record<string, string> = {
-      home: "Home", courses: "Courses", scholars: "Scholars", forum: "Forum", admin: "Admin",
+      home: "Home", about: "About", courses: "Courses", scholars: "Scholars", forum: "Forum", admin: "Admin",
       profile: "Profile", settings: "Settings", myLearning: "My Learning", manageCourses: "Manage Courses",
       dashboard: "Dashboard", signOut: "Sign Out", login: "Log in", getStarted: "Get Started", register: "Register",
     };
@@ -63,6 +63,7 @@ export function Navbar() {
   const localHref = (href: string) => href === "/" ? `/${locale}` : `/${locale}${href}`;
   const navLinks = [
     { href: "/",        label: t("home") },
+    { href: "/about",   label: t("about") },
     { href: "/courses", label: t("courses") },
     { href: "/scholars", label: t("scholars") },
     { href: "/forum",   label: t("forum") },

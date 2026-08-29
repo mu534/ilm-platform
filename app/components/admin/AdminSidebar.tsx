@@ -388,6 +388,8 @@ export function AdminSidebar({
             <Link
               href="/en"
               onClick={handleLinkClick}
+              target="_blank"
+              rel="noopener noreferrer"
               title={collapsed && !isMobile ? "Back to Site" : undefined}
               className={`flex items-center gap-3.5 px-3 py-2.5 rounded-xl text-sm font-medium text-[var(--accent)] hover:bg-[var(--accent-dim)] transition-all duration-200 ${
                 collapsed && !isMobile ? "justify-center px-0" : ""
@@ -435,6 +437,8 @@ export function AdminSidebar({
               <Link
                 href="/en"
                 onClick={handleLinkClick}
+                target="_blank"
+                rel="noopener noreferrer"
                 className={`flex items-center gap-3.5 px-3 py-2.5 rounded-xl text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-hover)] transition-all ${collapsed && !isMobile ? "justify-center px-0" : ""}`}
               >
                 <span className="flex-shrink-0"><FiChevronRight size={18} /></span>
@@ -480,4 +484,3 @@ export function AdminSidebar({
     </aside>
   );
 }
-

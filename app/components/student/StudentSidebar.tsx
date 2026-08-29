@@ -17,6 +17,7 @@ import {
   FiSettings,
   FiLogOut,
   FiShield,
+  FiExternalLink,
 } from "react-icons/fi";
 import { LuPanelLeftClose, LuPanelLeftOpen } from "react-icons/lu";
 import type { SessionUser } from "@/app/types/auth.types";
@@ -234,6 +235,25 @@ export function StudentSidebar({
               </Link>
             )}
 
+            {/* Back to Site Link */}
+            <Link
+              href="/en"
+              onClick={handleLinkClick}
+              target="_blank"
+              rel="noopener noreferrer"
+              title={collapsed && !isMobile ? "Back to Site" : undefined}
+              className={`flex items-center gap-3.5 px-3 py-2.5 rounded-xl text-sm font-medium text-[var(--accent)] hover:bg-[var(--accent-dim)] transition-all duration-200 ${
+                collapsed && !isMobile ? "justify-center px-0" : ""
+              }`}
+            >
+              <span className="flex-shrink-0">
+                <FiExternalLink size={18} />
+              </span>
+              {(!collapsed || isMobile) && (
+                <span className="truncate flex-1">Back to Site</span>
+              )}
+            </Link>
+
             {/* Logout Button */}
             <button
               onClick={() => {
@@ -284,4 +304,3 @@ export function StudentSidebar({
     </aside>
   );
 }
-

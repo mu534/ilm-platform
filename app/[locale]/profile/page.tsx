@@ -95,31 +95,47 @@ export default function ProfilePage() {
   };
 
   const inputClass =
-    "w-full px-4 py-2.5 bg-[var(--bg-card)] border border-[var(--border)] rounded-xl text-[var(--text-primary)] text-sm focus:outline-none focus:border-[var(--accent)] transition-colors";
+    "w-full px-4 py-2.5 bg-[var(--bg-elevated)] border border-[var(--border-strong)] rounded-xl text-[var(--text-primary)] text-sm focus:outline-none focus:border-[var(--accent)] focus:shadow-[0_0_0_3px_var(--accent-dim)] transition-all";
 
   return (
-    <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <h1 className="font-display text-3xl font-bold text-[var(--text-primary)] mb-8">
         My Profile
       </h1>
 
-      <div className="glass-card rounded-2xl p-8">
+      <div className="glass-card rounded-2xl overflow-hidden">
 
-        {/* ── Avatar + name ── */}
-        <div className="flex items-start gap-6 mb-8 pb-8 border-b border-[var(--border)]">
+        {/* ── Illuminated cover band ── */}
+        <div className="relative h-28 sm:h-32 hero-bg hero-radial pattern-overlay overflow-hidden">
+          <div
+            className="absolute inset-x-0 bottom-0 h-px"
+            style={{ background: "linear-gradient(90deg, transparent, var(--border-strong), transparent)" }}
+          />
+          {!editing && (
+            <button
+              onClick={() => setEditing(true)}
+              className="absolute top-4 right-4 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/25 hover:bg-black/40 backdrop-blur-sm border border-white/10 text-white/90 text-xs font-medium transition-colors"
+            >
+              <FiEdit2 size={12} /> Edit Profile
+            </button>
+          )}
+        </div>
+
+        {/* ── Avatar + identity, overlapping the cover ── */}
+        <div className="px-6 sm:px-8 -mt-12 pb-6 flex flex-col items-center text-center">
           <div className="flex flex-col items-center gap-2">
-            <Avatar.Root className="w-20 h-20 rounded-full overflow-hidden border-2 border-[var(--border-strong)]">
+            <Avatar.Root className="w-24 h-24 rounded-full overflow-hidden border-4 border-[var(--bg-card)] shadow-[var(--shadow-md)] ring-1 ring-[var(--border-strong)]">
               <Avatar.Image
                 src={form.image || user?.image || ""}
                 alt={user?.name ?? "User"}
                 className="w-full h-full object-cover"
               />
-              <Avatar.Fallback className="w-full h-full flex items-center justify-center bg-[var(--accent-dim)] text-[var(--accent)] text-2xl font-display font-bold">
+              <Avatar.Fallback className="w-full h-full flex items-center justify-center bg-[var(--accent-dim)] text-[var(--accent)] text-3xl font-display font-bold">
                 {user?.name?.[0]?.toUpperCase()}
               </Avatar.Fallback>
             </Avatar.Root>
             {editing && (
-              <div className="w-32">
+              <div className="w-28">
                 <FileUploader
                   accept="image/*"
                   folder="ilm-platform/avatars"
@@ -132,16 +148,24 @@ export default function ProfilePage() {
             )}
           </div>
 
-          <div className="flex-1 min-w-0">
-            <h2 className="font-display text-2xl font-semibold text-[var(--text-primary)] mb-1 truncate">
-              {user?.name}
-            </h2>
-            <p className="text-sm text-[var(--text-muted)] flex items-center gap-1 mb-2 min-w-0">
-              <FiMail size={13} className="flex-shrink-0" /> <span className="truncate">{user?.email}</span>
-            </p>
-            <RoleBadge role={user?.role ?? "USER"} />
-          </div>
+          <h2 className="font-display text-3xl font-semibold gradient-text mt-4 mb-1 max-w-full truncate px-4">
+            {user?.name}
+          </h2>
+          <p className="text-sm text-[var(--text-muted)] flex items-center justify-center gap-1.5 mb-3 max-w-full px-4">
+            <FiMail size={13} className="flex-shrink-0" /> <span className="truncate">{user?.email}</span>
+          </p>
+          <RoleBadge role={user?.role ?? "USER"} />
         </div>
+
+        {/* Ornamental divider */}
+        <div className="flex items-center gap-3 px-6 sm:px-8">
+          <div className="flex-1 h-px" style={{ background: "linear-gradient(90deg, transparent, var(--border-strong))" }} />
+          <span className="w-1.5 h-1.5 rotate-45 bg-[var(--accent)]" />
+          <div className="flex-1 h-px" style={{ background: "linear-gradient(90deg, var(--border-strong), transparent)" }} />
+        </div>
+
+        <div className="p-6 sm:p-8">
+
 
         {/* ── Status messages ── */}
         {saveStatus === "success" && (
@@ -156,82 +180,90 @@ export default function ProfilePage() {
         )}
 
         {/* ── Edit form ── */}
-        <div className="space-y-5">
-          {/* Name */}
-          <div>
-            <label className="block text-xs text-[var(--text-muted)] font-medium mb-1.5">
-              Display Name
-            </label>
-            {editing ? (
-              <input
-                value={form.name}
-                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                className={inputClass}
-                placeholder="Your name"
-              />
-            ) : (
-              <p className="text-[var(--text-primary)]">{user?.name}</p>
-            )}
-          </div>
+        {/* ── Profile details ── */}
+        <div>
+          <p className="text-xs text-[var(--accent)] uppercase tracking-wider font-semibold mb-4">
+            Profile Details
+          </p>
 
-          {/* Email (read-only) */}
-          <div>
-            <label className="block text-xs text-[var(--text-muted)] font-medium mb-1.5">
-              Email
-            </label>
-            <p className="text-[var(--text-secondary)] text-sm">{user?.email}</p>
-          </div>
+          <div className="grid sm:grid-cols-2 gap-x-6 gap-y-5">
+            {/* Name */}
+            <div>
+              <label className="block text-xs text-[var(--text-muted)] font-medium mb-1.5">
+                Display Name
+              </label>
+              {editing ? (
+                <input
+                  value={form.name}
+                  onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                  className={inputClass}
+                  placeholder="Your name"
+                />
+              ) : (
+                <p className="text-[var(--text-primary)]">{user?.name}</p>
+              )}
+            </div>
 
-          {/* Bio */}
-          <div>
-            <label className="block text-xs text-[var(--text-muted)] font-medium mb-1.5">
-              Bio
-            </label>
-            {editing ? (
-              <textarea
-                value={form.bio}
-                onChange={(e) => setForm((f) => ({ ...f, bio: e.target.value }))}
-                className={inputClass}
-                rows={3}
-                placeholder="Tell others about yourself..."
-                maxLength={500}
-              />
-            ) : (
-              <p className="text-[var(--text-secondary)] text-sm">
-                {form.bio || <span className="text-[var(--text-muted)] italic">No bio added</span>}
+            {/* Role (read-only) */}
+            <div>
+              <label className="block text-xs text-[var(--text-muted)] font-medium mb-1.5">
+                Role
+              </label>
+              <p className="text-[var(--text-secondary)] text-sm capitalize py-2.5">
+                {user?.role?.toLowerCase()}
               </p>
-            )}
-          </div>
+            </div>
 
-          <div>
-            <label className="block text-xs text-[var(--text-muted)] font-medium mb-1.5">City</label>
-            {editing ? <input value={form.city} onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))} className={inputClass} placeholder="Your city" autoComplete="address-level2" /> : <p className="text-[var(--text-secondary)] text-sm">{form.city || <span className="text-[var(--text-muted)] italic">No city added</span>}</p>}
-          </div>
+            {/* City */}
+            <div>
+              <label className="block text-xs text-[var(--text-muted)] font-medium mb-1.5">City</label>
+              {editing ? (
+                <input value={form.city} onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))} className={inputClass} placeholder="Your city" autoComplete="address-level2" />
+              ) : (
+                <p className="text-[var(--text-secondary)] text-sm py-2.5">{form.city || <span className="text-[var(--text-muted)] italic">No city added</span>}</p>
+              )}
+            </div>
 
-          <div>
-            <label className="block text-xs text-[var(--text-muted)] font-medium mb-1.5">Occupation</label>
-            {editing ? <input value={form.occupation} onChange={(e) => setForm((f) => ({ ...f, occupation: e.target.value }))} className={inputClass} placeholder="Your occupation" autoComplete="organization-title" /> : <p className="text-[var(--text-secondary)] text-sm">{form.occupation || <span className="text-[var(--text-muted)] italic">No occupation added</span>}</p>}
-          </div>
+            {/* Occupation */}
+            <div>
+              <label className="block text-xs text-[var(--text-muted)] font-medium mb-1.5">Occupation</label>
+              {editing ? (
+                <input value={form.occupation} onChange={(e) => setForm((f) => ({ ...f, occupation: e.target.value }))} className={inputClass} placeholder="Your occupation" autoComplete="organization-title" />
+              ) : (
+                <p className="text-[var(--text-secondary)] text-sm py-2.5">{form.occupation || <span className="text-[var(--text-muted)] italic">No occupation added</span>}</p>
+              )}
+            </div>
 
-          {/* Role */}
-          <div>
-            <label className="block text-xs text-[var(--text-muted)] font-medium mb-1.5">
-              Role
-            </label>
-            <p className="text-[var(--text-secondary)] text-sm capitalize">
-              {user?.role?.toLowerCase()}
-            </p>
+            {/* Bio — full width */}
+            <div className="sm:col-span-2">
+              <label className="block text-xs text-[var(--text-muted)] font-medium mb-1.5">
+                Bio
+              </label>
+              {editing ? (
+                <textarea
+                  value={form.bio}
+                  onChange={(e) => setForm((f) => ({ ...f, bio: e.target.value }))}
+                  className={inputClass}
+                  rows={3}
+                  placeholder="Tell others about yourself..."
+                  maxLength={500}
+                />
+              ) : (
+                <p className="text-[var(--text-secondary)] text-sm">
+                  {form.bio || <span className="text-[var(--text-muted)] italic">No bio added</span>}
+                </p>
+              )}
+            </div>
           </div>
         </div>
 
         {/* ── Actions ── */}
+        {editing && (
         <div className="flex gap-3 mt-8">
-          {editing ? (
-            <>
               <button
                 onClick={handleSave}
                 disabled={saveStatus === "saving"}
-                className="px-5 py-2 bg-[var(--accent)] hover:bg-[var(--accent-light)] text-white rounded-xl text-sm font-medium transition-colors disabled:opacity-60"
+                className="btn-primary text-sm px-5 py-2"
               >
                 {saveStatus === "saving" ? "Saving…" : "Save Changes"}
               </button>
@@ -240,37 +272,29 @@ export default function ProfilePage() {
                   setForm((f) => ({ ...f, image: user?.image ?? "" }));
                   setEditing(false);
                 }}
-                className="px-5 py-2 border border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-primary)] rounded-xl text-sm transition-colors"
+                className="btn-secondary text-sm px-5 py-2"
               >
                 Cancel
               </button>
-            </>
-          ) : (
-            <button
-              onClick={() => setEditing(true)}
-              className="flex items-center gap-2 px-5 py-2 border border-[var(--border)] hover:border-[var(--accent)] text-[var(--text-muted)] hover:text-[var(--text-primary)] rounded-xl text-sm transition-colors"
-            >
-              <FiEdit2 size={14} /> Edit Profile
-            </button>
-          )}
         </div>
+        )}
 
         {/* ── Quick links ── */}
-        <div className="mt-8 pt-8 border-t border-[var(--border)]">
-          <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold mb-4">
+        <div className="mt-8 pt-8 border-t border-[var(--border-subtle)]">
+          <p className="text-xs text-[var(--accent)] uppercase tracking-wider font-semibold mb-4">
             Quick Access
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[
-              { href: "/dashboard",               icon: <FiActivity size={14} />,  label: "Dashboard"    },
-              { href: "/dashboard/bookmarks",     icon: <FiBookmark size={14} />,  label: "Bookmarks"    },
-              { href: "/dashboard/certificates",  icon: <FiAward size={14} />,     label: "Certificates" },
-              { href: "/courses",                 icon: <FiBookOpen size={14} />,  label: "Courses"      },
+              { href: "/dashboard",               icon: <FiActivity size={16} />,  label: "Dashboard"    },
+              { href: "/dashboard/bookmarks",     icon: <FiBookmark size={16} />,  label: "Bookmarks"    },
+              { href: "/dashboard/certificates",  icon: <FiAward size={16} />,     label: "Certificates" },
+              { href: "/courses",                 icon: <FiBookOpen size={16} />,  label: "Courses"      },
             ].map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
-                className="flex flex-col items-center gap-2 p-3 rounded-xl border border-[var(--border)] hover:border-[var(--accent)] hover:bg-[var(--accent-dim)] transition-all text-center"
+                className="card-lift flex flex-col items-center gap-2 p-4 rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)] hover:border-[var(--accent)] hover:bg-[var(--accent-dim)] transition-all text-center"
               >
                 <span className="text-[var(--accent)]">{link.icon}</span>
                 <span className="text-xs text-[var(--text-muted)]">{link.label}</span>
@@ -320,6 +344,7 @@ export default function ProfilePage() {
             </div>
           </div>
         )}
+        </div>
       </div>
     </div>
   );

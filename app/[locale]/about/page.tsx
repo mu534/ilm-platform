@@ -1,5 +1,8 @@
 import Link from "next/link";
 import Image from "next/image";
+import { getServerSession } from "next-auth";
+import { authOptions } from "../../lib/auth";
+import type { SessionUser } from "@/app/types/auth.types";
 import {
   FiCompass, FiLayers, FiUsers, FiAward,
   FiBookOpen, FiHeart, FiArrowRight, FiTarget, FiUser,
@@ -123,6 +126,8 @@ export default async function AboutPage({
   const { locale } = await params;
   const localHref = (href: string) => (href === "/" ? `/${locale}` : `/${locale}${href}`);
   const { courseCount, scholarCount, userCount, scholars } = await getAboutData();
+  const session = await getServerSession(authOptions);
+  const isLoggedIn = !!(session?.user as SessionUser | null);
 
   return (
     <main className="w-full">
@@ -380,18 +385,28 @@ export default async function AboutPage({
               structured path here for you.
             </p>
             <div className="flex flex-wrap items-center justify-center gap-3">
-              <Link
-                href={localHref("/register")}
-                className="inline-flex items-center gap-2 px-7 py-3.5 bg-gradient-to-r from-gold-500 to-gold-600 hover:from-gold-400 hover:to-gold-500 text-white rounded-xl font-semibold shadow-md shadow-gold-600/30 hover:shadow-gold-500/40 transition-all duration-300 hover:scale-105 active:scale-95 text-sm"
-              >
-                Create Free Account <FiArrowRight size={15} />
-              </Link>
+              {!isLoggedIn && (
+                <Link
+                  href={localHref("/register")}
+                  className="inline-flex items-center gap-2 px-7 py-3.5 bg-gradient-to-r from-gold-500 to-gold-600 hover:from-gold-400 hover:to-gold-500 text-white rounded-xl font-semibold shadow-md shadow-gold-600/30 hover:shadow-gold-500/40 transition-all duration-300 hover:scale-105 active:scale-95 text-sm"
+                >
+                  Create Free Account <FiArrowRight size={15} />
+                </Link>
+              )}
               <Link
                 href={localHref("/courses")}
                 className="inline-flex items-center gap-2 px-7 py-3.5 border border-[var(--border-strong)] hover:border-[var(--accent)] hover:bg-[var(--accent-dim)] text-[var(--text-primary)] rounded-xl font-medium transition-all duration-300 hover:scale-105 active:scale-95 text-sm"
               >
                 Browse Courses
               </Link>
+              {isLoggedIn && (
+                <Link
+                  href={localHref("/dashboard")}
+                  className="inline-flex items-center gap-2 px-7 py-3.5 bg-gradient-to-r from-gold-500 to-gold-600 hover:from-gold-400 hover:to-gold-500 text-white rounded-xl font-semibold shadow-md shadow-gold-600/30 hover:shadow-gold-500/40 transition-all duration-300 hover:scale-105 active:scale-95 text-sm"
+                >
+                  Go to Dashboard <FiArrowRight size={15} />
+                </Link>
+              )}
             </div>
           </div>
         </div>

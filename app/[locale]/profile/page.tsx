@@ -110,7 +110,7 @@ export default function ProfilePage() {
           <div className="flex flex-col items-center gap-2">
             <Avatar.Root className="w-20 h-20 rounded-full overflow-hidden border-2 border-[var(--border-strong)]">
               <Avatar.Image
-                src={editing ? form.image : (user?.image ?? "")}
+                src={form.image || user?.image || ""}
                 alt={user?.name ?? "User"}
                 className="w-full h-full object-cover"
               />
@@ -119,11 +119,12 @@ export default function ProfilePage() {
               </Avatar.Fallback>
             </Avatar.Root>
             {editing && (
-              <div className="w-48">
+              <div className="w-32">
                 <FileUploader
                   accept="image/*"
                   folder="ilm-platform/avatars"
                   label="Change photo"
+                  aspectRatio="1/1"
                   onUpload={(url) => setForm((f) => ({ ...f, image: url }))}
                   currentUrl={form.image}
                 />
@@ -131,12 +132,12 @@ export default function ProfilePage() {
             )}
           </div>
 
-          <div className="flex-1">
-            <h2 className="font-display text-2xl font-semibold text-[var(--text-primary)] mb-1">
+          <div className="flex-1 min-w-0">
+            <h2 className="font-display text-2xl font-semibold text-[var(--text-primary)] mb-1 truncate">
               {user?.name}
             </h2>
-            <p className="text-sm text-[var(--text-muted)] flex items-center gap-1 mb-2">
-              <FiMail size={13} /> {user?.email}
+            <p className="text-sm text-[var(--text-muted)] flex items-center gap-1 mb-2 min-w-0">
+              <FiMail size={13} className="flex-shrink-0" /> <span className="truncate">{user?.email}</span>
             </p>
             <RoleBadge role={user?.role ?? "USER"} />
           </div>
@@ -235,7 +236,10 @@ export default function ProfilePage() {
                 {saveStatus === "saving" ? "Saving…" : "Save Changes"}
               </button>
               <button
-                onClick={() => setEditing(false)}
+                onClick={() => {
+                  setForm((f) => ({ ...f, image: user?.image ?? "" }));
+                  setEditing(false);
+                }}
                 className="px-5 py-2 border border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-primary)] rounded-xl text-sm transition-colors"
               >
                 Cancel

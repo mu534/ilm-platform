@@ -276,7 +276,7 @@ export const authOptions: NextAuthOptions = {
       session.user.onboardingCompleted = token.onboardingCompleted ?? false;
       session.user.name = token.name as string | null;
       session.user.email = token.email as string | null;
-      if (token.picture) session.user.image = token.picture as string;
+      session.user.image = (token.picture as string | null) ?? null;
       return session;
     },
   },

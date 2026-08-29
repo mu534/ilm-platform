@@ -1,18 +1,65 @@
 import Link from "next/link";
 import Image from "next/image";
-import { getServerSession } from "next-auth";
-import { authOptions } from "../../lib/auth";
 import {
   FiCompass, FiLayers, FiUsers, FiAward,
-  FiBookOpen, FiHeart, FiArrowRight, FiTarget,
+  FiBookOpen, FiHeart, FiArrowRight, FiTarget, FiUser,
 } from "react-icons/fi";
 import { GiStarFormation } from "react-icons/gi";
+import { prisma } from "@/app/lib/prism";
+import { publicCourseWhere } from "@/app/lib/courseAccess";
+import { ScholarCard } from "@/app/components/scholars/ScholarCard";
+import type { Scholar } from "@/app/types/auth.types";
+
+// Cache the page for 5 minutes — avoids hitting the DB on every visit
+export const revalidate = 300;
 
 export const metadata = {
   title: "About Us | Ilm Platform",
   description:
     "Ilm Platform exists to make authentic Islamic knowledge accessible to everyone — especially new Muslims taking their first steps — by organizing it into clear, structured, and verified learning paths.",
 };
+
+// ─── Data fetching ────────────────────────────────────────────────────────────
+
+type PrismaScholar = {
+  id: string; userId: string; bio: string; photo: string | null;
+  topics: string[]; qualifications: string[]; featured: boolean;
+  user: { name: string; email: string; image: string | null };
+  _count: { lectures: number };
+};
+
+function mapScholar(s: PrismaScholar): Scholar {
+  return { ...s };
+}
+
+async function getAboutData() {
+  const [courseCount, scholarCount, userCount, scholarsRaw] = await Promise.all([
+    prisma.course.count({ where: { ...publicCourseWhere } }),
+    prisma.scholar.count(),
+    prisma.user.count(),
+    prisma.scholar.findMany({
+      orderBy: [{ featured: "desc" }, { createdAt: "desc" }],
+      take: 4,
+      include: {
+        user:   { select: { name: true, email: true, image: true } },
+        _count: { select: { lectures: true } },
+      },
+    }),
+  ]);
+
+  return {
+    courseCount,
+    scholarCount,
+    userCount,
+    scholars: scholarsRaw.map(mapScholar),
+  };
+}
+
+function formatCount(n: number) {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000)     return `${(n / 1_000).toFixed(n >= 10_000 ? 0 : 1)}k`;
+  return n.toLocaleString();
+}
 
 type Pillar = {
   icon: React.ReactNode;
@@ -75,8 +122,7 @@ export default async function AboutPage({
 }) {
   const { locale } = await params;
   const localHref = (href: string) => (href === "/" ? `/${locale}` : `/${locale}${href}`);
-  const session = await getServerSession(authOptions);
-  const isLoggedIn = !!session?.user;
+  const { courseCount, scholarCount, userCount, scholars } = await getAboutData();
 
   return (
     <main className="w-full">
@@ -120,11 +166,33 @@ export default async function AboutPage({
             Islamic Knowledge, <span className="gradient-text">Organized</span> for Everyone
           </h1>
 
-          <p className="text-base sm:text-lg text-[var(--text-secondary)] max-w-2xl mx-auto leading-relaxed">
+          <p className="text-base sm:text-lg text-[var(--text-secondary)] max-w-2xl mx-auto leading-relaxed mb-10">
             Ilm Platform exists to make comprehensive, authentic Islamic knowledge accessible to
             everyone — with a special place in our hearts for those who have newly embraced
             Islam and are starting to learn their faith from scratch.
           </p>
+
+          <div
+            className="w-full max-w-2xl mx-auto rounded-2xl border border-[var(--border)] bg-[var(--bg-card)]/70 backdrop-blur-sm overflow-hidden"
+            role="list"
+            aria-label="Platform statistics"
+          >
+            <div className="stat-strip divide-x divide-[var(--border)]">
+              {[
+                { icon: <FiBookOpen className="w-3.5 h-3.5" />, count: courseCount,  label: "Courses" },
+                { icon: <FiUsers    className="w-3.5 h-3.5" />, count: scholarCount, label: "Scholars" },
+                { icon: <FiUser     className="w-3.5 h-3.5" />, count: userCount,    label: "Students" },
+              ].map((s, i) => (
+                <div key={i} className="stat-strip__item flex-1" role="listitem">
+                  <div className="flex items-center justify-center gap-1.5 mb-1 text-[var(--text-muted)]">
+                    {s.icon}
+                  </div>
+                  <div className="stat-strip__number">{formatCount(s.count)}</div>
+                  <div className="stat-strip__label">{s.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 
@@ -193,6 +261,53 @@ export default async function AboutPage({
               </p>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* ── Meet the scholars ── */}
+      <section className="w-full bg-[var(--bg-secondary)]" aria-labelledby="scholars-heading">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
+          <div className="flex items-end justify-between gap-4 mb-10 flex-wrap">
+            <div>
+              <p className="text-xs text-[var(--accent)] uppercase tracking-widest font-semibold mb-3">
+                Meet the Scholars
+              </p>
+              <h2
+                id="scholars-heading"
+                className="font-display text-3xl sm:text-4xl font-semibold text-[var(--text-primary)] leading-tight"
+              >
+                Learn From People You Can Trust
+              </h2>
+              <p className="section-subtitle mt-2 max-w-xl">
+                Every course is taught or reviewed by a real scholar — not an anonymous upload.
+              </p>
+            </div>
+            <Link
+              href={localHref("/scholars")}
+              className="flex-shrink-0 flex items-center gap-1.5 text-sm text-[var(--accent)] hover:text-[var(--accent-light)] transition-colors group"
+            >
+              View all scholars
+              <FiArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+            </Link>
+          </div>
+
+          {scholars.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {scholars.map((scholar) => (
+                <ScholarCard key={scholar.id} scholar={scholar} />
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-dashed border-[var(--border-strong)] bg-[var(--bg-card)] p-10 text-center">
+              <p className="text-[var(--text-secondary)] text-sm">
+                Our scholar directory is growing — check back soon, or{" "}
+                <Link href={localHref("/scholars")} className="text-[var(--accent)] hover:underline">
+                  browse the scholars page
+                </Link>{" "}
+                for the latest additions.
+              </p>
+            </div>
+          )}
         </div>
       </section>
 
@@ -265,28 +380,18 @@ export default async function AboutPage({
               structured path here for you.
             </p>
             <div className="flex flex-wrap items-center justify-center gap-3">
-              {!isLoggedIn && (
-                <Link
-                  href={localHref("/register")}
-                  className="inline-flex items-center gap-2 px-7 py-3.5 bg-gradient-to-r from-gold-500 to-gold-600 hover:from-gold-400 hover:to-gold-500 text-white rounded-xl font-semibold shadow-md shadow-gold-600/30 hover:shadow-gold-500/40 transition-all duration-300 hover:scale-105 active:scale-95 text-sm"
-                >
-                  Create Free Account <FiArrowRight size={15} />
-                </Link>
-              )}
+              <Link
+                href={localHref("/register")}
+                className="inline-flex items-center gap-2 px-7 py-3.5 bg-gradient-to-r from-gold-500 to-gold-600 hover:from-gold-400 hover:to-gold-500 text-white rounded-xl font-semibold shadow-md shadow-gold-600/30 hover:shadow-gold-500/40 transition-all duration-300 hover:scale-105 active:scale-95 text-sm"
+              >
+                Create Free Account <FiArrowRight size={15} />
+              </Link>
               <Link
                 href={localHref("/courses")}
                 className="inline-flex items-center gap-2 px-7 py-3.5 border border-[var(--border-strong)] hover:border-[var(--accent)] hover:bg-[var(--accent-dim)] text-[var(--text-primary)] rounded-xl font-medium transition-all duration-300 hover:scale-105 active:scale-95 text-sm"
               >
                 Browse Courses
               </Link>
-              {isLoggedIn && (
-                <Link
-                  href={localHref("/dashboard")}
-                  className="inline-flex items-center gap-2 px-7 py-3.5 bg-gradient-to-r from-gold-500 to-gold-600 hover:from-gold-400 hover:to-gold-500 text-white rounded-xl font-semibold shadow-md shadow-gold-600/30 hover:shadow-gold-500/40 transition-all duration-300 hover:scale-105 active:scale-95 text-sm"
-                >
-                  Go to Dashboard <FiArrowRight size={15} />
-                </Link>
-              )}
             </div>
           </div>
         </div>

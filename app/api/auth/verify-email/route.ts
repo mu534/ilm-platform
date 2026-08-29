@@ -36,8 +36,9 @@ export async function POST(req: NextRequest) {
     const rl = await checkRateLimit(`resend-verify:${ip}`, { limit: 3, window: 900, failClosed: true });
     if (!rl.success) return errorResponse("Too many attempts. Please try again later.", 429);
 
-    const { email } = (await req.json()) as { email: string };
-    if (!email) return errorResponse("Email is required", 400);
+    const { email: rawEmail } = (await req.json()) as { email: string };
+    if (!rawEmail) return errorResponse("Email is required", 400);
+    const email = rawEmail.trim().toLowerCase();
 
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user)               return successResponse({ message: "If this email exists, a verification link has been sent." }); // don't leak existence

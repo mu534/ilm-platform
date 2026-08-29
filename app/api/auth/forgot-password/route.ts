@@ -5,7 +5,7 @@ import { checkRateLimit, getClientIp } from "../../../lib/rateLimit";
 import { generateToken, sendEmail, passwordResetEmailHtml } from "../../../lib/email";
 import { z } from "zod";
 
-const schema = z.object({ email: z.string().email() });
+const schema = z.object({ email: z.string().trim().toLowerCase().email() });
 
 // POST /api/auth/forgot-password
 export async function POST(req: NextRequest) {

@@ -13,8 +13,8 @@ import { publicCourseWhere } from "@/app/lib/courseAccess";
 import { ScholarCard } from "@/app/components/scholars/ScholarCard";
 import type { Scholar } from "@/app/types/auth.types";
 
-// Cache the page for 5 minutes — avoids hitting the DB on every visit
-export const revalidate = 300;
+// Do not cache — page uses getServerSession which must run per-request
+export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "About Us | Ilm Platform",

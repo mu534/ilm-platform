@@ -15,6 +15,7 @@ import {
   FiActivity,
   FiSidebar,
   FiSearch,
+  FiExternalLink,
 } from "react-icons/fi";
 import { GiMoon, GiSun } from "react-icons/gi";
 import { useTheme } from "@/app/components/ThemeProvider";
@@ -199,6 +200,17 @@ export function AdminTopbar({
                   </Link>
                 </DropdownMenu.Item>
 
+                <DropdownMenu.Item asChild>
+                  <a
+                    href="/en"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2.5 px-3 py-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-dim)] rounded-xl cursor-pointer transition-colors"
+                  >
+                    <FiExternalLink size={14} className="text-[var(--accent)]" /> Visit Site
+                  </a>
+                </DropdownMenu.Item>
+
                 <DropdownMenu.Separator className="my-1 h-px bg-[var(--border)]" />
 
                 <DropdownMenu.Item
@@ -215,4 +227,3 @@ export function AdminTopbar({
     </header>
   );
 }
-

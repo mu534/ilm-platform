@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../../lib/prism";
 import { requireUserFresh } from "../../../../lib/authorization";
-import { errorResponse } from "../../../../utils/api";
+import { errorResponse, handleApiError } from "../../../../utils/api";
 import { generateQrSvg } from "../../../../lib/qr";
 import { formatCertificateName } from "../../../../lib/formatName";
 
@@ -31,6 +31,10 @@ export async function GET(
 
   const { id } = await params;
 
+  // Everything below (DB lookup, QR generation, template assembly) wrapped
+  // so an unexpected failure returns the same masked JSON error shape every
+  // other route uses, instead of relying on Next's default fallback.
+  try {
   const cert = await prisma.certificate.findUnique({
     where: { id },
   });
@@ -344,4 +348,7 @@ export async function GET(
       "Content-Disposition": `inline; filename="certificate-${certId}.html"`,
     },
   });
+  } catch (error) {
+    return handleApiError(error);
+  }
 }

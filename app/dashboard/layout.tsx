@@ -1,9 +1,9 @@
-import { StudentLayout } from "@/app/components/student/StudentLayout";
+import { RoleAwareDashboardShell } from "@/app/components/shared/RoleAwareDashboardShell";
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return <StudentLayout>{children}</StudentLayout>;
+  return <RoleAwareDashboardShell>{children}</RoleAwareDashboardShell>;
 }

@@ -17,8 +17,11 @@ export async function GET(req: NextRequest) {
       where: { email: email.toLowerCase(), active: true },
       data: { active: false, unsubscribedAt: new Date() },
     });
-  } catch {
-    // Silently ignore — don't leak whether email exists
+  } catch (error) {
+    // Silently ignore in the response — this endpoint must never reveal
+    // whether an email exists in the system either way. Still log
+    // server-side so a real DB outage here doesn't go unnoticed.
+    console.error("[API Error] GET /api/newsletter/unsubscribe", error);
   }
 
   return new NextResponse(

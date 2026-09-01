@@ -34,7 +34,11 @@ function hasLocaleRoute(pathname: string): boolean {
  *
  * Responsibilities:
  *  1. Protect /admin, /dashboard, /profile, /onboarding routes (require auth)
- *  2. Restrict /admin (except /admin/courses) to ADMIN or SCHOLAR roles
+ *  2. Restrict /admin (except course-builder paths) to ADMIN, or to
+ *     INSTRUCTOR — the Role enum's current name for what older sessions'
+ *     JWTs may still carry as the legacy "SCHOLAR" role string; both are
+ *     checked below so users who were signed in before that rename aren't
+ *     logged out mid-session.
  *  3. Send learners who have not finished onboarding to /onboarding, and send
  *     learners who already finished it away from /onboarding
  *  4. Add security headers on every response

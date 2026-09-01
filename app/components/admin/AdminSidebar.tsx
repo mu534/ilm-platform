@@ -85,7 +85,12 @@ export function AdminSidebar({
   const isInstructor = user?.role === "INSTRUCTOR";
 
   const isLinkActive = (item: NavItem) => {
-    if (item.href === "/admin") return pathname === "/admin";
+    // Root-style entries ("/admin", instructor's "/dashboard/instructor")
+    // must match exactly, otherwise they'd also light up for their own
+    // nested subpages (e.g. "My Students") that have distinct nav entries.
+    if (item.href === "/admin" || item.href === "/dashboard/instructor") {
+      return pathname === item.href;
+    }
     return pathname === item.href || pathname.startsWith(`${item.href}/`);
   };
 
@@ -93,11 +98,16 @@ export function AdminSidebar({
     if (isMobile && onCloseMobile) onCloseMobile();
   };
 
-  // Instructor sees only their relevant nav items
+  // Instructor sees only their relevant nav items. "Dashboard" and
+  // "My Students" live under /dashboard/instructor rather than /admin —
+  // that's fine, the sidebar is the same regardless of which side of the
+  // route tree the page happens to live on.
   const instructorNav: NavItem[] = [
-    { href: "/admin/courses",      label: "My Courses",    icon: <FiLayout size={18} /> },
-    { href: "/admin/courses/new",  label: "New Course",    icon: <FiPlus   size={18} /> },
-    { href: "/admin/my-analytics", label: "My Analytics",  icon: <FiBarChart2 size={18} /> },
+    { href: "/dashboard/instructor",          label: "Dashboard",     icon: <FiGrid   size={18} /> },
+    { href: "/admin/courses",                 label: "My Courses",    icon: <FiLayout size={18} /> },
+    { href: "/admin/courses/new",             label: "New Course",    icon: <FiPlus   size={18} /> },
+    { href: "/dashboard/instructor/students", label: "My Students",   icon: <FiUsers  size={18} /> },
+    { href: "/admin/my-analytics",            label: "My Analytics",  icon: <FiBarChart2 size={18} /> },
   ];
 
   return (
@@ -113,7 +123,7 @@ export function AdminSidebar({
         onMouseLeave={() => setIsHeaderHovered(false)}
       >
         <Link
-          href="/admin"
+          href={isAdmin ? "/admin" : "/dashboard/instructor"}
           onClick={handleLinkClick}
           className="flex items-center gap-3 group focus:outline-none focus:ring-2 focus:ring-[var(--accent)] rounded-xl p-1"
         >
@@ -423,17 +433,11 @@ export function AdminSidebar({
         )}
 
         {/* ── Shared: Back to Site + Sign Out (instructor only) ── */}
+        {/* "Dashboard" already lives in instructorNav above, so this block
+            only needs the two links that aren't part of the main nav. */}
         {isInstructor && !isAdmin && (
           <div>
             <nav className="space-y-1">
-              <Link
-                href="/dashboard/instructor"
-                onClick={handleLinkClick}
-                className={`flex items-center gap-3.5 px-3 py-2.5 rounded-xl text-sm font-medium text-[var(--accent)] hover:bg-[var(--accent-dim)] transition-all ${collapsed && !isMobile ? "justify-center px-0" : ""}`}
-              >
-                <span className="flex-shrink-0"><FiChevronRight size={18} /></span>
-                {(!collapsed || isMobile) && <span className="truncate flex-1">Instructor Dashboard</span>}
-              </Link>
               <Link
                 href="/en"
                 onClick={handleLinkClick}

@@ -168,6 +168,13 @@ export default async function DashboardPage() {
   const user = session?.user as SessionUser | undefined;
   if (!user) redirect("/login?callbackUrl=/dashboard");
 
+  // This page renders learner-specific content (enrollments, learning
+  // progress, bookmarks). It's also the sidebar's logo link and default
+  // landing route, so staff would otherwise land here first and see a
+  // "Student Dashboard" instead of their own. Send them to their real home.
+  if (user.role === "ADMIN") redirect("/admin");
+  if (user.role === "INSTRUCTOR") redirect("/dashboard/instructor");
+
   const data = await getDashboardData(user.id);
 
   // Identify top course to continue

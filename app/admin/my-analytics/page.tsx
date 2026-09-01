@@ -5,24 +5,42 @@ import { prisma } from "../../lib/prism";
 import Link from "next/link";
 import {
   FiUsers, FiCheckCircle, FiBarChart2, FiBookOpen, FiStar,
+  FiEye, FiMessageCircle,
 } from "react-icons/fi";
+import { formatDate } from "../../utils/api";
 import type { SessionUser } from "@/app/types/auth.types";
 
 export const metadata = { title: "My Analytics" };
 
+// This page used to only cover enrollment/completion performance, while a
+// second, disconnected "Instructor Analytics" page at
+// /dashboard/instructor/analytics covered content engagement (views,
+// comments, top lectures) — two competing instructor-analytics screens that
+// grew independently. That page now redirects here; the engagement queries
+// below (day30/topLectures/commentsByType/recentComments) are what it used
+// to compute on its own, folded into this one canonical page.
 async function getScholarAnalytics(authorId: string) {
   const courses = await prisma.course.findMany({
     where:  { authorId },
     select: { id: true, title: true, slug: true, status: true, approvalStatus: true, createdAt: true },
   });
   const courseIds = courses.map((c) => c.id);
+  const day30 = new Date(Date.now() - 30 * 86400_000);
 
   if (courseIds.length === 0) {
-    return { courses: [], courseIds, totalEnrollments: 0, activeStudents: 0, completedStudents: 0, completionRate: 0, avgQuizScore: null, avgRating: null, totalRatings: 0, courseBreakdown: [] };
+    return {
+      courses, courseIds, totalEnrollments: 0, activeStudents: 0, completedStudents: 0,
+      completionRate: 0, avgQuizScore: null, avgRating: null, totalRatings: 0, courseBreakdown: [],
+      totalViews: 0, viewsThisMonth: 0, totalComments: 0, commentsThisMonth: 0,
+      topLectures: [], lecturesByType: [], recentComments: [],
+    };
   }
 
-  const [totalEnrollments, activeEnrollments, completedEnrollments, ratingAgg, quizAgg, courseBreakdown] =
-    await Promise.all([
+  const [
+    totalEnrollments, activeEnrollments, completedEnrollments, ratingAgg, quizAgg, courseBreakdown,
+    viewsAgg, viewsThisMonthAgg, totalComments, commentsThisMonth,
+    topLectures, lecturesByType, recentComments,
+  ] = await Promise.all([
       prisma.enrollment.count({ where: { courseId: { in: courseIds } } }),
       prisma.enrollment.count({ where: { courseId: { in: courseIds }, status: "ACTIVE" } }),
       prisma.enrollment.count({ where: { courseId: { in: courseIds }, status: "COMPLETED" } }),
@@ -43,6 +61,38 @@ async function getScholarAnalytics(authorId: string) {
           ratings: { select: { rating: true } },
         },
         orderBy: { createdAt: "desc" },
+      }),
+
+      // ── Engagement (formerly the separate instructor/analytics page) ──
+      prisma.lecture.aggregate({
+        where: { authorId, published: true },
+        _sum:  { views: true },
+      }),
+      prisma.lecture.aggregate({
+        where: { authorId, published: true, createdAt: { gte: day30 } },
+        _sum:  { views: true },
+      }),
+      prisma.comment.count({ where: { lecture: { authorId } } }),
+      prisma.comment.count({ where: { lecture: { authorId }, createdAt: { gte: day30 } } }),
+      prisma.lecture.findMany({
+        where:   { authorId, published: true },
+        orderBy: { views: "desc" },
+        take:    5,
+        select:  { id: true, title: true, slug: true, type: true, views: true },
+      }),
+      prisma.lecture.groupBy({
+        by:    ["type"],
+        where: { authorId, published: true },
+        _count: true,
+      }),
+      prisma.comment.findMany({
+        where:   { lecture: { authorId }, approved: true },
+        orderBy: { createdAt: "desc" },
+        take:    5,
+        include: {
+          author:  { select: { name: true } },
+          lecture: { select: { title: true, slug: true } },
+        },
       }),
     ]);
 
@@ -66,7 +116,39 @@ async function getScholarAnalytics(authorId: string) {
     avgRating: ratingAgg._avg.rating ? Math.round(ratingAgg._avg.rating * 10) / 10 : null,
     totalRatings: ratingAgg._count.rating,
     courseBreakdown: breakdown,
+    totalViews: viewsAgg._sum.views ?? 0,
+    viewsThisMonth: viewsThisMonthAgg._sum.views ?? 0,
+    totalComments,
+    commentsThisMonth,
+    topLectures,
+    lecturesByType,
+    recentComments,
   };
+}
+
+function HBarChart({ data, maxVal }: { data: { label: string; value: number; href?: string }[]; maxVal: number }) {
+  return (
+    <div className="space-y-3">
+      {data.map((item) => (
+        <div key={item.label} className="flex items-center gap-3">
+          <div className="w-36 text-xs text-[var(--text-secondary)] truncate flex-shrink-0">
+            {item.href
+              ? <Link href={item.href} className="hover:text-[var(--accent)] transition-colors">{item.label}</Link>
+              : item.label}
+          </div>
+          <div className="flex-1 h-5 bg-[var(--bg-secondary)] rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-gold-600 to-gold-400 rounded-full transition-all duration-700"
+              style={{ width: maxVal > 0 ? `${Math.min(100, (item.value / maxVal) * 100)}%` : "0%" }}
+            />
+          </div>
+          <div className="w-10 text-xs text-[var(--text-muted)] text-right tabular-nums flex-shrink-0">
+            {item.value.toLocaleString()}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 export default async function MyAnalyticsPage() {
@@ -75,6 +157,7 @@ export default async function MyAnalyticsPage() {
   if (!user || !["ADMIN", "INSTRUCTOR"].includes(user.role)) redirect("/dashboard");
 
   const data = await getScholarAnalytics(user.id);
+  const maxViews = data.topLectures[0]?.views ?? 1;
 
   const stats = [
     { icon: <FiBookOpen size={16} />, label: "Total Courses",      value: data.courses.length,         color: "text-[var(--accent)]"  },
@@ -83,6 +166,8 @@ export default async function MyAnalyticsPage() {
     { icon: <FiCheckCircle size={16}/>, label: "Completed",         value: data.completedStudents,       color: "text-purple-400"       },
     { icon: <FiBarChart2 size={16} />,  label: "Completion Rate",   value: `${data.completionRate}%`,    color: "text-amber-400", isString: true  },
     { icon: <FiStar size={16} />,       label: "Avg Rating",        value: data.avgRating ?? "—",       color: "text-gold-400",  isString: true  },
+    { icon: <FiEye size={16} />,        label: "Total Views",       value: data.totalViews,              color: "text-cyan-400"         },
+    { icon: <FiMessageCircle size={16}/>, label: "Comments",        value: data.totalComments,           color: "text-orange-400"       },
   ];
 
   return (
@@ -137,6 +222,68 @@ export default async function MyAnalyticsPage() {
           </div>
         </div>
       )}
+
+      {/* Engagement: top lectures, content mix, recent comments */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+        <div className="glass-card rounded-2xl p-5">
+          <h2 className="font-semibold text-[var(--text-primary)] text-sm mb-5">Top Lectures by Views</h2>
+          {data.topLectures.length === 0 ? (
+            <p className="text-[var(--text-muted)] text-sm">No published lectures yet.</p>
+          ) : (
+            <HBarChart
+              data={data.topLectures.map((l) => ({ label: l.title, value: l.views, href: `/lectures/${l.slug}` }))}
+              maxVal={maxViews}
+            />
+          )}
+        </div>
+
+        <div className="glass-card rounded-2xl p-5">
+          <h2 className="font-semibold text-[var(--text-primary)] text-sm mb-5">Content by Type</h2>
+          {data.lecturesByType.length === 0 ? (
+            <p className="text-[var(--text-muted)] text-sm">No content yet.</p>
+          ) : (
+            <div className="space-y-3">
+              {data.lecturesByType.map((item) => (
+                <div key={item.type} className="flex items-center justify-between">
+                  <span className="text-sm text-[var(--text-secondary)] capitalize">{item.type.toLowerCase()}</span>
+                  <span className="text-sm font-medium text-[var(--text-primary)] tabular-nums">{item._count}</span>
+                </div>
+              ))}
+              <div className="mt-4 pt-4 border-t border-[var(--border)] flex justify-between text-sm">
+                <span className="text-[var(--text-muted)]">Views (30d)</span>
+                <span className="font-medium text-[var(--text-primary)] tabular-nums">+{data.viewsThisMonth}</span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="glass-card rounded-2xl p-5 lg:col-span-2">
+          <h2 className="font-semibold text-[var(--text-primary)] text-sm mb-4">Recent Comments</h2>
+          {data.recentComments.length === 0 ? (
+            <p className="text-[var(--text-muted)] text-sm">No comments yet.</p>
+          ) : (
+            <div className="divide-y divide-[var(--border)]">
+              {data.recentComments.map((comment) => (
+                <div key={comment.id} className="py-3 flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-full bg-[var(--accent-dim)] flex-shrink-0 flex items-center justify-center text-[var(--accent)] text-xs font-bold">
+                    {comment.author.name[0]?.toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <span className="text-xs font-medium text-[var(--text-primary)]">{comment.author.name}</span>
+                      <span className="text-xs text-[var(--text-muted)]">{formatDate(comment.createdAt)}</span>
+                    </div>
+                    <p className="text-sm text-[var(--text-secondary)] line-clamp-2">{comment.body}</p>
+                    <Link href={`/lectures/${comment.lecture.slug}`} className="text-xs text-[var(--accent)] hover:text-[var(--accent-light)] transition-colors mt-0.5 block truncate">
+                      {comment.lecture.title}
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

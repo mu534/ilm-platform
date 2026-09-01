@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
 
 export default function LegacyScholarAnalyticsRedirect() {
-  redirect("/dashboard/instructor/analytics");
+  redirect("/admin/my-analytics");
 }

@@ -9,10 +9,8 @@ import {
   FiMenu,
   FiUser,
   FiSettings,
-  FiGrid,
   FiLogOut,
   FiChevronDown,
-  FiActivity,
   FiSidebar,
   FiSearch,
   FiExternalLink,
@@ -53,11 +51,16 @@ export function AdminTopbar({
   const { data: session } = useSession();
   const { toggleTheme, isLight } = useTheme();
   const user = session?.user as SessionUser | undefined;
+  const isAdmin = user?.role === "ADMIN";
 
   const pageInfo = pageTitles[pathname] ?? {
     title: pathname.split("/").filter(Boolean).pop()?.replace(/-/g, " ") ?? "Admin Portal",
     subtitle: "Ilm Platform Administration",
   };
+  // This topbar is shared by /admin/* (admin) and /dashboard/instructor/*
+  // (instructor) — the breadcrumb root used to always say "Admin", even
+  // for an instructor who was never in the admin section at all.
+  const sectionLabel = isAdmin ? "Admin" : "Instructor";
 
   return (
     <header className="h-16 sticky top-0 z-30 border-b border-[var(--border)] bg-[var(--bg-card)]/80 backdrop-blur-md px-4 sm:px-6 flex items-center justify-between transition-colors">
@@ -88,7 +91,7 @@ export function AdminTopbar({
         {/* Page Title & Breadcrumbs */}
         <div className="flex flex-col">
           <div className="flex items-center gap-1.5 text-xs text-[var(--text-muted)] font-medium">
-            <span>Admin</span>
+            <span>{sectionLabel}</span>
             <span>/</span>
             <span className="capitalize text-[var(--accent)]">{pageInfo.title}</span>
           </div>
@@ -164,23 +167,13 @@ export function AdminTopbar({
                   <p className="text-xs text-[var(--text-muted)] truncate">{user?.email}</p>
                 </div>
 
-                <DropdownMenu.Item asChild>
-                  <Link
-                    href="/admin"
-                    className="flex items-center gap-2.5 px-3 py-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-dim)] rounded-xl cursor-pointer transition-colors"
-                  >
-                    <FiGrid size={14} className="text-[var(--accent)]" /> Admin Dashboard
-                  </Link>
-                </DropdownMenu.Item>
-
-                <DropdownMenu.Item asChild>
-                  <Link
-                    href="/dashboard"
-                    className="flex items-center gap-2.5 px-3 py-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-dim)] rounded-xl cursor-pointer transition-colors"
-                  >
-                    <FiActivity size={14} className="text-[var(--accent)]" /> Student Dashboard
-                  </Link>
-                </DropdownMenu.Item>
+                {/* Both dashboard shortcuts used to be shown unconditionally —
+                    "Admin Dashboard" even to instructors, and "Student
+                    Dashboard" which is now unreachable for any staff user
+                    since /dashboard redirects them straight back out. The
+                    sidebar already has each role's own home (Overview /
+                    Dashboard), so this menu only needs the account-level
+                    actions. */}
 
                 <DropdownMenu.Item asChild>
                   <Link

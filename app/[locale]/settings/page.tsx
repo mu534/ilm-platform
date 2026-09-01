@@ -2,10 +2,12 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import {
   FiBell, FiGlobe, FiLock, FiTrash2, FiSave,
-  FiLoader, FiCheck, FiAlertTriangle, FiX,
+  FiLoader, FiCheck, FiAlertTriangle, FiX, FiArrowRight,
+  FiMapPin, FiEdit3, FiUser, FiImage, FiPhone, FiCheckCircle,
 } from "react-icons/fi";
 
 interface Preferences {
@@ -26,6 +28,110 @@ const LANGUAGES = [
 
 const inputClass =
   "w-full px-3 py-2 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] transition-colors";
+
+// Best-effort icon per missing-field label — falls back to a generic dot
+// if the field name doesn't match a known one, so this never breaks if the
+// backend adds a new field to the completion check.
+const FIELD_ICONS: Record<string, React.ReactNode> = {
+  Country: <FiMapPin size={11} />,
+  City:    <FiMapPin size={11} />,
+  Bio:     <FiEdit3 size={11} />,
+  Photo:   <FiImage size={11} />,
+  Phone:   <FiPhone size={11} />,
+};
+
+function ProfileCompletionRing({ percentage, isComplete }: { percentage: number; isComplete: boolean }) {
+  const size = 56, stroke = 5, r = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * r;
+  const offset = circumference * (1 - percentage / 100);
+
+  return (
+    <div className="relative flex-shrink-0" style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="-rotate-90">
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--bg-secondary)" strokeWidth={stroke} />
+        <circle
+          cx={size / 2} cy={size / 2} r={r} fill="none"
+          stroke="url(#profile-ring-gradient)"
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          className="transition-[stroke-dashoffset] duration-700 ease-out"
+        />
+        <defs>
+          <linearGradient id="profile-ring-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%"   stopColor="var(--accent-light)" />
+            <stop offset="100%" stopColor="var(--accent)" />
+          </linearGradient>
+        </defs>
+      </svg>
+      <div className="absolute inset-0 flex items-center justify-center">
+        {isComplete
+          ? <FiCheckCircle size={20} className="text-[var(--accent)]" />
+          : <span className="text-sm font-bold text-[var(--text-primary)]">{percentage}%</span>}
+      </div>
+    </div>
+  );
+}
+
+function ProfileCompletionCard({
+  completion,
+}: {
+  completion: { percentage: number; missing: string[] };
+}) {
+  const isComplete = completion.missing.length === 0;
+
+  return (
+    <Link
+      href="/profile"
+      className="group relative block overflow-hidden glass-card rounded-2xl p-5 sm:p-6 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-[var(--accent)] transition-all duration-300"
+    >
+      {/* Warm gradient wash — purely decorative, echoes the homepage hero */}
+      <div
+        className="absolute inset-0 pointer-events-none opacity-60"
+        style={{ background: "radial-gradient(ellipse 60% 100% at 100% 0%, var(--accent-dim), transparent 70%)" }}
+        aria-hidden="true"
+      />
+
+      <div className="relative flex items-center gap-4">
+        <ProfileCompletionRing percentage={completion.percentage} isComplete={isComplete} />
+
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <h2 className="text-sm font-semibold text-[var(--text-primary)]">Profile completion</h2>
+          </div>
+          <p className="text-xs text-[var(--text-muted)] mt-0.5 leading-relaxed">
+            {isComplete
+              ? "Your profile is fully set up — nice work."
+              : "Complete your details to improve recommendations."}
+          </p>
+        </div>
+
+        <span className="hidden sm:flex items-center gap-1 text-xs font-semibold text-[var(--accent)] flex-shrink-0 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
+          {isComplete ? "View profile" : "Complete it"} <FiArrowRight size={12} />
+        </span>
+      </div>
+
+      {!isComplete && (
+        <div className="relative flex flex-wrap gap-1.5 mt-4">
+          {completion.missing.map((field) => (
+            <span
+              key={field}
+              className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-[var(--accent-dim)] text-[var(--accent-light)] border border-[var(--border-subtle)]"
+            >
+              {FIELD_ICONS[field] ?? <FiUser size={11} />} {field}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Mobile-only CTA — the hover reveal above is desktop-only */}
+      <span className="sm:hidden relative flex items-center gap-1 text-xs font-semibold text-[var(--accent)] mt-4">
+        {isComplete ? "View profile" : "Complete your profile"} <FiArrowRight size={12} />
+      </span>
+    </Link>
+  );
+}
 
 function SettingsSection({ icon, title, description, children }: {
   icon: React.ReactNode; title: string; description?: string; children: React.ReactNode;
@@ -48,8 +154,7 @@ function SettingsSection({ icon, title, description, children }: {
 
 function Toggle({ checked, onChange, label, description }: {
   checked: boolean; onChange: (v: boolean) => void; label: string; description: string;
-}) {
-  return (
+}) {  return (
     <label className="flex items-start justify-between gap-4 py-3 first:pt-0 last:pb-0 cursor-pointer">
       <div className="min-w-0">
         <p className="text-sm text-[var(--text-primary)] font-medium">{label}</p>
@@ -192,8 +297,10 @@ export default function SettingsPage() {
         <h1 className="font-display text-2xl font-bold text-[var(--text-primary)]">Settings</h1>
       </div>
 
-      {/* Notifications */}
-      {prefs.profileCompletion && <SettingsSection icon={<FiCheck size={16} />} title="Profile completion" description="Complete your details to improve recommendations"><div className="flex justify-between text-sm"><span>{prefs.profileCompletion.percentage}% complete</span><span className="text-[var(--accent)]">{prefs.profileCompletion.missing.length ? `Missing: ${prefs.profileCompletion.missing.slice(0, 3).join(", ")}` : "Complete"}</span></div><div className="h-2 mt-3 rounded-full bg-[var(--bg-secondary)] overflow-hidden"><div className="h-full bg-[var(--accent)]" style={{ width: `${prefs.profileCompletion.percentage}%` }} /></div></SettingsSection>}
+      {/* Profile completion */}
+      {prefs.profileCompletion && (
+        <ProfileCompletionCard completion={prefs.profileCompletion} />
+      )}
 
       {/* Notifications */}
       <SettingsSection icon={<FiBell size={16} />} title="Notifications" description="Control which in-app notifications you receive">

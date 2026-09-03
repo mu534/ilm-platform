@@ -15,10 +15,7 @@ export function RoleAwareDashboardShell({
   const user = session?.user as SessionUser | undefined;
   const isStaff = user?.role === "ADMIN" || user?.role === "INSTRUCTOR";
 
-  // While the session is still resolving, fall back to the student shell so
-  // there's no layout flash for the common case. Every page beneath this
-  // shell still enforces its own server-side role check, so this is purely
-  // a chrome choice, never an authorization decision.
+
   if (status === "authenticated" && isStaff) {
     return <AdminLayout>{children}</AdminLayout>;
   }

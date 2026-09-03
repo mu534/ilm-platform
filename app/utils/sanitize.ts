@@ -1,18 +1,35 @@
-/**
- * Server-side HTML sanitizer — strips dangerous tags and attributes
- * while preserving safe formatting used in lecture content.
- *
- * Allowed tags: p, h2, h3, h4, strong, em, b, i, u, ul, ol, li,
- *               blockquote, br, hr, a (href only), span
- * Stripped:     script, style, iframe, object, embed, form, input,
- *               on* event handlers, javascript: hrefs, data: URIs
- */
+
 
 const ALLOWED_TAGS = new Set([
   "p", "h2", "h3", "h4", "strong", "em", "b", "i", "u",
   "ul", "ol", "li", "blockquote", "br", "hr", "a", "span",
-  "div", "section", "article",
+  "div", "section", "article", "code", "pre",
 ]);
+
+
+const ALLOWED_TEXT_ALIGN = new Set(["left", "center", "right", "justify"]);
+const HEX_COLOR = /^#[0-9a-fA-F]{3,8}$/;
+
+function extractSafeStyle(match: string): string {
+  const styleMatch = match.match(/style\s*=\s*"([^"]*)"/i) ?? match.match(/style\s*=\s*'([^']*)'/i);
+  if (!styleMatch) return "";
+
+  const kept: string[] = [];
+  for (const decl of styleMatch[1].split(";")) {
+    const [propRaw, valRaw] = decl.split(":");
+    if (!propRaw || !valRaw) continue;
+    const prop = propRaw.trim().toLowerCase();
+    const val  = valRaw.trim();
+
+    if (prop === "text-align" && ALLOWED_TEXT_ALIGN.has(val.toLowerCase())) {
+      kept.push(`text-align: ${val.toLowerCase()}`);
+    } else if (prop === "color" && HEX_COLOR.test(val)) {
+      kept.push(`color: ${val}`);
+    }
+  }
+
+  return kept.length ? ` style="${kept.join("; ")}"` : "";
+}
 
 const DANGEROUS_PATTERNS = [
   /<script[\s\S]*?<\/script>/gi,
@@ -58,8 +75,9 @@ export function sanitizeHtml(html: string): string {
       }
       // Allow closing tags for all allowed tags
       if (match.startsWith("</")) return match;
-      // For opening tags, strip all attributes except for <a> (handled above)
-      return `<${lower}>`;
+      // For opening tags, strip all attributes except href on <a> (above)
+      // and a strictly-validated style allow-list (text-align / color).
+      return `<${lower}${extractSafeStyle(match)}>`;
     }
     // Unknown tag — strip the tag but keep inner content
     return "";

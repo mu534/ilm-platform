@@ -1,551 +1,431 @@
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
-import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { prisma } from "@/app/lib/prism";
-import { publicCourseWhere } from "@/app/lib/courseAccess";
-import { ScholarCard } from "@/app/components/scholars/ScholarCard";
-import { FeaturedCourseCarousel } from "@/app/components/courses/FeaturedCourseCarousel";
-import { ContinueLearningStrip } from "@/app/components/courses/ContinueLearningStrip";
-import { CategoryExplorer } from "@/app/components/CategoryExplorer";
-import SocialProofSection from "@/app/components/SocialProofSection";
-import WhyIlmPlatform from "@/app/components/WhyIlmPlatform";
-import { EnhancedSearch } from "@/app/components/EnhancedSearch";
-import type { Scholar, SessionUser } from "@/app/types/auth.types";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/lib/auth";
+import { useSession, signOut } from "next-auth/react";
 import {
-  FiArrowRight, FiBookOpen, FiUsers, FiUser,
-  FiMail,
+  FiBell, FiGlobe, FiLock, FiTrash2, FiSave,
+  FiLoader, FiCheck, FiAlertTriangle, FiX, FiArrowRight,
+  FiMapPin, FiEdit3, FiUser, FiImage, FiPhone, FiCheckCircle,
 } from "react-icons/fi";
-import { GiMoon, GiStarFormation } from "react-icons/gi";
 
-// Cache the home page for 5 minutes — prevents DB queries on every visit
-export const revalidate = 300;
-
-// ─── Data fetching ────────────────────────────────────────────────────────────
-
-async function getHomeData() {
-  // Batch 1 = critical above-the-fold data.
-  const [featuredCourses, featuredScholars, categoriesRaw] = await Promise.all([
-    prisma.course.findMany({
-      where:   { ...publicCourseWhere, featured: true },
-      take:    6,
-      orderBy: { createdAt: "desc" },
-      include: {
-        category: { select: { id: true, name: true, slug: true, icon: true, color: true } },
-        author:   { select: { id: true, name: true, image: true } },
-        scholar:  {
-          select: {
-            id: true,
-            photo: true,
-            verified: true,
-            professionalDesignation: true,
-            user: { select: { name: true } },
-          },
-        },
-        _count:   { select: { modules: true, enrollments: true, ratings: true } },
-      },
-    }),
-    prisma.scholar.findMany({
-      where:   { featured: true },
-      take:    4,
-      include: {
-        user:   { select: { name: true, email: true, image: true } },
-        _count: { select: { lectures: true } },
-      },
-    }),
-    prisma.category.findMany({
-      orderBy: { order: "asc" },
-      include: { _count: { select: { courses: true } } },
-    }),
-  ]);
-
-  // Batch 2 = stats + reviews (below the fold)
-  const [counts, courseReviews] = await Promise.all([
-    Promise.all([
-      prisma.course.count({ where: { ...publicCourseWhere } }),
-      prisma.scholar.count(),
-      prisma.user.count(),
-    ]),
-    // Real course reviews for social proof
-    prisma.courseRating.findMany({
-      where:   { review: { not: null } },
-      take:    3,
-      orderBy: { createdAt: "desc" },
-      include: {
-        user:   { select: { name: true, image: true } },
-        course: { select: { title: true } },
-      },
-    }),
-  ]);
-
-  // Batch-fetch average ratings — single query, no N+1
-  const courseIds = featuredCourses.map((c) => c.id);
-  const ratings   = await prisma.courseRating.groupBy({
-    by:     ["courseId"],
-    where:  { courseId: { in: courseIds } },
-    _avg:   { rating: true },
-  });
-  const ratingMap = new Map(ratings.map((r) => [r.courseId, r._avg.rating ?? 0]));
-
-  const categories = categoriesRaw
-    .map((c) => ({ ...c, courseCount: c._count.courses }))
-    .filter((c) => c.courseCount > 0);
-
-  // Map reviews to component interface
-  const reviews = courseReviews
-    .filter((r) => r.review && r.review.length > 10)
-    .map((r) => ({
-      id:          r.id,
-      rating:      r.rating,
-      review:      r.review!,
-      userName:    r.user.name,
-      userImage:   r.user.image,
-      courseTitle:  r.course.title,
-    }));
-
-  return {
-    featuredCourses, ratingMap, featuredScholars,
-    categories, counts, reviews,
-  };
+interface Preferences {
+  notifyNewContent:  boolean;
+  notifyComments:    boolean;
+  preferredLanguage: string;
+  profileCompletion?: { percentage: number; missing: string[] };
 }
 
-async function getContinueLearning(userId: string) {
-  const enrollments = await prisma.enrollment.findMany({
-    where: {
-      userId,
-      status: "ACTIVE",
-      progress: { gt: 0, lt: 100 },
-    },
-    orderBy: { updatedAt: "desc" },
-    take: 3,
-    include: {
-      course: {
-        select: {
-          id: true, slug: true, title: true, thumbnailUrl: true,
-          modules: {
-            orderBy: { order: "asc" },
-            select: {
-              lectures: {
-                where: { published: true },
-                orderBy: { order: "asc" },
-                select: { id: true, slug: true },
-              },
-            },
-          },
-        },
-      },
-    },
-  });
+const LANGUAGES = [
+  { code: "en", label: "English" },
+  { code: "ar", label: "العربية (Arabic)" },
+  { code: "ur", label: "اردو (Urdu)" },
+  { code: "id", label: "Bahasa Indonesia" },
+  { code: "tr", label: "Türkçe (Turkish)" },
+  { code: "fr", label: "Français" },
+];
 
-  // Get completed lecture IDs for this user across these courses
-  const allLectureIds = enrollments.flatMap((e) =>
-    e.course.modules.flatMap((m) => m.lectures.map((l) => l.id))
-  );
-  const completedSet = new Set(
-    allLectureIds.length > 0
-      ? (await prisma.lectureProgress.findMany({
-          where: { userId, lectureId: { in: allLectureIds }, completed: true },
-          select: { lectureId: true },
-        })).map((p) => p.lectureId)
-      : []
-  );
+const inputClass =
+  "w-full px-3 py-2 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] transition-colors";
 
-  return enrollments.map((e) => {
-    const lectures = e.course.modules.flatMap((m) => m.lectures);
-    const nextLecture = lectures.find((l) => !completedSet.has(l.id)) ?? lectures[0];
-    return {
-      courseId:        e.course.id,
-      slug:            e.course.slug,
-      title:           e.course.title,
-      thumbnailUrl:    e.course.thumbnailUrl,
-      progress:        e.progress,
-      nextLectureSlug: nextLecture?.slug ?? null,
-    };
-  });
-}
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-type PrismaScholar = {
-  id: string; userId: string; bio: string; photo: string | null;
-  topics: string[]; qualifications: string[]; featured: boolean;
-  user: { name: string; email: string; image: string | null };
-  _count: { lectures: number };
+// Best-effort icon per missing-field label — falls back to a generic dot
+// if the field name doesn't match a known one, so this never breaks if the
+// backend adds a new field to the completion check.
+const FIELD_ICONS: Record<string, React.ReactNode> = {
+  Country: <FiMapPin size={11} />,
+  City:    <FiMapPin size={11} />,
+  Bio:     <FiEdit3 size={11} />,
+  Photo:   <FiImage size={11} />,
+  Phone:   <FiPhone size={11} />,
 };
 
-// ─── Mappers ──────────────────────────────────────────────────────────────────
+function ProfileCompletionRing({ percentage, isComplete }: { percentage: number; isComplete: boolean }) {
+  const size = 56, stroke = 5, r = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * r;
+  const offset = circumference * (1 - percentage / 100);
 
-function mapScholar(s: PrismaScholar): Scholar {
-  return { ...s };
-}
-
-// ─── Sub-components ───────────────────────────────────────────────────────────
-
-function SectionHeader({
-  eyebrow, title, subtitle, href, linkLabel,
-}: {
-  eyebrow: string;
-  title: string;
-  subtitle?: string;
-  href?: string;
-  linkLabel?: string;
-}) {
   return (
-    <div className="flex items-start justify-between mb-10 gap-4">
-      <div>
-        <p className="text-xs text-[var(--accent)] uppercase tracking-widest font-semibold mb-2">
-          {eyebrow}
-        </p>
-        <h2 className="font-display text-2xl sm:text-3xl font-semibold text-[var(--text-primary)] leading-tight">
-          {title}
-        </h2>
-        {subtitle && (
-          <p className="section-subtitle mt-2">{subtitle}</p>
-        )}
+    <div className="relative flex-shrink-0" style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="-rotate-90">
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--bg-secondary)" strokeWidth={stroke} />
+        <circle
+          cx={size / 2} cy={size / 2} r={r} fill="none"
+          stroke="url(#profile-ring-gradient)"
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          className="transition-[stroke-dashoffset] duration-700 ease-out"
+        />
+        <defs>
+          <linearGradient id="profile-ring-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%"   stopColor="var(--accent-light)" />
+            <stop offset="100%" stopColor="var(--accent)" />
+          </linearGradient>
+        </defs>
+      </svg>
+      <div className="absolute inset-0 flex items-center justify-center">
+        {isComplete
+          ? <FiCheckCircle size={20} className="text-[var(--accent)]" />
+          : <span className="text-sm font-bold text-[var(--text-primary)]">{percentage}%</span>}
       </div>
-      {href && linkLabel && (
-        <Link
-          href={href}
-          className="flex-shrink-0 flex items-center gap-1.5 text-sm text-[var(--accent)] hover:text-[var(--accent-light)] transition-colors group mt-1"
-        >
-          {linkLabel}
-          <FiArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
-        </Link>
-      )}
     </div>
   );
 }
 
-/** Refined editorial statistics strip — replaces the three heavy StatCard boxes */
-function StatStrip({
-  courseCount,
-  scholarCount,
-  userCount,
+function ProfileCompletionCard({
+  completion,
 }: {
-  courseCount: number;
-  scholarCount: number;
-  userCount: number;
+  completion: { percentage: number; missing: string[] };
 }) {
-  const stats = [
-    { icon: <FiBookOpen size={13} />, count: courseCount, label: "Courses" },
-    { icon: <FiUsers    size={13} />, count: scholarCount, label: "Scholars" },
-    { icon: <FiUser     size={13} />, count: userCount,    label: "Students" },
-  ];
+  const isComplete = completion.missing.length === 0;
 
-  function fmt(n: number) {
-    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-    if (n >= 1_000)     return `${(n / 1_000).toFixed(n >= 10_000 ? 0 : 1)}k`;
-    return n.toLocaleString();
+  return (
+    <Link
+      href="/profile"
+      className="group relative block overflow-hidden glass-card rounded-2xl p-5 sm:p-6 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-[var(--accent)] transition-all duration-300"
+    >
+      {/* Warm gradient wash — purely decorative, echoes the homepage hero */}
+      <div
+        className="absolute inset-0 pointer-events-none opacity-60"
+        style={{ background: "radial-gradient(ellipse 60% 100% at 100% 0%, var(--accent-dim), transparent 70%)" }}
+        aria-hidden="true"
+      />
+
+      <div className="relative flex items-center gap-4">
+        <ProfileCompletionRing percentage={completion.percentage} isComplete={isComplete} />
+
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <h2 className="text-sm font-semibold text-[var(--text-primary)]">Profile completion</h2>
+          </div>
+          <p className="text-xs text-[var(--text-muted)] mt-0.5 leading-relaxed">
+            {isComplete
+              ? "Your profile is fully set up — nice work."
+              : "Complete your details to improve recommendations."}
+          </p>
+        </div>
+
+        <span className="hidden sm:flex items-center gap-1 text-xs font-semibold text-[var(--accent)] flex-shrink-0 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
+          {isComplete ? "View profile" : "Complete it"} <FiArrowRight size={12} />
+        </span>
+      </div>
+
+      {!isComplete && (
+        <div className="relative flex flex-wrap gap-1.5 mt-4">
+          {completion.missing.map((field) => (
+            <span
+              key={field}
+              className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-[var(--accent-dim)] text-[var(--accent-light)] border border-[var(--border-subtle)]"
+            >
+              {FIELD_ICONS[field] ?? <FiUser size={11} />} {field}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Mobile-only CTA — the hover reveal above is desktop-only */}
+      <span className="sm:hidden relative flex items-center gap-1 text-xs font-semibold text-[var(--accent)] mt-4">
+        {isComplete ? "View profile" : "Complete your profile"} <FiArrowRight size={12} />
+      </span>
+    </Link>
+  );
+}
+
+function SettingsSection({ icon, title, description, children }: {
+  icon: React.ReactNode; title: string; description?: string; children: React.ReactNode;
+}) {
+  return (
+    <section className="border border-[var(--border)] rounded-2xl p-5 sm:p-6 bg-[var(--bg-card)]">
+      <div className="flex items-start gap-3 mb-5">
+        <div className="w-9 h-9 rounded-xl bg-[var(--accent-dim)] border border-[var(--border-subtle)] flex items-center justify-center text-[var(--accent)] flex-shrink-0">
+          {icon}
+        </div>
+        <div>
+          <h2 className="text-sm font-semibold text-[var(--text-primary)]">{title}</h2>
+          {description && <p className="text-xs text-[var(--text-muted)] mt-0.5">{description}</p>}
+        </div>
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function Toggle({ checked, onChange, label, description }: {
+  checked: boolean; onChange: (v: boolean) => void; label: string; description: string;
+}) {  return (
+    <label className="flex items-start justify-between gap-4 py-3 first:pt-0 last:pb-0 cursor-pointer">
+      <div className="min-w-0">
+        <p className="text-sm text-[var(--text-primary)] font-medium">{label}</p>
+        <p className="text-xs text-[var(--text-muted)] mt-0.5">{description}</p>
+      </div>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        onClick={() => onChange(!checked)}
+        className={`relative flex-shrink-0 w-10 h-6 rounded-full transition-colors ${
+          checked ? "bg-[var(--accent)]" : "bg-[var(--border-strong)]"
+        }`}
+      >
+        <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${
+          checked ? "translate-x-4" : "translate-x-0"
+        }`} />
+      </button>
+    </label>
+  );
+}
+
+export default function SettingsPage() {
+  const { status } = useSession();
+  const router = useRouter();
+
+  const [prefs,    setPrefs]    = useState<Preferences | null>(null);
+  const [loading,  setLoading]  = useState(true);
+  const [saving,   setSaving]   = useState(false);
+  const [saved,    setSaved]    = useState(false);
+
+  // Password change
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword,     setNewPassword]     = useState("");
+  const [pwSaving,  setPwSaving]  = useState(false);
+  const [pwMessage, setPwMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  // Delete account
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deletePassword,    setDeletePassword]    = useState("");
+  const [deleting,          setDeleting]           = useState(false);
+  const [deleteError,       setDeleteError]        = useState("");
+
+  const load = useCallback(async () => {
+    try {
+      const res  = await fetch("/api/account/preferences");
+      const data = await res.json();
+      if (data.success) setPrefs(data.data);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (status === "unauthenticated") router.push("/login?callbackUrl=/settings");
+    if (status === "authenticated") void load();
+  }, [status, load, router]);
+
+  const savePrefs = async (updates: Partial<Preferences>) => {
+    if (!prefs) return;
+    const next = { ...prefs, ...updates };
+    setPrefs(next);
+    setSaving(true); setSaved(false);
+    try {
+      const res  = await fetch("/api/account/preferences", {
+        method:  "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify(updates),
+      });
+      const data = await res.json();
+      if (data.success) { setSaved(true); setTimeout(() => setSaved(false), 2000); }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const changePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPwMessage(null);
+    if (newPassword.length < 8) {
+      setPwMessage({ type: "error", text: "New password must be at least 8 characters" });
+      return;
+    }
+    setPwSaving(true);
+    try {
+      const res  = await fetch("/api/auth/change-password", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ currentPassword, newPassword }),
+      });
+      const data = await res.json();
+      if (!data.success) {
+        setPwMessage({ type: "error", text: data.error ?? "Failed to change password" });
+        return;
+      }
+      setPwMessage({ type: "success", text: "Password updated successfully" });
+      setCurrentPassword(""); setNewPassword("");
+    } catch {
+      setPwMessage({ type: "error", text: "Something went wrong" });
+    } finally {
+      setPwSaving(false);
+    }
+  };
+
+  const deleteAccount = async () => {
+    setDeleteError(""); setDeleting(true);
+    try {
+      const res  = await fetch("/api/account", {
+        method:  "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ password: deletePassword || undefined, confirm: true }),
+      });
+      const data = await res.json();
+      if (!data.success) {
+        setDeleteError(data.error ?? "Failed to delete account");
+        return;
+      }
+      await signOut({ callbackUrl: "/" });
+    } catch {
+      setDeleteError("Something went wrong");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  if (status === "loading" || loading || !prefs) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-10 space-y-4">
+        {[1, 2, 3].map((i) => <div key={i} className="h-32 rounded-2xl shimmer" />)}
+      </div>
+    );
   }
 
   return (
-    <div
-      className="w-full max-w-2xl mx-auto rounded-2xl border border-[var(--border)] bg-[var(--bg-card)]/70 backdrop-blur-sm overflow-hidden"
-      role="list"
-      aria-label="Platform statistics"
-    >
-      <div className="stat-strip divide-x divide-[var(--border)]">
-        {stats.map((s, i) => (
-          <div
-            key={i}
-            className="stat-strip__item flex-1"
-            role="listitem"
-          >
-            <div className="flex items-center gap-1.5 mb-1 text-[var(--text-muted)]">
-              {s.icon}
-            </div>
-            <div className="stat-strip__number">
-              {fmt(s.count)}
-            </div>
-            <div className="stat-strip__label">{s.label}</div>
-          </div>
-        ))}
+    <div className="max-w-2xl mx-auto px-4 sm:px-6 py-10 space-y-6">
+      <div>
+        <p className="text-xs text-[var(--accent)] uppercase tracking-widest font-semibold mb-1.5">
+          Account
+        </p>
+        <h1 className="font-display text-2xl font-bold text-[var(--text-primary)]">Settings</h1>
       </div>
-    </div>
-  );
-}
 
-// ─── Newsletter CTA (client island) ──────────────────────────────────────────
-
-import { NewsletterForm } from "@/app/components/NewsletterForm";
-
-// ─── Page ─────────────────────────────────────────────────────────────────────
-
-export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
-  const { locale } = await params;
-  setRequestLocale(locale);
-  const t = await getTranslations();
-  const session = await getServerSession(authOptions);
-  const user    = session?.user as SessionUser | null;
-
-  const [
-    {
-      featuredCourses, ratingMap, featuredScholars,
-      categories, counts, reviews,
-    },
-    continueLearning,
-  ] = await Promise.all([
-    getHomeData(),
-    user ? getContinueLearning(user.id) : Promise.resolve([]),
-  ]);
-
-  const [courseCount, scholarCount, userCount] = counts;
-
-  const mappedScholars = featuredScholars.map(mapScholar);
-
-  // Enrich courses with batch-fetched average rating + all metadata for the carousel
-  const enrichedCourses = featuredCourses.map((c) => ({
-    id:                c.id,
-    slug:              c.slug,
-    title:             c.title,
-    description:       c.description,
-    shortDescription:  c.shortDescription ?? null,
-    subtitle:          c.subtitle ?? null,
-    thumbnailUrl:      c.thumbnailUrl,
-    difficulty:        c.difficulty,
-    estimatedDuration: c.estimatedDuration,
-    enrollmentType:    c.enrollmentType,
-    price:             c.price ?? null,
-    currency:          c.currency ?? null,
-    featured:          c.featured,
-    avgRating:         ratingMap.get(c.id) ?? 0,
-    enrollCount:       c._count.enrollments,
-    moduleCount:       c._count.modules,
-    categoryName:      c.category?.name ?? null,
-    categoryIcon:      c.category?.icon ?? null,
-    authorName:        c.scholar?.user.name ?? c.author.name,
-    authorDesignation: c.scholar?.professionalDesignation ?? null,
-  }));
-
-  return (
-    <div className="min-h-screen w-full">
-
-      {/* ── Hero ── */}
-      <section
-        className="relative overflow-hidden pt-16 pb-14 sm:pt-24 sm:pb-20 w-full"
-        aria-labelledby="hero-heading"
-      >
-        {/* Subtle geometric background pattern */}
-        <div className="absolute inset-0 pattern-overlay opacity-30" aria-hidden="true" />
-
-        {/* Warm radial bloom */}
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background:
-              "radial-gradient(ellipse 80% 55% at 50% -5%, var(--accent-dim), transparent 70%)",
-          }}
-          aria-hidden="true"
-        />
-
-        <div className="relative w-full max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center text-center">
-
-          {/* Eyebrow pill */}
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-[var(--border-strong)] bg-[var(--bg-card)]/70 backdrop-blur-sm mb-8">
-            <GiStarFormation className="text-[var(--accent)] text-xs" aria-hidden="true" />
-            <span className="text-xs tracking-widest text-[var(--accent)] uppercase font-semibold">
-              Knowledge is Light
-            </span>
-            <GiStarFormation className="text-[var(--accent)] text-xs" aria-hidden="true" />
-          </div>
-
-          {/* Arabic */}
-          <p
-            className="arabic-bismillah text-2xl sm:text-3xl mb-7"
-            lang="ar"
-            aria-label="Bismillah ir-Rahman ir-Raheem"
-          >
-            بِسْمِ اللّٰهِ الرَّحْمَنِ الرَّحِيْمِ
-          </p>
-
-          {/* Headline */}
-          <h1
-            id="hero-heading"
-            className="font-display text-4xl sm:text-5xl md:text-6xl font-bold leading-[1.08] tracking-tight mb-6 text-[var(--text-primary)]"
-          >
-            {t('hero.title')}
-            <br />
-            with <span className="gradient-text">Clarity</span>
-          </h1>
-
-          <p className="text-base sm:text-lg text-[var(--text-secondary)] max-w-xl mb-10 leading-relaxed">
-            {t('hero.subtitle')}
-          </p>
-
-          {/* Search */}
-          <EnhancedSearch />
-
-          {/* CTAs */}
-          <div className="flex flex-wrap items-center justify-center gap-3">
-            <Link
-              href="/courses"
-              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-gold-500 to-gold-600 hover:from-gold-400 hover:to-gold-500 text-white rounded-xl font-semibold shadow-md shadow-gold-600/30 hover:shadow-gold-500/40 transition-all duration-300 hover:scale-105 active:scale-95 text-sm"
-            >
-              {t('hero.cta')} <FiArrowRight size={15} />
-            </Link>
-            <Link
-              href="/scholars"
-              className="flex items-center gap-2 px-6 py-3 border border-[var(--border-strong)] hover:border-[var(--accent)] hover:bg-[var(--accent-dim)] text-[var(--text-primary)] rounded-xl font-medium transition-all duration-300 hover:scale-105 active:scale-95 text-sm"
-            >
-              {t('hero.secondaryCta')}
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Stats — editorial strip ── */}
-      <section
-        className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 sm:pb-20"
-        aria-label="Platform statistics"
-      >
-        <StatStrip
-          courseCount={courseCount}
-          scholarCount={scholarCount}
-          userCount={userCount}
-        />
-      </section>
-
-      {/* ── Continue Learning (signed-in users only) ── */}
-      <ContinueLearningStrip courses={continueLearning} userName={user?.name} />
-
-      {/* ── Featured Courses — premium carousel ── */}
-      {enrichedCourses.length > 0 && (
-        <section className="w-full py-16 sm:py-20">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
-            <SectionHeader
-              eyebrow={t('home.structuredLearning')}
-              title={t('home.featuredCourses')}
-              subtitle="A curated selection of courses to help you build meaningful Islamic knowledge."
-              href="/courses"
-              linkLabel="View All Courses"
-            />
-          </div>
-          <div className="max-w-7xl mx-auto">
-            <FeaturedCourseCarousel courses={enrichedCourses} />
-          </div>
-        </section>
+      {/* Profile completion */}
+      {prefs.profileCompletion && (
+        <ProfileCompletionCard completion={prefs.profileCompletion} />
       )}
 
-      {/* ── Browse by Category ── */}
-      <CategoryExplorer categories={categories} />
+      {/* Notifications */}
+      <SettingsSection icon={<FiBell size={16} />} title="Notifications" description="Control which in-app notifications you receive">
+        <div className="divide-y divide-[var(--border)]">
+          <Toggle
+            checked={prefs.notifyNewContent}
+            onChange={(v) => void savePrefs({ notifyNewContent: v })}
+            label="New lessons & courses"
+            description="From scholars you follow and courses you're enrolled in"
+          />
+          <Toggle
+            checked={prefs.notifyComments}
+            onChange={(v) => void savePrefs({ notifyComments: v })}
+            label="Comment replies"
+            description="When someone replies to your comment"
+          />
+        </div>
+        {saving && (
+          <p className="flex items-center gap-1.5 text-xs text-[var(--text-muted)] mt-3">
+            <FiLoader size={11} className="animate-spin" /> Saving…
+          </p>
+        )}
+        {saved && (
+          <p className="flex items-center gap-1.5 text-xs text-emerald-400 mt-3">
+            <FiCheck size={11} /> Saved
+          </p>
+        )}
+      </SettingsSection>
 
-      {/* ── Why Ilm Platform ── */}
-      <WhyIlmPlatform />
-
-      {/* ── Featured Scholars ── */}
-      {mappedScholars.length > 0 && (
-        <section
-          className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20"
-          aria-labelledby="scholars-heading"
+      {/* Language */}
+      <SettingsSection icon={<FiGlobe size={16} />} title="Language" description="Preferred language for course recommendations and content">
+        <select
+          value={prefs.preferredLanguage}
+          onChange={(e) => void savePrefs({ preferredLanguage: e.target.value })}
+          className={inputClass}
         >
-          <SectionHeader
-            eyebrow="Learn from the best"
-            title="Featured Scholars"
-            subtitle="Our featured scholars bring deep expertise and authentic scholarship to every course."
-            href="/scholars"
-            linkLabel="All Scholars"
+          {LANGUAGES.map((l) => <option key={l.code} value={l.code}>{l.label}</option>)}
+        </select>
+      </SettingsSection>
+
+      {/* Security */}
+      <SettingsSection icon={<FiLock size={16} />} title="Security" description="Change your password (Google sign-in accounts can skip this)">
+        <form onSubmit={changePassword} className="space-y-3">
+          <input
+            type="password"
+            value={currentPassword}
+            onChange={(e) => setCurrentPassword(e.target.value)}
+            placeholder="Current password"
+            className={inputClass}
+            autoComplete="current-password"
           />
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
-            {mappedScholars.map((scholar) => (
-              <ScholarCard key={scholar.id} scholar={scholar} />
-            ))}
+          <input
+            type="password"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            placeholder="New password (min. 8 characters)"
+            className={inputClass}
+            autoComplete="new-password"
+          />
+          {pwMessage && (
+            <p className={`text-xs ${pwMessage.type === "success" ? "text-emerald-400" : "text-red-400"}`}>
+              {pwMessage.text}
+            </p>
+          )}
+          <button type="submit" disabled={pwSaving || !currentPassword || !newPassword} className="btn-primary text-sm px-4 py-2 disabled:opacity-60">
+            {pwSaving ? <FiLoader className="animate-spin" size={13} /> : <FiSave size={13} />}
+            Update Password
+          </button>
+        </form>
+      </SettingsSection>
+
+      {/* Danger zone */}
+      <section className="border border-red-500/20 rounded-2xl p-5 sm:p-6 bg-red-500/5">
+        <div className="flex items-start gap-3 mb-4">
+          <div className="w-9 h-9 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400 flex-shrink-0">
+            <FiAlertTriangle size={16} />
           </div>
-        </section>
-      )}
-
-      {/* ── Social Proof — real course reviews ── */}
-      <SocialProofSection reviews={reviews} />
-
-      {/* ── Final CTA + Newsletter ── */}
-      <section
-        className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16"
-        aria-labelledby="cta-heading"
-      >
-        <div className="relative rounded-3xl overflow-hidden border border-[var(--border-strong)]">
-          <div className="absolute inset-0 hero-bg opacity-80" aria-hidden="true" />
-          <div className="absolute inset-0 pattern-overlay opacity-20" aria-hidden="true" />
-          <div
-            className="absolute inset-0 pointer-events-none"
-            style={{
-              background:
-                "radial-gradient(ellipse 70% 80% at 50% 100%, var(--accent-dim), transparent)",
-            }}
-            aria-hidden="true"
-          />
-          <div className="absolute inset-x-0 top-0 hero-line" aria-hidden="true" />
-
-          <div className="relative px-6 py-14 sm:py-20 flex flex-col items-center text-center">
-            <div className="inline-flex items-center justify-center w-16 h-16 mb-6">
-              <Image src="/logo.png" alt="Ilm Platform" width={64} height={64} className="object-contain animate-pulse-accent" aria-hidden="true" />
-            </div>
-
-            {user ? (
-              <>
-                <h2
-                  id="cta-heading"
-                  className="font-display text-3xl sm:text-4xl font-bold text-[var(--text-primary)] mb-4 leading-tight"
-                >
-                  Welcome back, {user.name?.split(" ")[0]} 👋
-                </h2>
-                <p className="text-[var(--text-secondary)] mb-8 max-w-sm text-sm sm:text-base leading-relaxed">
-                  Continue your journey of seeking authentic Islamic knowledge.
-                </p>
-                <div className="flex flex-wrap items-center justify-center gap-3">
-                  <Link
-                    href="/profile"
-                    className="inline-flex items-center gap-2 px-7 py-3.5 bg-gradient-to-r from-gold-500 to-gold-600 hover:from-gold-400 hover:to-gold-500 text-white rounded-xl font-semibold shadow-md shadow-gold-600/30 hover:shadow-gold-500/40 transition-all duration-300 hover:scale-105 active:scale-95 text-sm"
-                  >
-                    My Profile <FiArrowRight size={15} />
-                  </Link>
-                  <Link
-                    href="/courses"
-                    className="inline-flex items-center gap-2 px-7 py-3.5 border border-[var(--border-strong)] hover:border-[var(--accent)] hover:bg-[var(--accent-dim)] text-[var(--text-primary)] rounded-xl font-medium transition-all duration-300 hover:scale-105 active:scale-95 text-sm"
-                  >
-                    Browse Courses
-                  </Link>
-                </div>
-              </>
-            ) : (
-              <>
-                <h2
-                  id="cta-heading"
-                  className="font-display text-3xl sm:text-4xl font-bold text-[var(--text-primary)] mb-4 leading-tight"
-                >
-                  Start Your Journey Today
-                </h2>
-                <p className="text-[var(--text-secondary)] mb-8 max-w-sm text-sm sm:text-base leading-relaxed">
-                  Join students seeking authentic Islamic knowledge from qualified scholars.
-                </p>
-                <div className="flex flex-wrap items-center justify-center gap-3 mb-10">
-                  <Link
-                    href="/register"
-                    className="inline-flex items-center gap-2 px-7 py-3.5 bg-gradient-to-r from-gold-500 to-gold-600 hover:from-gold-400 hover:to-gold-500 text-white rounded-xl font-semibold shadow-md shadow-gold-600/30 hover:shadow-gold-500/40 transition-all duration-300 hover:scale-105 active:scale-95 text-sm"
-                  >
-                    Create Free Account <FiArrowRight size={15} />
-                  </Link>
-                  <Link
-                    href="/courses"
-                    className="inline-flex items-center gap-2 px-7 py-3.5 border border-[var(--border-strong)] hover:border-[var(--accent)] hover:bg-[var(--accent-dim)] text-[var(--text-primary)] rounded-xl font-medium transition-all duration-300 hover:scale-105 active:scale-95 text-sm"
-                  >
-                    Browse Courses
-                  </Link>
-                </div>
-
-                {/* Newsletter signup — merged into CTA for unauthenticated */}
-                <div className="w-full max-w-md border-t border-[var(--border)] pt-8">
-                  <p className="text-sm text-[var(--text-secondary)] mb-4 flex items-center justify-center gap-2">
-                    <FiMail size={14} className="text-[var(--accent)]" aria-hidden="true" />
-                    Get notified about new courses and scholars
-                  </p>
-                  <NewsletterForm />
-                </div>
-              </>
-            )}
+          <div>
+            <h2 className="text-sm font-semibold text-[var(--text-primary)]">Danger Zone</h2>
+            <p className="text-xs text-[var(--text-muted)] mt-0.5">
+              Permanently delete your account and all associated data. This cannot be undone.
+            </p>
           </div>
         </div>
-      </section>
 
+        {!showDeleteConfirm ? (
+          <button
+            onClick={() => setShowDeleteConfirm(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl border border-red-500/30 text-red-400 hover:bg-red-500/10 text-sm font-medium transition-colors"
+          >
+            <FiTrash2 size={13} /> Delete My Account
+          </button>
+        ) : (
+          <div className="space-y-3 p-4 rounded-xl border border-red-500/20 bg-[var(--bg-card)]">
+            <p className="text-sm text-[var(--text-primary)] font-medium">Are you absolutely sure?</p>
+            <p className="text-xs text-[var(--text-muted)]">
+              This will permanently delete your enrollments, progress, comments, and certificates.
+            </p>
+            <input
+              type="password"
+              value={deletePassword}
+              onChange={(e) => setDeletePassword(e.target.value)}
+              placeholder="Confirm your password (leave blank if you signed in with Google)"
+              className={inputClass}
+            />
+            {deleteError && <p className="text-xs text-red-400">{deleteError}</p>}
+            <div className="flex gap-2">
+              <button
+                onClick={() => void deleteAccount()}
+                disabled={deleting}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-semibold transition-colors disabled:opacity-60"
+              >
+                {deleting ? <FiLoader className="animate-spin" size={13} /> : <FiTrash2 size={13} />}
+                Yes, delete permanently
+              </button>
+              <button
+                onClick={() => { setShowDeleteConfirm(false); setDeletePassword(""); setDeleteError(""); }}
+                className="btn-secondary text-sm px-4 py-2"
+              >
+                <FiX size={13} /> Cancel
+              </button>
+            </div>
+          </div>
+        )}
+      </section>
     </div>
   );
 }

@@ -207,7 +207,7 @@ export async function PATCH(
       }).catch(() => {});
     }
 
-    return successResponse(updated);
+    return successResponse({ ...updated, needsRereview });
   } catch (error) {
     return handleApiError(error);
   }

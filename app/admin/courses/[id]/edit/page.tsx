@@ -127,6 +127,7 @@ export default function EditCoursePage() {
   const [saving,       setSaving]       = useState(false);
   const [errors,       setErrors]       = useState<Record<string, string>>({});
   const [courseStatus, setCourseStatus] = useState("DRAFT");
+  const [reReviewNotice, setReReviewNotice] = useState(false);
   const [activeTab,    setActiveTab]    = useState<Tab>("info");
   const [form,         setForm]         = useState<FormState>(EMPTY_FORM);
 
@@ -210,6 +211,7 @@ export default function EditCoursePage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
+    setReReviewNotice(false);
     setSaving(true);
     try {
       // Publication and moderation state are owned by the review workflow, so
@@ -244,6 +246,14 @@ export default function EditCoursePage() {
         } else {
           setErrors({ general: data.error ?? "Failed to update course" });
         }
+      } else if (data.data?.needsRereview) {
+        // Editing a field on an already-published course sends it back to
+        // PENDING_REVIEW and pulls it from public view — that used to happen
+        // silently (redirect straight to the list, no message), so an
+        // instructor's saved edit could look like it "disappeared" once they
+        // checked the live course. Stay on the page and say so explicitly.
+        setCourseStatus("PENDING_REVIEW");
+        setReReviewNotice(true);
       } else {
         router.push("/admin/courses");
       }
@@ -288,6 +298,22 @@ export default function EditCoursePage() {
           Manage Curriculum →
         </Link>
       </div>
+
+      {reReviewNotice && (
+        <div className="mb-5 p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 text-sm">
+          <div className="flex items-start gap-2.5">
+            <FiInfo size={16} className="text-blue-400 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-medium text-blue-300">Saved — but this course is now pending re-review</p>
+              <p className="text-[var(--text-secondary)] mt-1">
+                This course was already live, so editing it took it back off the public course
+                pages until an admin reviews the change. Students already enrolled keep their
+                access; new visitors won&apos;t see it in the meantime.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {errors.general && (
         <div className="mb-5 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">{errors.general}</div>

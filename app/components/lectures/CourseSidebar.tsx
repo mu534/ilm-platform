@@ -48,7 +48,10 @@ interface CurriculumData {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function fmtSeconds(sec: number): string {
-  const m = Math.floor(sec / 60), s = sec % 60;
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = sec % 60;
+  if (h) return m ? `${h}h ${m}m` : `${h}h`;
   return m ? (s ? `${m}m ${s}s` : `${m}m`) : `${sec}s`;
 }
 
@@ -430,8 +433,9 @@ export function CourseSidebar({
         aria-label="Course curriculum"
       >
         {collapsed ? (
-          // Collapsed — show only toggle button
-          <div className="flex flex-col items-center pt-4 gap-4">
+          // Collapsed — the toggle button plus a compact progress ring, so
+          // there's still some sense of where you are without re-expanding.
+          <div className="flex flex-col items-center pt-4 gap-5">
             <button
               onClick={() => setCollapsed(false)}
               className="p-2 text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors"
@@ -439,6 +443,32 @@ export function CourseSidebar({
             >
               <FiMenu size={18} />
             </button>
+
+            {data && (
+              <button
+                onClick={() => setCollapsed(false)}
+                className="relative flex-shrink-0 group"
+                style={{ width: 36, height: 36 }}
+                aria-label={`${data.percent}% complete — expand sidebar`}
+                title={`${data.totalCompleted}/${data.totalLectures} lessons — ${data.percent}% complete`}
+              >
+                <svg width={36} height={36} className="-rotate-90">
+                  <circle cx={18} cy={18} r={15} fill="none" stroke="var(--bg-secondary)" strokeWidth={3} />
+                  <circle
+                    cx={18} cy={18} r={15} fill="none"
+                    stroke="var(--accent)"
+                    strokeWidth={3}
+                    strokeLinecap="round"
+                    strokeDasharray={2 * Math.PI * 15}
+                    strokeDashoffset={2 * Math.PI * 15 * (1 - data.percent / 100)}
+                    className="transition-[stroke-dashoffset] duration-500"
+                  />
+                </svg>
+                <span className="absolute inset-0 flex items-center justify-center text-[9px] font-bold text-[var(--text-primary)] group-hover:text-[var(--accent)] transition-colors">
+                  {data.percent}
+                </span>
+              </button>
+            )}
           </div>
         ) : (
           <>

@@ -80,7 +80,7 @@ function CourseCard({ course }: { course: FeaturedCourse }) {
   return (
     <Link
       href={`/courses/${course.slug}`}
-      className="group flex-shrink-0 w-[280px] sm:w-[300px] lg:w-[288px] xl:w-[300px] snap-start rounded-2xl overflow-hidden border border-[var(--border)] bg-[var(--bg-card)] hover:border-[var(--border-strong)] hover:shadow-[var(--shadow-lg)] hover:-translate-y-0.5 transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+      className="group flex flex-col h-full rounded-2xl overflow-hidden border border-[var(--border)] bg-[var(--bg-card)] hover:border-[var(--border-strong)] hover:shadow-[var(--shadow-lg)] hover:-translate-y-0.5 transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
       aria-label={`View course: ${course.title}`}
     >
       {/* ── Thumbnail ── */}
@@ -242,7 +242,7 @@ export function FeaturedCourseCarousel({ courses }: FeaturedCourseCarouselProps)
           role="list"
         >
           {courses.map((course) => (
-            <div key={course.id} role="listitem">
+            <div key={course.id} role="listitem" className="flex-shrink-0 snap-start w-[280px] sm:w-[300px] lg:w-[288px] xl:w-[300px]">
               <CourseCard course={course} />
             </div>
           ))}

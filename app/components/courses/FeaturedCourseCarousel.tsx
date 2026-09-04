@@ -80,7 +80,7 @@ function CourseCard({ course }: { course: FeaturedCourse }) {
   return (
     <Link
       href={`/courses/${course.slug}`}
-      className="group flex-shrink-0 w-[300px] sm:w-[320px] lg:w-[340px] snap-start rounded-2xl overflow-hidden border border-[var(--border)] bg-[var(--bg-card)] hover:border-[var(--border-strong)] hover:shadow-[var(--shadow-lg)] hover:-translate-y-0.5 transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+      className="group flex-shrink-0 w-[280px] sm:w-[300px] lg:w-[288px] xl:w-[300px] snap-start rounded-2xl overflow-hidden border border-[var(--border)] bg-[var(--bg-card)] hover:border-[var(--border-strong)] hover:shadow-[var(--shadow-lg)] hover:-translate-y-0.5 transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
       aria-label={`View course: ${course.title}`}
     >
       {/* ── Thumbnail ── */}
@@ -128,12 +128,12 @@ function CourseCard({ course }: { course: FeaturedCourse }) {
       <div className="p-4 flex flex-col gap-2.5">
 
         {/* Title */}
-        <h3 className="text-sm font-semibold text-[var(--text-primary)] leading-snug line-clamp-2 group-hover:text-[var(--accent)] transition-colors duration-200 min-h-[2.5rem]">
+        <h3 className="text-sm font-semibold text-[var(--text-primary)] leading-snug line-clamp-2 group-hover:text-[var(--accent)] transition-colors duration-200">
           {course.title}
         </h3>
 
-        {/* Short description — 1–3 lines, clamped */}
-        <p className="text-[12px] text-[var(--text-secondary)] leading-relaxed line-clamp-3 min-h-[3.75rem]">
+        {/* Short description — 2 lines max */}
+        <p className="text-[12px] text-[var(--text-secondary)] leading-relaxed line-clamp-2">
           {course.shortDescription?.trim() || course.description || ""}
         </p>
 
@@ -220,7 +220,7 @@ export function FeaturedCourseCarousel({ courses }: FeaturedCourseCarouselProps)
   if (courses.length === 0) return null;
 
   const scrollBy = (dir: -1 | 1) => {
-    scrollRef.current?.scrollBy({ left: dir * 360, behavior: "smooth" });
+    scrollRef.current?.scrollBy({ left: dir * 320, behavior: "smooth" });
   };
 
   const navBtnBase =
@@ -232,7 +232,7 @@ export function FeaturedCourseCarousel({ courses }: FeaturedCourseCarouselProps)
       <div className="[mask-image:linear-gradient(to_right,transparent,black_2%,black_98%,transparent)]">
         <div
           ref={scrollRef}
-          className="flex gap-5 overflow-x-auto px-4 sm:px-6 lg:px-8 pb-3"
+          className="flex gap-4 overflow-x-auto px-4 sm:px-6 lg:px-8 pb-3"
           style={{
             scrollSnapType: "x mandatory",
             scrollbarWidth: "none",
